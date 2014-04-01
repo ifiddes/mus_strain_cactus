@@ -1,1 +1,22 @@
 # These are my notes for this project.
+##############################
+# 1 april 2014
+# From Benedict:
+For those with access to CBSE machines, the 10-way maf is in:
+
+/hive/users/benedict/mouseHub/all.hal
+The maf is:
+
+/hive/users/benedict/mouseHub/all.maf
+
+This was produced with the command:
+
+hal2mafMP.py --refGenome C57B6J --ucscNames --inMemory --numProc=10 all.hal all.maf
+
+The MP at the end of hal2mafMP.py stands for "Multi-Processor", and is a parallel version of the basic hal2maf command. To extract out just a subregion that might overlap the CFTR (I did this by hand in the browser, do:)
+
+hal2maf --refGenome C57B6J --ucscNames --refSequence 6 --start 3359286 --length 2000000 all.hal cftr.maf
+
+There are lots of options to hal2maf, but --noDupes will remove any duplications and --inMemory might be faster, albeit using more memory.
+
+##############################
