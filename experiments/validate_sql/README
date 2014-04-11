@@ -1,7 +1,9 @@
 How to validate the mysql sequence database against the fasta files.
 
+#####
 #0 Set variables, verify that ~/.my.cnf has the password
 species="FVBNJ NZOHlLtJ C57B6NJ AKRJ DBA2J CBAJ C3HHeJ C57B6J BALBcJ Rattus"
+
 #####
 #1 FROM mysql, write out the species names, sequence names, AND sequence lengths INTO one file per species.
 for s in $species; do
