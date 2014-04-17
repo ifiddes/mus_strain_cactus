@@ -7,7 +7,7 @@ project.
 Copy-pasta heavily from quick_plot (https://github.com/dentearl/quick_plot/)
 
 example call:
-./coverage_plotter.py --out output_01a --flavor m_1a ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/AKRJ.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/BALBcJ.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/C*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/D*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/F*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/N*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/R*.comp.basestats
+./coverage_plotter.py --out output_01a --ratio ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/AKRJ.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/BALBcJ.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/C*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/D*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/F*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/N*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/R*.comp.basestats
 
 """
 ##############################
@@ -101,20 +101,12 @@ def InitArguments(parser):
                       type=str,
                       help=('path/filename where figure will be created. No '
                             'extension needed. default=%(default)s'))
-  parser.add_argument('--flavor', default='m_1', help='experimental flavor.')
+  parser.add_argument('--ratio', default=False, action='store_true',
+                      help='Switch from absolute to ratio.')
   parser.add_argument('--mode', dest='mode', default='line', type=str,
                       help=('plotting mode. may be in (line, scatter, '
                             'column, bar, hist, tick, barcode, point, contour, '
                             'density, matrix) default=%(default)s'))
-  parser.add_argument('--title', dest='title', type=str,
-                      default='sentinel_value',
-                      help='Plot title.')
-  parser.add_argument('--xlabel', dest='xlabel', type=str,
-                      default='sentinel_value',
-                      help='X-axis label.')
-  parser.add_argument('--ylabel', dest='ylabel', type=str,
-                      default='sentinel_value',
-                      help='Y-axis label.')
   parser.add_argument('--height', dest='height', default=4.0, type=float,
                       help='height of image, in inches. default=%(default)s')
   parser.add_argument('--width', dest='width', default=9.0, type=float,
@@ -448,6 +440,7 @@ def PlotExperiment_1(data_list, ax, args):
     args: an argparse argument object.
   """
   ylabel = 'Number of transcripts'
+  args.title = 'Mapping count of 88,093 transcipts from mm10 mapped to other strains / species'
   width = 0.33
   data_min = 0.0
   data_max = 1.0
@@ -479,9 +472,10 @@ def PlotExperiment_1(data_list, ax, args):
   for obj_dict in data_order:
     labels.append(obj_dict['data'].label.split('.')[0])
     data_ordering.append(obj_dict['data'])
-  if args.flavor == 'm_1a':
+  if args.ratio:
     # normalize the data to 1.0
     ylabel = 'Proportion of transcripts'
+    args.title = 'Fraction of 88,093 transcipts from mm10 mapped to other strains / species'
     for label in categories:
       norm = 0
       for v in [0.0, 0.5, 0.9, 0.95, 0.99, 1.0]:
@@ -531,7 +525,7 @@ def PlotExperiment_1(data_list, ax, args):
                   bbox_transform=plt.gcf().transFigure)
   leg.get_frame().set_edgecolor('white')
   xmin, xmax, ymin, ymax = ax.axis()
-  if args.flavor == 'm_1a':
+  if args.ratio:
     ax.set_ylim([0, 1.0])
   ax.xaxis.set_ticks(numpy.arange(0, len(data_list)) + width/2.0)
   ax.xaxis.set_ticklabels(labels, rotation=45)
@@ -551,10 +545,7 @@ def PlotData(data_list, ax, args):
     ax: a matplotlib axis object.
     args: an argparse argument object.
   """
-  if args.flavor == 'm_1' or args.flavor == 'm_1a':
-    PlotExperiment_1(data_list, ax, args)
-  else:
-    raise BadInput('Unanticipated flavor:%s' % args.flavor)
+  PlotExperiment_1(data_list, ax, args)
 
 
 def main():
