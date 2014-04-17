@@ -103,6 +103,8 @@ def InitArguments(parser):
                             'extension needed. default=%(default)s'))
   parser.add_argument('--ratio', default=False, action='store_true',
                       help='Switch from absolute to ratio.')
+  parser.add_argument('--flip', default=False, action='store_true',
+                      help='Flip the order of column stacks.')
   parser.add_argument('--mode', dest='mode', default='line', type=str,
                       help=('plotting mode. may be in (line, scatter, '
                             'column, bar, hist, tick, barcode, point, contour, '
@@ -431,6 +433,24 @@ def ColorPicker(i, args):
     return args.colors_medium[i % len(args.colors_medium)]
 
 
+def PlotBars(ax, data_list, stacks, width, args):
+  """ Plot all of the bars on the axis.
+  """
+  order = [0.0, 0.5, 0.9, 0.95, 0.99, 1.0]
+  bars = []
+  if args.flip:
+    order.reverse()
+  cumul = numpy.zeros(len(stacks[0.0]))
+  for i, key in enumerate(order, 0):
+    bars.append(ax.bar(range(0, len(data_list)),
+                       stacks[key],
+                       width,
+                       bottom = cumul,
+                       color=ColorPicker(i, args), linewidth=0.0, alpha=1.0))
+    cumul += stacks[key]
+  return bars
+
+
 def PlotExperiment_1(data_list, ax, args):
   """ Plot data as in Mark's first suggestion, stacked bar plot.
 
@@ -475,7 +495,8 @@ def PlotExperiment_1(data_list, ax, args):
   if args.ratio:
     # normalize the data to 1.0
     ylabel = 'Proportion of transcripts'
-    args.title = 'Fraction of 88,093 transcipts from mm10 mapped to other strains / species'
+    args.title = ('Fraction of 88,093 transcipts from mm10 mapped to '
+                  'other strains / species')
     for label in categories:
       norm = 0
       for v in [0.0, 0.5, 0.9, 0.95, 0.99, 1.0]:
@@ -489,38 +510,13 @@ def PlotExperiment_1(data_list, ax, args):
   for v in [0.0, 0.5, 0.9, 0.95, 0.99, 1.0]:
     stacks[v] = numpy.array(stacks[v])
   # plot stacked bar chart
-  p0 = ax.bar(range(0, len(data_list)),
-              stacks[0.0],
-              width,
-              color=ColorPicker(0, args), linewidth=0.0, alpha=1.0)
-  p1 = ax.bar(range(0, len(data_list)),
-              stacks[0.5],
-              width,
-              bottom=stacks[0.0],
-              color=ColorPicker(1, args), linewidth=0.0, alpha=1.0)
-  p2 = ax.bar(range(0, len(data_list)),
-              stacks[0.9],
-              width,
-              bottom=stacks[0.0] + stacks[0.5],  # note bottom is cumulative
-              color=ColorPicker(2, args), linewidth=0.0, alpha=1.0)
-  p3 = ax.bar(range(0, len(data_list)),
-              stacks[0.95],
-              width,
-              bottom=(stacks[0.0] + stacks[0.5] + stacks[0.9]),
-              color=ColorPicker(3, args), linewidth=0.0, alpha=1.0)
-  p4 = ax.bar(range(0, len(data_list)),
-              stacks[0.99],
-              width,
-              bottom=stacks[0.0] + stacks[0.5] + stacks[0.9] + stacks[0.95],
-              color=ColorPicker(4, args), linewidth=0.0, alpha=1.0)
-  p5 = ax.bar(range(0, len(data_list)),
-              stacks[1.0],
-              width,
-              bottom=(stacks[0.0] + stacks[0.5] + stacks[0.9] +
-                      stacks[0.95] + stacks[0.99]),
-              color=ColorPicker(5, args), linewidth=0.0, alpha=1.0)
-  leg = ax.legend([p5[0], p4[0], p3[0], p2[0], p1[0], p0[0]],
-                  ['1.0', '< 1.0', '< 0.95', '< 0.9', '< 0.5', '0'],
+  bars = PlotBars(ax, data_list, stacks, width, args)
+  legend_labels = ['1.0', '< 1.0', '< 0.95', '< 0.9', '< 0.5', '0']
+  if args.flip:
+    legend_labels.reverse()
+  leg = ax.legend([bars[5][0], bars[4][0], bars[3][0],
+                   bars[2][0], bars[1][0], bars[0][0]],
+                  legend_labels,
                   bbox_to_anchor=(0,-0.1,1,1),  # place legend outside of axis
                   bbox_transform=plt.gcf().transFigure)
   leg.get_frame().set_edgecolor('white')
