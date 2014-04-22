@@ -117,11 +117,13 @@ class AugustusCall(Target):
   def run(self):
     if not os.path.exists(self.out_path):
       os.mkdir(self.out_path)
-    # self.maf_file = os.path.join(self.getLocalTempDir(),
-    #                              'window_%s_%s_%03d.maf'
-    #                              % (self.args.ref_genome,
-    #                                 self.args.ref_sequence, self.window_number))
-    maf_file = self.args.maf_file_path
+    if self.args.maf_file_path is None:
+      self.maf_file = os.path.join(self.getLocalTempDir(),
+                                   'window_%s_%s_%03d.maf'
+                                   % (self.args.ref_genome,
+                                      self.args.ref_sequence, self.window_number))
+    else:
+      maf_file = self.args.maf_file_path
     self.aug_parameters['alnfile'] = maf_file
     # extract the region needed as maf
     hal2maf_cmd = [os.path.join(self.args.hal_path, 'bin', 'hal2maf')]
@@ -182,14 +184,15 @@ def InitializeArguments(parser):
                       help='location of hal tools directory.')
   parser.add_argument('--hal_file_path', type=str,
                       help='location hal file.')
-  parser.add_argument('--maf_file_path', type=str,
-                      help='location maf file.')
   parser.add_argument('--tree_path', type=str,
                       help='location newick tree file.')
   parser.add_argument('--out_dir', type=str,
                       help='location to store output files.')
   parser.add_argument('--dbaccess_file', type=str,
                       help='location of dbaccess file containing login info.')
+  parser.add_argument('--maf_file_path', type=str,
+                      help=('location maf file. Overrides all hal window '
+                            'extraction'))
   window = parser.add_argument_group('Window options')
   window.add_argument('--ref_genome', type=str,
                       help='reference genome to use for region extraction.')
