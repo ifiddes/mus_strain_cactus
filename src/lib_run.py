@@ -15,7 +15,7 @@ def RunCommands(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
 
 
 def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
-                 err_pipes=None, ignore_returns=False):
+                 err_pipes=None, ignore_returns=None):
   """ Uses the subprocess module to issue serial processes from the cmds list.
   Arguments:
     ignore_returns: if true, return code is ignored
@@ -65,7 +65,7 @@ def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
 
 
 def RunCommandsP(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
-                 err_pipes=None, ignore_returns=False, **kwargs):
+                 err_pipes=None, ignore_returns=None, **kwargs):
   """ Uses the subprocess module to issue parallel processes from cmds list.
   """
   procs = []
