@@ -203,7 +203,7 @@ def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
   f = open(os.path.join(out_path, 'summary_report.txt', 'w'))
   f.write('run started: %s\n' % time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                                               time.localtime(now)))
-  f.write('command: %s %s\n' % (sys.argv[1], sys.argv[2]))
+  f.write('command: %s\n' % (' '.join(sys.argv[1:])))
   f.close()
   return now
 
