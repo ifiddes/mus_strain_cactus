@@ -14,17 +14,17 @@ def RunCommands(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
                  ignore_returns)
 
 
-def HandlePipes(in_pipes, out_pipes, err_pipes, ignore_returns):
+def HandlePipes(n, in_pipes, out_pipes, err_pipes, ignore_returns):
   """ Generate the correct data structures for RunCommands*() functions.
   """
   if in_pipes is None:
-    in_pipes = [None] * len(cmds)
+    in_pipes = [None] * n
   if out_pipes is None:
-    out_pipes = [None] * len(cmds)
+    out_pipes = [None] * n
   if err_pipes is None:
-    err_pipes = [None] * len(cmds)
+    err_pipes = [None] * n
   if ignore_returns is None:
-    ignore_returns = [False] * len(cmds)
+    ignore_returns = [False] * n
   return in_pipes, out_pipes, err_pipes, ignore_returns
 
 
@@ -55,7 +55,7 @@ def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
   if not os.path.exists(local_temp_dir):
     raise ValueError('local_temp_dir "%s" does not exist.' % local_temp_dir)
   in_pipes, out_pipes, err_pipes, ignore_returns = HandlePipes(
-    in_pipes, out_pipes, err_pipes, ignore_returns)
+    len(cmds), in_pipes, out_pipes, err_pipes, ignore_returns)
   for i, c in enumerate(cmds, 0):
     sin, sout, serr = HandlePipesInstance(in_pipes[i], out_pipes[i],
                                           err_pipes[i])
@@ -88,7 +88,7 @@ def RunCommandsP(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
     raise ValueError('local_temp_dir "%s" does not exist.' % local_temp_dir)
   procs = []
   in_pipes, out_pipes, err_pipes, ignore_returns = HandlePipes(
-    in_pipes, out_pipes, err_pipes, ingore_returns)
+    len(cmds), in_pipes, out_pipes, err_pipes, ingore_returns)
   for i, c in enumerate(cmds, 0):
     sin, sout, serr = HandlePipesInstance(in_pipes[i], out_pipes[i],
                                           err_pipes[i])

@@ -151,7 +151,8 @@ class AugustusCall(Target):
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
-    LogCommand(self.out_path, aug_cmds, out_pipes, err_pipes, self.args)
+    LogCommand(self.out_path, aug_cmds, out_pipes=out_pipes,
+               err_pipes=err_pipes)
     lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
                          out_pipes=out_pipes, err_pipes=err_pipes)
     # copy output files from tmp back to the target dir
@@ -161,7 +162,7 @@ class AugustusCall(Target):
       files = glob(os.path.join(self.getLocalTempDir(), '*.%s' % suffix))
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
-    LogCommand(self.out_path, copy_cmds, self.args)
+    LogCommand(self.out_path, copy_cmds)
     lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
 
 
@@ -174,7 +175,7 @@ def ReadDBAccess(dbaccess_file):
   return line
 
 
-def LogCommand(out_path, cmds, out_pipes=None, err_pipes=None, args):
+def LogCommand(out_path, cmds, out_pipes=None, err_pipes=None):
   """ Write out the commands that will be executed for this run.
   """
   f = open(os.path.join(out_path, 'commands.log'), 'a')
