@@ -114,6 +114,7 @@ class AugustusCall(Target):
     if self.args._CompPred_only_species is not None:
       self.aug_parameters['/CompPred/only_species'] = (
         self.args._CompPred_only_species)
+
   def run(self):
     if not os.path.exists(self.out_path):
       os.mkdir(self.out_path)
@@ -121,7 +122,8 @@ class AugustusCall(Target):
       self.maf_file = os.path.join(self.getLocalTempDir(),
                                    'window_%s_%s_%03d.maf'
                                    % (self.args.ref_genome,
-                                      self.args.ref_sequence, self.window_number))
+                                      self.args.ref_sequence,
+                                      self.window_number))
     else:
       maf_file = self.args.maf_file_path
     self.aug_parameters['alnfile'] = maf_file
@@ -139,21 +141,27 @@ class AugustusCall(Target):
     hal2maf_cmd.append(self.args.hal_file_path)
     hal2maf_cmd.append(maf_file)
     hal2maf_cmds = [hal2maf_cmd]
+    if self.args.maf_file_path is None:
+      LogCommand(self.out_path, hal2maf_cmds)
+      lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
     # run augustus on the maf
+    err_pipes = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
+    out_pipes = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
     aug_cmd = [os.path.join(self.args.augustus_path, 'bin', 'augustus')]
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
+    LogCommand(self.out_path, aug_cmds, out_pipes, err_pipes, self.args)
+    lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
+                         out_pipes=out_pipes, err_pipes=err_pipes)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
-    copy_cmds.append([lib_run.Which('cp'),
-                        os.path.join(self.getLocalTempDir(), '*'),
-                        os.path.join(self.out_path)])
-    LogCommands(self.out_path, hal2maf_cmds, aug_cmds, copy_cmds, self.args)
-    # lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
-    lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir())
-    # if (os.path.exists(os.path.join(self.getLocalTempDir(), 'stdout.out'))):  # todo: put actual result file
+    for suffix in ['dot', 'gff', 'gff3', 'out', 'wig']:
+      files = glob(os.path.join(self.getLocalTempDir(), '*.%s' % suffix))
+      for f in files:
+        copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
+    LogCommand(self.out_path, copy_cmds, self.args)
     lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
 
 
@@ -166,13 +174,20 @@ def ReadDBAccess(dbaccess_file):
   return line
 
 
-def LogCommands(out_path, hal2maf_cmds, aug_cmds, copy_cmds, args):
+def LogCommand(out_path, cmds, out_pipes=None, err_pipes=None, args):
   """ Write out the commands that will be executed for this run.
   """
-  f = open(os.path.join(out_path, 'commands.log'), 'w')
-  f.write('%s\n' % ' '.join(map(lambda x: ' '.join(x), hal2maf_cmds)))
-  f.write('%s\n' % ' '.join(map(lambda x: ' '.join(x), aug_cmds)))
-  f.write('%s\n' % ' '.join(map(lambda x: ' '.join(x), copy_cmds)))
+  f = open(os.path.join(out_path, 'commands.log'), 'a')
+  if out_pipes is None:
+    out_str = ''
+  else:
+    out_str = ' 1>%s' % ' '.join(map(lambda x: ' '.join(x), out_pipes))
+  if err_pipes is None:
+    err_str = ''
+  else:
+    err_str = ' 2>%s' % ' '.join(map(lambda x: ' '.join(x), err_pipes))
+  f.write('%s%s%s\n' % (' '.join(map(lambda x: ' '.join(x), cmds)),
+                        err_str, out_str))
   f.close()
 
 
@@ -297,6 +312,8 @@ def CheckArguments(args, parser):
                       ('dbaccess_file', args.dbaccess_file)]:
     if value is None:
       parser.error('Specify --%s' % name)
+    else:
+      value = os.path.abspath(value)
   # check for existence
   for name, value in [('augustus_path', args.augustus_path),
                       ('hal_path', args.hal_path),

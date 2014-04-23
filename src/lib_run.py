@@ -14,14 +14,9 @@ def RunCommands(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
                  ignore_returns)
 
 
-def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
-                 err_pipes=None, ignore_returns=None):
-  """ Uses the subprocess module to issue serial processes from the cmds list.
-  Arguments:
-    ignore_returns: if true, return code is ignored
+def HandlePipes(in_pipes, out_pipes, err_pipes, ignore_returns):
+  """ Generate the correct data structures for RunCommands*() functions.
   """
-  if not os.path.exists(local_temp_dir):
-    raise ValueError('local_temp_dir "%s" does not exist.' % local_temp_dir)
   if in_pipes is None:
     in_pipes = [None] * len(cmds)
   if out_pipes is None:
@@ -30,19 +25,40 @@ def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
     err_pipes = [None] * len(cmds)
   if ignore_returns is None:
     ignore_returns = [False] * len(cmds)
+  return in_pipes, out_pipes, err_pipes, ignore_returns
+
+
+def HandlePipesInstance(in_pipe, out_pipe, err_pipe):
+  """ Generate the correct data structures for a single command.
+  """
+  if in_pipe is None:
+    sin = None
+  else:
+    sin = subprocess.PIPE
+  if out_pipe is None:
+    sout = None
+  else:
+    sout = subprocess.PIPE
+  if err_pipe is None:
+    serr = None
+  else:
+    serr = subprocess.PIPE
+  return sin, sout, serr
+
+
+def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
+                 err_pipes=None, ignore_returns=None):
+  """ Uses the subprocess module to issue serial processes from the cmds list.
+  Arguments:
+    ignore_returns: if true, return code is ignored
+  """
+  if not os.path.exists(local_temp_dir):
+    raise ValueError('local_temp_dir "%s" does not exist.' % local_temp_dir)
+  in_pipes, out_pipes, err_pipes, ignore_returns = HandlePipes(
+    in_pipes, out_pipes, err_pipes, ignore_returns)
   for i, c in enumerate(cmds, 0):
-    if in_pipes[i] is None:
-      sin = None
-    else:
-      sin = subprocess.PIPE
-    if out_pipes[i] is None:
-      sout = None
-    else:
-      sout = subprocess.PIPE
-    if err_pipes[i] is None:
-      serr = None
-    else:
-      serr = subprocess.PIPE
+    sin, sout, serr = HandlePipesInstance(in_pipes[i], out_pipes[i],
+                                          err_pipes[i])
     p = subprocess.Popen(c, cwd=local_temp_dir, stdin=sin,
                          stdout=sout, stderr=serr)
     if in_pipes[i] is None:
@@ -68,26 +84,16 @@ def RunCommandsP(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
                  err_pipes=None, ignore_returns=None, **kwargs):
   """ Uses the subprocess module to issue parallel processes from cmds list.
   """
+  if not os.path.exists(local_temp_dir):
+    raise ValueError('local_temp_dir "%s" does not exist.' % local_temp_dir)
   procs = []
-  if in_pipes is None:
-    in_pipes = [None] * len(cmds)
-  if out_pipes is None:
-    out_pipes = [None] * len(cmds)
-  if err_pipes is None:
-    err_pipes = [None] * len(cmds)
-  if ignore_returns is None:
-    ignore_returns = [False] * len(cmds)
+  in_pipes, out_pipes, err_pipes, ignore_returns = HandlePipes(
+    in_pipes, out_pipes, err_pipes, ingore_returns)
   for i, c in enumerate(cmds, 0):
-    if in_pipes[i] is None:
-      sin = None
-    else:
-      sin = subprocess.PIPE
-    if out_pipes[i] is None:
-      sout = None
-    else:
-      sout = subprocess.PIPE
-    procs.append(subprocess.Popen(c, cwd=local_temp_dir, stdin=sin,
-                                  stdout=sout))
+    sin, sout, serr = HandlePipesInstance(in_pipes[i], out_pipes[i],
+                                          err_pipes[i])
+    procs.append(subprocess.Popen(
+        c, cwd=local_temp_dir, stdin=sin, stdout=sout, stderr=serr))
   for i, p in enumerate(procs, 0):
     if in_pipes[i] is None:
       sin = None
