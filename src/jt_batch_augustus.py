@@ -11,6 +11,7 @@ import os
 from sonLib.bioio import logger
 import subprocess
 import sys
+import time
 ##################################################
 # Copyright (c) 2014 Dent Earl, Benedict Paten, Mark Diekhans, Craig Hunter
 # ... and other members of the Reconstruction Team of David Haussler's
@@ -54,17 +55,18 @@ class BatchJob(Target):
                                        self.args.ref_genome,
                                        self.args.ref_sequence, start,
                                        self.args.window_length, end,
-                                       self.args.species,
                                        count - 1, self.args))
     logger.debug('There will be %d AugustusCall children' % count)
-
+    self.args.batch_start_time = CreateSummaryReport(
+      self.args.out_dir, self.args.ref_genome, self.args.ref_sequence,
+      self.args.window_start, self.args.window_length, self.args.window_end)
 
 class AugustusCall(Target):
   """
   AugustusCall class calls the augustus binary.
   """
   def __init__(self, hal_file_path, ref_genome, ref_sequence,
-               window_start, window_length, window_end, species,
+               window_start, window_length, window_end,
                window_number, args):
     Target.__init__(self)
     self.hal_file_path = hal_file_path
@@ -73,7 +75,6 @@ class AugustusCall(Target):
     self.window_start = window_start
     self.window_length = window_length
     self.window_end = window_end
-    self.species = species
     self.window_number = window_number
     self.out_path = os.path.join(args.out_dir,
                                  'window_%s_%s_%03d'
@@ -178,7 +179,7 @@ def ReadDBAccess(dbaccess_file):
 def LogCommand(out_path, cmds, out_pipes=None, err_pipes=None):
   """ Write out the commands that will be executed for this run.
   """
-  f = open(os.path.join(out_path, 'commands.log'), 'a')
+  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
   if out_pipes is None:
     out_str = ''
   else:
@@ -187,9 +188,24 @@ def LogCommand(out_path, cmds, out_pipes=None, err_pipes=None):
     err_str = ''
   else:
     err_str = ' 2>%s' % ' '.join(map(lambda x: ' '.join(x), err_pipes))
-  f.write('%s%s%s\n' % (' '.join(map(lambda x: ' '.join(x), cmds)),
-                        err_str, out_str))
+  f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                                          time.localtime(time.time())),
+                            ' '.join(map(lambda x: ' '.join(x), cmds)),
+                            err_str, out_str))
   f.close()
+
+
+def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
+                        window_length, window_end):
+  """ Create a summary report in the root output directory.
+  """
+  now = time.time()
+  f = open(os.path.join(out_path, 'summary_report.txt', 'w'))
+  f.write('run started: %s\n' % time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                                              time.localtime(now)))
+  f.write('command: %s %s\n' % (sys.argv[1], sys.argv[2]))
+  f.close()
+  return now
 
 
 def InitializeArguments(parser):
@@ -361,10 +377,34 @@ def CheckArguments(args, parser):
                   args.tree_path, args.out_dir))
 
 
+def PrettyTime(t):
+  """ Given input t as seconds, return a nicely formated string.
+  """
+  if t < 120:
+    return '%.2f secs' % t
+  t /= 60.0
+  if t < 120:
+    return '%.2f mins' % t
+  t /= 60.0
+  if t < 25:
+    return '%.2f hrs' % t
+  t /= 24.0
+  if t < 28:
+    return '%.2f days' % t
+  t /= 7.0
+  return '%.2f weeks' % t
+
+
 def LaunchBatch(args):
   jobResult = Stack(BatchJob(args)).startJobTree(args)
   if jobResult:
     raise RuntimeError('The jobTree contained %d failed jobs!\n' % jobResult)
+  f = open(os.path.join(out_path, 'summary_report.txt', 'a'))
+  now = time.time()
+  f.write('run finished: %s\n' %
+          time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)))
+  f.write('elapsed time: %s\n' % PrettyTime(now - args.batch_start_time))
+  f.close()
 
 
 def main():
