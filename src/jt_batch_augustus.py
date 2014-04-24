@@ -147,7 +147,8 @@ class AugustusCall(Target):
     hal2maf_cmds = [hal2maf_cmd]
     if self.args.maf_file_path is None:
       LogCommand(self.out_path, hal2maf_cmds)
-      # lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
+      if not self.args.debug:
+        lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
     # run augustus on the maf
     err_pipe = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
     out_pipe = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
@@ -157,8 +158,9 @@ class AugustusCall(Target):
     aug_cmds = [aug_cmd]
     LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
                err_pipe=err_pipe)
-    # lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
-    #                      out_pipes=out_pipe, err_pipes=err_pipe)
+    if not self.args.debug:
+      lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
+                           out_pipes=out_pipe, err_pipes=err_pipe)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -167,7 +169,8 @@ class AugustusCall(Target):
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
     LogCommand(self.out_path, copy_cmds)
-    # lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
+    if not self.args.debug:
+      lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
 
 
 def ReadDBAccess(dbaccess_file):
@@ -235,6 +238,8 @@ def InitializeArguments(parser):
   parser.add_argument('--maf_file_path', type=str,
                       help=('location maf file. Overrides all hal window '
                             'extraction'))
+  parser.add_argument('--debug', default=False, action='store_true',
+                      help='turns off execution of commands, just writes logs.')
   window = parser.add_argument_group('Window options')
   window.add_argument('--ref_genome', type=str,
                       help='reference genome to use for region extraction.')
