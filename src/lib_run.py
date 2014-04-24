@@ -68,17 +68,17 @@ def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
         raise IOError('Unable to locate inPipe file: %s for command %s'
                       % (in_pipes[i], ' '.join(c)))
       sin = open(in_pipes[i], 'r').read()
+    pout, perr = p.communicate(sin)
     if out_pipes[i] is None:
-      pout, perr = p.communicate(sin)
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i])
     else:
       f = open(out_pipes[i], 'w')
-      f.write(p.communicate(sin)[0])
+      f.write(pout)
       f.close()
-      f = open(err_pipes[i], 'w')
-      f.write(p.communicate(serr)[0])
-      f.close()
+      g = open(err_pipes[i], 'w')
+      g.write(perr)
+      g.close()
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i])
 
@@ -105,17 +105,17 @@ def RunCommandsP(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
         raise IOError('Unable to locate inPipe file: %s for command %s'
                       % (in_pipes[i], cmds[i]))
       sin = open(in_pipes[i], 'r').read()
+    pout, perr = p.communicate(sin)
     if out_pipes[i] is None:
-      pout, perr = p.communicate(sin)
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i])
     else:
       f = open(out_pipes[i], 'w')
-      f.write(p.communicate(sin)[0])
+      f.write(pout)
       f.close()
-      f = open(err_pipes[i], 'w')
-      f.write(p.communicate(serr)[0])
-      f.close()
+      g = open(err_pipes[i], 'w')
+      g.write(perr)
+      g.close()
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i] + ['< %s 1> %s 2> %s'
                                                   % (in_pipes[i],
