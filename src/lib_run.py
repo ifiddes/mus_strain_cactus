@@ -76,6 +76,9 @@ def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
       f = open(out_pipes[i], 'w')
       f.write(p.communicate(sin)[0])
       f.close()
+      f = open(err_pipes[i], 'w')
+      f.write(p.communicate(serr)[0])
+      f.close()
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i])
 
@@ -110,8 +113,11 @@ def RunCommandsP(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
       f = open(out_pipes[i], 'w')
       f.write(p.communicate(sin)[0])
       f.close()
+      f = open(err_pipes[i], 'w')
+      f.write(p.communicate(serr)[0])
+      f.close()
       if not ignore_returns[i]:
-        HandleReturnCode(p.returncode, cmds[i] + ['< %s > %s 2> %s'
+        HandleReturnCode(p.returncode, cmds[i] + ['< %s 1> %s 2> %s'
                                                   % (in_pipes[i],
                                                      out_pipes[i],
                                                      err_pipes[i])])
