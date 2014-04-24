@@ -48,7 +48,7 @@ class BatchJob(Target):
   def run(self):
     count = 0
     for start in xrange(self.args.window_start, self.args.window_end,
-                        self.args.window_length):
+                        self.args.window_overlap):
       count += 1
       end = min(self.args.window_end, start + self.args.window_length)
       self.addChildTarget(AugustusCall(self.args.hal_file_path,
@@ -59,8 +59,10 @@ class BatchJob(Target):
     logger.debug('There will be %d AugustusCall children' % count)
     self.args.batch_start_time = CreateSummaryReport(
       self.args.out_dir, self.args.ref_genome, self.args.ref_sequence,
-      self.args.window_start, self.args.window_length, self.args.window_end,
-      count, self.args.batch_start_time, self.args.calling_command)
+      self.args.window_start, self.args.window_length, self.args.window_overlap,
+      self.args.window_end, count, self.args.batch_start_time,
+      self.args.calling_command)
+
 
 class AugustusCall(Target):
   """
@@ -198,18 +200,20 @@ def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None):
 
 
 def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
-                        window_length, window_end, count, now, command):
+                        window_length, window_overlap, window_end, count,
+                        now, command):
   """ Create a summary report in the root output directory.
   """
   f = open(os.path.join(out_dir, 'summary_report.txt'), 'w')
   f.write('run started: %s\n' % time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                                               time.localtime(now)))
   f.write('command: %s\n' % command)
-  f.write('window start: %d\n' % window_start)
-  f.write('window length: %d\n' % window_length)
-  f.write('window end: %d\n' % window_end)
-  f.write('region length: %d\n' % (window_end - window_start))
-  f.write('num windows: %d\n' % count)
+  f.write('window start:   %d\n' % window_start)
+  f.write('window length:  %d\n' % window_length)
+  f.write('window overlap: %d\n' % window_overlap)
+  f.write('window end:     %d\n' % window_end)
+  f.write('region length:  %d\n' % (window_end - window_start))
+  f.write('num windows:    %d\n' % count)
   f.close()
   return now
 
