@@ -59,7 +59,8 @@ class BatchJob(Target):
     logger.debug('There will be %d AugustusCall children' % count)
     self.args.batch_start_time = CreateSummaryReport(
       self.args.out_dir, self.args.ref_genome, self.args.ref_sequence,
-      self.args.window_start, self.args.window_length, self.args.window_end)
+      self.args.window_start, self.args.window_length, self.args.window_end,
+      count, self.args.batch_start_time, self.args.calling_command)
 
 class AugustusCall(Target):
   """
@@ -144,18 +145,18 @@ class AugustusCall(Target):
     hal2maf_cmds = [hal2maf_cmd]
     if self.args.maf_file_path is None:
       LogCommand(self.out_path, hal2maf_cmds)
-      lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
+      # lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
     # run augustus on the maf
-    err_pipes = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
-    out_pipes = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
+    err_pipe = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
+    out_pipe = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
     aug_cmd = [os.path.join(self.args.augustus_path, 'bin', 'augustus')]
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
-    LogCommand(self.out_path, aug_cmds, out_pipes=out_pipes,
-               err_pipes=err_pipes)
-    lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
-                         out_pipes=out_pipes, err_pipes=err_pipes)
+    LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
+               err_pipe=err_pipe)
+    # lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
+    #                      out_pipes=out_pipe, err_pipes=err_pipe)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -164,7 +165,7 @@ class AugustusCall(Target):
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
     LogCommand(self.out_path, copy_cmds)
-    lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
+    # lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
 
 
 def ReadDBAccess(dbaccess_file):
@@ -176,34 +177,39 @@ def ReadDBAccess(dbaccess_file):
   return line
 
 
-def LogCommand(out_path, cmds, out_pipes=None, err_pipes=None):
+def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None):
   """ Write out the commands that will be executed for this run.
   """
   f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
-  if out_pipes is None:
+  if out_pipe is None:
     out_str = ''
   else:
-    out_str = ' 1>%s' % ' '.join(map(lambda x: ' '.join(x), out_pipes))
-  if err_pipes is None:
+    out_str = ' 1>%s' % ' '.join(out_pipe)
+  if err_pipe is None:
     err_str = ''
   else:
-    err_str = ' 2>%s' % ' '.join(map(lambda x: ' '.join(x), err_pipes))
-  f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
-                                          time.localtime(time.time())),
-                            ' '.join(map(lambda x: ' '.join(x), cmds)),
-                            err_str, out_str))
+    err_str = ' 2>%s' % ' '.join(err_pipe)
+  for c in cmds:
+    f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                                             time.localtime(time.time())),
+                               ' '.join(c),
+                               err_str, out_str))
   f.close()
 
 
 def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
-                        window_length, window_end):
+                        window_length, window_end, count, now, command):
   """ Create a summary report in the root output directory.
   """
-  now = time.time()
-  f = open(os.path.join(out_path, 'summary_report.txt', 'w'))
+  f = open(os.path.join(out_dir, 'summary_report.txt'), 'w')
   f.write('run started: %s\n' % time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                                               time.localtime(now)))
-  f.write('command: %s\n' % (' '.join(sys.argv[1:])))
+  f.write('command: %s\n' % command)
+  f.write('window start: %d\n' % window_start)
+  f.write('window length: %d\n' % window_length)
+  f.write('window end: %d\n' % window_end)
+  f.write('region length: %d\n' % (window_end - window_start))
+  f.write('num windows: %d\n' % count)
   f.close()
   return now
 
@@ -375,6 +381,7 @@ def CheckArguments(args, parser):
                'out_dir:%s\n'
                % (args.augustus_path, args.hal_path, args.hal_file_path,
                   args.tree_path, args.out_dir))
+  args.calling_command = '%s' % ' '.join(sys.argv[0:])
 
 
 def PrettyTime(t):
@@ -396,10 +403,11 @@ def PrettyTime(t):
 
 
 def LaunchBatch(args):
+  args.batch_start_time = time.time()
   jobResult = Stack(BatchJob(args)).startJobTree(args)
   if jobResult:
     raise RuntimeError('The jobTree contained %d failed jobs!\n' % jobResult)
-  f = open(os.path.join(out_path, 'summary_report.txt', 'a'))
+  f = open(os.path.join(args.out_dir, 'summary_report.txt'), 'a')
   now = time.time()
   f.write('run finished: %s\n' %
           time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)))
