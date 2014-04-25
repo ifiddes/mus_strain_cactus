@@ -195,6 +195,7 @@ def TimeStamp(out_path, time_start=None):
     f.write('[%s] Start\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                                             time.localtime(now))))
   f.close()
+  return now
 
 
 def ReadDBAccess(dbaccess_file):
