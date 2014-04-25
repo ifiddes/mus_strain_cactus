@@ -147,9 +147,11 @@ class AugustusCall(Target):
     hal2maf_cmd.append(self.maf_file)
     hal2maf_cmds = [hal2maf_cmd]
     if self.args.maf_file_path is None:
+      time_start = TimeStamp(self.out_path)
       LogCommand(self.out_path, hal2maf_cmds)
       if not self.args.debug:
         lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
+        TimeStamp(self.out_path, time_start)
     # run augustus on the maf
     err_pipe = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
     out_pipe = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
@@ -160,8 +162,10 @@ class AugustusCall(Target):
     LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
                err_pipe=err_pipe)
     if not self.args.debug:
+      time_start = TimeStamp(self.out_path)
       lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
                            out_pipes=out_pipe, err_pipes=err_pipe)
+      TimeStamp(self.out_path, time_start)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -171,7 +175,26 @@ class AugustusCall(Target):
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
     LogCommand(self.out_path, copy_cmds)
     if not self.args.debug:
+      time_start = TimeStamp(self.out_path)
+      # we could use RunCommandsP here, but we might hammer the disk if we did.
       lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
+      TimeStamp(self.out_path, time_start)
+
+
+def TimeStamp(out_path, time_start=None):
+  """ Open up the log file and make a timestamp.
+  """
+  now = time.time()
+  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
+  if time_start is not None:
+    elapsed_time = now - time_start
+    f.write('[%s] End (elapsed: %s)\n' %
+            (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)),
+             PrettyTime(elapsed_time)))
+  else:
+    f.write('[%s] Start\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                                            time.localtime(now))))
+  f.close()
 
 
 def ReadDBAccess(dbaccess_file):
@@ -406,12 +429,12 @@ def PrettyTime(t):
     return '%dm %ds' % (m, s)
   if t < 25 * 60 * 60:
     h = floor(t / 60. / 60.)
-    m = floor((t - h * 60. * 60.) / 60.)
+    m = floor((t - (h * 60. * 60.)) / 60.)
     s = t % 60
     return '%dh %.0fm %ds' % (h, m, s)
   if t < 7 * 24 * 60 * 60:
     d = floor(t / 24. / 60. / 60.)
-    h = floor((t - d * 24. * 60. * 60.) / 60. / 60.)
+    h = floor((t - (d * 24. * 60. * 60.)) / 60. / 60.)
     m = floor((t
                - (d * 24. * 60. * 60.)
                - (h * 60. * 60.))
@@ -420,7 +443,7 @@ def PrettyTime(t):
     d_plural = plural_dict[d > 1]
     return '%d day%s %dh %dm %ds' % (d, d_plural, h, m, s)
   w = floor(t / 7. / 24. / 60. / 60.)
-  d = floor((t - w * 7 * 24 * 60 * 60) / 24. / 60. / 60.)
+  d = floor((t - (w * 7 * 24 * 60 * 60)) / 24. / 60. / 60.)
   h = floor((t
              - (w * 7. * 24. * 60. * 60.)
              - (d * 24. * 60. * 60.))
