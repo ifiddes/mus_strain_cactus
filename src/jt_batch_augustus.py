@@ -7,6 +7,7 @@ from jobTree.scriptTree.stack import Stack
 from jobTree.scriptTree.target import Target
 from glob import glob
 import lib_run
+from math import floor
 import os
 from sonLib.bioio import logger
 import subprocess
@@ -129,8 +130,8 @@ class AugustusCall(Target):
                                       self.args.ref_sequence,
                                       self.window_number))
     else:
-      maf_file = self.args.maf_file_path
-    self.aug_parameters['alnfile'] = maf_file
+      self.maf_file = self.args.maf_file_path
+    self.aug_parameters['alnfile'] = self.maf_file
     # extract the region needed as maf
     hal2maf_cmd = [os.path.join(self.args.hal_path, 'bin', 'hal2maf')]
     hal2maf_cmd.append('--refGenome')
@@ -143,7 +144,7 @@ class AugustusCall(Target):
     hal2maf_cmd.append('--length')
     hal2maf_cmd.append(str(self.window_length))
     hal2maf_cmd.append(self.args.hal_file_path)
-    hal2maf_cmd.append(maf_file)
+    hal2maf_cmd.append(self.maf_file)
     hal2maf_cmds = [hal2maf_cmd]
     if self.args.maf_file_path is None:
       LogCommand(self.out_path, hal2maf_cmds)
@@ -396,19 +397,44 @@ def CheckArguments(args, parser):
 def PrettyTime(t):
   """ Given input t as seconds, return a nicely formated string.
   """
+  plural_dict = {True: 's', False: ''}
   if t < 120:
-    return '%.2f secs' % t
-  t /= 60.0
-  if t < 120:
-    return '%.2f mins' % t
-  t /= 60.0
-  if t < 25:
-    return '%.2f hrs' % t
-  t /= 24.0
-  if t < 28:
-    return '%.2f days' % t
-  t /= 7.0
-  return '%.2f weeks' % t
+    return '%ds' % t
+  if t < 120 * 60:
+    m = floor(t / 60.)
+    s = t % 60
+    return '%dm %ds' % (m, s)
+  if t < 25 * 60 * 60:
+    h = floor(t / 60. / 60.)
+    m = floor((t - h * 60. * 60.) / 60.)
+    s = t % 60
+    return '%dh %.0fm %ds' % (h, m, s)
+  if t < 7 * 24 * 60 * 60:
+    d = floor(t / 24. / 60. / 60.)
+    h = floor((t - d * 24. * 60. * 60.) / 60. / 60.)
+    m = floor((t
+               - (d * 24. * 60. * 60.)
+               - (h * 60. * 60.))
+              / 60.)
+    s = t % 60
+    d_plural = plural_dict[d > 1]
+    return '%d day%s %dh %dm %ds' % (d, d_plural, h, m, s)
+  w = floor(t / 7. / 24. / 60. / 60.)
+  d = floor((t - w * 7 * 24 * 60 * 60) / 24. / 60. / 60.)
+  h = floor((t
+             - (w * 7. * 24. * 60. * 60.)
+             - (d * 24. * 60. * 60.))
+            / 60. / 60.)
+  m = floor((t
+             - (w * 7. * 24. * 60. * 60.)
+             - (d * 24. * 60. * 60.)
+             - (h * 60. * 60.))
+            / 60.)
+  s = t % 60
+  w_plural = plural_dict[w > 1]
+  d_plural = plural_dict[d > 1]
+  return '%d week%s %d day%s %dh %dm %ds' % (w, w_plural, d,
+                                             d_plural, h, m, s)
 
 
 def LaunchBatch(args):
