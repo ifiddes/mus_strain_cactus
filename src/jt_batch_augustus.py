@@ -151,7 +151,7 @@ class AugustusCall(Target):
       LogCommand(self.out_path, hal2maf_cmds)
       if not self.args.debug:
         lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
-        TimeStamp(self.out_path, time_start)
+      TimeStamp(self.out_path, time_start)
     # run augustus on the maf
     err_pipe = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
     out_pipe = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
@@ -159,13 +159,13 @@ class AugustusCall(Target):
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
+    time_start = TimeStamp(self.out_path)
     LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
                err_pipe=err_pipe)
     if not self.args.debug:
-      time_start = TimeStamp(self.out_path)
       lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
                            out_pipes=out_pipe, err_pipes=err_pipe)
-      TimeStamp(self.out_path, time_start)
+    TimeStamp(self.out_path, time_start)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -173,12 +173,12 @@ class AugustusCall(Target):
       files = glob(os.path.join(self.getLocalTempDir(), '*.%s' % suffix))
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
+    time_start = TimeStamp(self.out_path)
     LogCommand(self.out_path, copy_cmds)
     if not self.args.debug:
-      time_start = TimeStamp(self.out_path)
       # we could use RunCommandsP here, but we might hammer the disk if we did.
       lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
-      TimeStamp(self.out_path, time_start)
+    TimeStamp(self.out_path, time_start)
 
 
 def TimeStamp(out_path, time_start=None):
