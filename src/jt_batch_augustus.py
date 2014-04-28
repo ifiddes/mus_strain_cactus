@@ -416,6 +416,8 @@ def CheckArguments(args, parser):
                % (args.augustus_path, args.hal_path, args.hal_file_path,
                   args.tree_path, args.out_dir))
   args.calling_command = '%s' % ' '.join(sys.argv[0:])
+  if args.window_overlap > args.window_length:
+    parser.error('--window_overlap cannot by greater than --window_length.')
 
 
 def PrettyTime(t):
