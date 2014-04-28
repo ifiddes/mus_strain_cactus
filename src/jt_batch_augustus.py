@@ -49,7 +49,7 @@ class BatchJob(Target):
   def run(self):
     count = 0
     for start in xrange(self.args.window_start, self.args.window_end,
-                        self.args.window_overlap):
+                        self.args.window_length - self.args.window_overlap):
       count += 1
       end = min(self.args.window_end, start + self.args.window_length)
       self.addChildTarget(AugustusCall(self.args.hal_file_path,
