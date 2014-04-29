@@ -147,11 +147,11 @@ class AugustusCall(Target):
     hal2maf_cmd.append(self.maf_file)
     hal2maf_cmds = [hal2maf_cmd]
     if self.args.maf_file_path is None:
-      time_start = TimeStamp(self.out_path)
-      LogCommand(self.out_path, hal2maf_cmds)
+      time_start = lib_run.TimeStamp(self.out_path)
+      lib_run.LogCommand(self.out_path, hal2maf_cmds)
       if not self.args.debug:
         lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
-      TimeStamp(self.out_path, time_start)
+      lib_run.TimeStamp(self.out_path, time_start)
     # run augustus on the maf
     err_pipe = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
     out_pipe = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
@@ -159,13 +159,13 @@ class AugustusCall(Target):
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
-    time_start = TimeStamp(self.out_path)
-    LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
+    time_start = lib_run.TimeStamp(self.out_path)
+    lib_run.LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
                err_pipe=err_pipe)
     if not self.args.debug:
       lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
                            out_pipes=out_pipe, err_pipes=err_pipe)
-    TimeStamp(self.out_path, time_start)
+    lib_run.TimeStamp(self.out_path, time_start)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -173,29 +173,12 @@ class AugustusCall(Target):
       files = glob(os.path.join(self.getLocalTempDir(), '*.%s' % suffix))
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
-    time_start = TimeStamp(self.out_path)
-    LogCommand(self.out_path, copy_cmds)
+    time_start = lib_run.TimeStamp(self.out_path)
+    lib_run.LogCommand(self.out_path, copy_cmds)
     if not self.args.debug:
       # we could use RunCommandsP here, but we might hammer the disk if we did.
       lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
-    TimeStamp(self.out_path, time_start)
-
-
-def TimeStamp(out_path, time_start=None):
-  """ Open up the log file and make a timestamp.
-  """
-  now = time.time()
-  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
-  if time_start is not None:
-    elapsed_time = now - time_start
-    f.write('[%s] End (elapsed: %s)\n' %
-            (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)),
-             PrettyTime(elapsed_time)))
-  else:
-    f.write('[%s] Start\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
-                                            time.localtime(now))))
-  f.close()
-  return now
+    lib_run.TimeStamp(self.out_path, time_start)
 
 
 def ReadDBAccess(dbaccess_file):
@@ -205,26 +188,6 @@ def ReadDBAccess(dbaccess_file):
   line = f.read()
   line = line.strip()
   return line
-
-
-def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None):
-  """ Write out the commands that will be executed for this run.
-  """
-  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
-  if out_pipe is None:
-    out_str = ''
-  else:
-    out_str = ' 1>%s' % ' '.join(out_pipe)
-  if err_pipe is None:
-    err_str = ''
-  else:
-    err_str = ' 2>%s' % ' '.join(err_pipe)
-  for c in cmds:
-    f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
-                                             time.localtime(time.time())),
-                               ' '.join(c),
-                               err_str, out_str))
-  f.close()
 
 
 def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,

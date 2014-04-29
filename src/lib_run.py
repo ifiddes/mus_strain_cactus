@@ -171,3 +171,40 @@ def Which(program, extra_path_list=None):
     if is_exe(exe_file):
       return exe_file
   return None
+
+
+def TimeStamp(out_path, time_start=None):
+  """ Open up the log file and make a timestamp.
+  """
+  now = time.time()
+  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
+  if time_start is not None:
+    elapsed_time = now - time_start
+    f.write('[%s] End (elapsed: %s)\n' %
+            (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)),
+             PrettyTime(elapsed_time)))
+  else:
+    f.write('[%s] Start\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                                            time.localtime(now))))
+  f.close()
+  return now
+
+
+def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None):
+  """ Write out the commands that will be executed for this run.
+  """
+  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
+  if out_pipe is None:
+    out_str = ''
+  else:
+    out_str = ' 1>%s' % ' '.join(out_pipe)
+  if err_pipe is None:
+    err_str = ''
+  else:
+    err_str = ' 2>%s' % ' '.join(err_pipe)
+  for c in cmds:
+    f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                                             time.localtime(time.time())),
+                               ' '.join(c),
+                               err_str, out_str))
+  f.close()
