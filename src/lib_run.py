@@ -173,6 +173,49 @@ def Which(program, extra_path_list=None):
   return None
 
 
+def PrettyTime(t):
+  """ Given input t as seconds, return a nicely formated string.
+  """
+  plural_dict = {True: 's', False: ''}
+  if t < 120:
+    return '%ds' % t
+  if t < 120 * 60:
+    m = floor(t / 60.)
+    s = t % 60
+    return '%dm %ds' % (m, s)
+  if t < 25 * 60 * 60:
+    h = floor(t / 60. / 60.)
+    m = floor((t - (h * 60. * 60.)) / 60.)
+    s = t % 60
+    return '%dh %.0fm %ds' % (h, m, s)
+  if t < 7 * 24 * 60 * 60:
+    d = floor(t / 24. / 60. / 60.)
+    h = floor((t - (d * 24. * 60. * 60.)) / 60. / 60.)
+    m = floor((t
+               - (d * 24. * 60. * 60.)
+               - (h * 60. * 60.))
+              / 60.)
+    s = t % 60
+    d_plural = plural_dict[d > 1]
+    return '%d day%s %dh %dm %ds' % (d, d_plural, h, m, s)
+  w = floor(t / 7. / 24. / 60. / 60.)
+  d = floor((t - (w * 7 * 24 * 60 * 60)) / 24. / 60. / 60.)
+  h = floor((t
+             - (w * 7. * 24. * 60. * 60.)
+             - (d * 24. * 60. * 60.))
+            / 60. / 60.)
+  m = floor((t
+             - (w * 7. * 24. * 60. * 60.)
+             - (d * 24. * 60. * 60.)
+             - (h * 60. * 60.))
+            / 60.)
+  s = t % 60
+  w_plural = plural_dict[w > 1]
+  d_plural = plural_dict[d > 1]
+  return '%d week%s %d day%s %dh %dm %ds' % (w, w_plural, d,
+                                             d_plural, h, m, s)
+
+
 def TimeStamp(out_path, time_start=None):
   """ Open up the log file and make a timestamp.
   """
