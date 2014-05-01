@@ -77,11 +77,11 @@ class MergeCall(Target):
   def run(self):
     comp_gffs = [lib_run.Which('cat')]
     base_gffs = [lib_run.Which('cat')]
-    comp_out = os.path.join(self.args.out_dir, '%s.merged.gff' % self.seq)
-    base_out = os.path.join(self.args.out_dir, '%s.merged.base.gff' % self.seq)
-    comp_err = os.path.join(self.args.out_dir, '%s.merged.stderr' % self.seq)
+    comp_out = os.path.join(self.args.out_dir, 'merged.%s.gff' % self.seq)
+    base_out = os.path.join(self.args.out_dir, 'merged.%s.base.gff' % self.seq)
+    comp_err = os.path.join(self.args.out_dir, 'merged.%s.stderr' % self.seq)
     base_err = os.path.join(
-      self.args.out_dir, '%s.merged.base.stderr' % self.seq)
+      self.args.out_dir, 'merged.%s.base.stderr' % self.seq)
     for d in self.dirs:
       if os.path.exists(os.path.join(d, '%s.gff' % self.seq)):
         comp_gffs.append(os.path.join(d, '%s.gff' % self.seq))
@@ -94,20 +94,20 @@ class MergeCall(Target):
     comp_cmds.append([lib_run.Which('uniq')])
     base_cmds.append([lib_run.Which('uniq')])
     time_start = lib_run.TimeStamp(self.args.out_dir,
-                                   name='jt_issued_commands_%s.log' % self.seq)
+                                   name='jt_issued_commands.%s.log' % self.seq)
     lib_run.LogCommandPipe(self.args.out_dir, comp_cmds,
-                           name='jt_issued_commands_%s.log' % self.seq)
+                           name='jt_issued_commands.%s.log' % self.seq)
     lib_run.RunCommandsPipes(comp_cmds, self.getLocalTempDir(),
                             out_pipe=comp_out, err_pipe=comp_err)
     lib_run.TimeStamp(self.args.out_dir, time_start,
-                      name='jt_issued_commands_%s.log' % self.seq)
+                      name='jt_issued_commands.%s.log' % self.seq)
     time_start = lib_run.TimeStamp(self.args.out_dir)
     lib_run.LogCommandPipe(self.args.out_dir, base_cmds,
-                           name='jt_issued_commands_%s.log' % self.seq)
+                           name='jt_issued_commands.%s.log' % self.seq)
     lib_run.RunCommandsPipes(base_cmds, self.getLocalTempDir(),
                             out_pipe=base_out, err_pipe=base_err)
     lib_run.TimeStamp(self.args.out_dir, time_start,
-                      name='jt_issued_commands_%s.log' % self.seq)
+                      name='jt_issued_commands.%s.log' % self.seq)
 
 
 def CreateSummaryReport(out_dir, now, count, command):
