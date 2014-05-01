@@ -7,11 +7,11 @@ def RunCommands(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
   """ Wrapper for RunCommandsS and RunCommandsP.
   """
   if serial:
-    RunCommandsS(cmds, local_temp_dir, in_ipes, out_pipes, err_pipes,
-                 ignore_returns)
+    RunCommandsSerial(cmds, local_temp_dir, in_ipes, out_pipes, err_pipes,
+                      ignore_returns)
   else:
-    RunCommandsP(cmds, local_temp_dir, in_ipes, out_pipes, err_pipes,
-                 ignore_returns)
+    RunCommandsParallel(cmds, local_temp_dir, in_ipes, out_pipes, err_pipes,
+                        ignore_returns)
 
 
 def HandlePipes(n, in_pipes, out_pipes, err_pipes, ignore_returns):
@@ -46,8 +46,8 @@ def HandlePipesInstance(in_pipe, out_pipe, err_pipe):
   return sin, sout, serr
 
 
-def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
-                 err_pipes=None, ignore_returns=None):
+def RunCommandsSerial(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
+                      err_pipes=None, ignore_returns=None):
   """ Uses the subprocess module to issue serial processes from the cmds list.
   Arguments:
     ignore_returns: if true, return code is ignored
@@ -68,23 +68,65 @@ def RunCommandsS(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
         raise IOError('Unable to locate inPipe file: %s for command %s'
                       % (in_pipes[i], ' '.join(c)))
       sin = open(in_pipes[i], 'r').read()
-    pout, perr = p.communicate(sin)
+    p_out, p_err = p.communicate(sin)
     if out_pipes[i] is None:
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i])
     else:
       f = open(out_pipes[i], 'w')
-      f.write(pout)
+      f.write(p_out)
       f.close()
+    if err_pipes[i] is None:
+      if not ignore_returns[i]:
+        HandleReturnCode(p.returncode, cmds[i])
+    else:
       g = open(err_pipes[i], 'w')
-      g.write(perr)
+      g.write(p_err)
       g.close()
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i])
 
 
-def RunCommandsP(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
-                 err_pipes=None, ignore_returns=None, **kwargs):
+def RunCommandsPipes(cmds, local_temp_dir, in_pipe=None, out_pipe=None,
+                     err_pipe=None, ignore_returns=None):
+  """ Uses the subprocess module to issue piped processes from the cmds list.
+  Arguments:
+    ignore_returns: if true, return code is ignored
+  """
+  if not os.path.exists(local_temp_dir):
+    raise ValueError('local_temp_dir "%s" does not exist.' % local_temp_dir)
+  sin, sout, serr = HandlePipesInstance(in_pipe, out_pipe, err_pipe)
+  p_prev = None
+  for i, c in enumerate(cmds, 0):
+    if p_prev is None:
+      p = subprocess.Popen(c, cwd=local_temp_dir, stdin=sin,
+                           stdout=subprocess.PIPE, stderr=serr)
+    else:
+      p = subprocess.Popen(c, cwd=local_temp_dir, stdin=p_prev.stdout,
+                           stdout=subprocess.PIPE, stderr=serr)
+      p_prev.stdout.close()
+    p_prev = p
+  p_out, p_err = p.communicate()
+  if out_pipe is None:
+    if not ignore_returns:
+      HandleReturnCode(p.returncode, cmds[i])
+  else:
+    f = open(out_pipe, 'w')
+    f.write(p_out)
+    f.close()
+  if err_pipe is None:
+    if not ignore_returns:
+      HandleReturnCode(p.returncode, cmds[i])
+  else:
+    g = open(err_pipe, 'w')
+    g.write(p_err)
+    g.close()
+    if not ignore_returns:
+      HandleReturnCode(p.returncode, cmds[i])
+
+
+def RunCommandsParallel(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
+                        err_pipes=None, ignore_returns=None, **kwargs):
   """ Uses the subprocess module to issue parallel processes from cmds list.
   """
   if not os.path.exists(local_temp_dir):
@@ -105,16 +147,20 @@ def RunCommandsP(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
         raise IOError('Unable to locate inPipe file: %s for command %s'
                       % (in_pipes[i], cmds[i]))
       sin = open(in_pipes[i], 'r').read()
-    pout, perr = p.communicate(sin)
+    p_out, p_err = p.communicate(sin)
     if out_pipes[i] is None:
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i])
     else:
       f = open(out_pipes[i], 'w')
-      f.write(pout)
+      f.write(p_out)
       f.close()
+    if err_pipes[i] is None:
+      if not ignore_returns[i]:
+        HandleReturnCode(p.returncode, cmds[i])
+    else:
       g = open(err_pipes[i], 'w')
-      g.write(perr)
+      g.write(p_err)
       g.close()
       if not ignore_returns[i]:
         HandleReturnCode(p.returncode, cmds[i] + ['< %s 1> %s 2> %s'
@@ -216,11 +262,16 @@ def PrettyTime(t):
                                              d_plural, h, m, s)
 
 
-def TimeStamp(out_path, time_start=None):
+def TimeStamp(out_path, time_start=None, name=None):
   """ Open up the log file and make a timestamp.
   """
+  import time
   now = time.time()
-  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
+  if name is None:
+    filename = os.path.join(out_path, 'jt_issued_commands.log')
+  else:
+    filename = os.path.join(out_path, name)
+  f = open(filename, 'a')
   if time_start is not None:
     elapsed_time = now - time_start
     f.write('[%s] End (elapsed: %s)\n' %
@@ -233,10 +284,14 @@ def TimeStamp(out_path, time_start=None):
   return now
 
 
-def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None):
+def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
   """ Write out the commands that will be executed for this run.
   """
-  f = open(os.path.join(out_path, 'jt_issued_commands.log'), 'a')
+  if name is None:
+    filename = os.path.join(out_path, 'jt_issued_commands.log')
+  else:
+    filename = os.path.join(out_path, name)
+  f = open(filename, 'a')
   if out_pipe is None:
     out_str = ''
   else:
@@ -249,5 +304,32 @@ def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None):
     f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                                              time.localtime(time.time())),
                                ' '.join(c),
+                               err_str, out_str))
+  f.close()
+
+
+def LogCommandPipe(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
+  """ Write out the pipe chained commands that will be executed for this run.
+  """
+  import time
+  if name is None:
+    filename = os.path.join(out_path, 'jt_issued_commands.log')
+  else:
+    filename = os.path.join(out_path, name)
+  f = open(filename, 'a')
+  log = ''
+  log = ' | '.join(map(lambda c: ' '.join(c), cmds))
+  if out_pipe is None:
+    out_str = ''
+  else:
+    out_str = ' 1>%s' % ' '.join(out_pipe)
+  if err_pipe is None:
+    err_str = ''
+  else:
+    err_str = ' 2>%s' % ' '.join(err_pipe)
+  for c in cmds:
+    f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                                             time.localtime(time.time())),
+                               log,
                                err_str, out_str))
   f.close()

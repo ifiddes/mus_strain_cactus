@@ -150,7 +150,7 @@ class AugustusCall(Target):
       time_start = lib_run.TimeStamp(self.out_path)
       lib_run.LogCommand(self.out_path, hal2maf_cmds)
       if not self.args.debug:
-        lib_run.RunCommandsS(hal2maf_cmds, self.getLocalTempDir())
+        lib_run.RunCommandsSerial(hal2maf_cmds, self.getLocalTempDir())
       lib_run.TimeStamp(self.out_path, time_start)
     # run augustus on the maf
     err_pipe = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
@@ -163,7 +163,7 @@ class AugustusCall(Target):
     lib_run.LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
                err_pipe=err_pipe)
     if not self.args.debug:
-      lib_run.RunCommandsS(aug_cmds, self.getLocalTempDir(),
+      lib_run.RunCommandsSerial(aug_cmds, self.getLocalTempDir(),
                            out_pipes=out_pipe, err_pipes=err_pipe)
     lib_run.TimeStamp(self.out_path, time_start)
     # copy output files from tmp back to the target dir
@@ -176,8 +176,9 @@ class AugustusCall(Target):
     time_start = lib_run.TimeStamp(self.out_path)
     lib_run.LogCommand(self.out_path, copy_cmds)
     if not self.args.debug:
-      # we could use RunCommandsP here, but we might hammer the disk if we did.
-      lib_run.RunCommandsS(copy_cmds, self.getLocalTempDir())
+      # we could use RunCommandsParallel here, but we might hammer
+      # the disk if we did.
+      lib_run.RunCommandsSerial(copy_cmds, self.getLocalTempDir())
     lib_run.TimeStamp(self.out_path, time_start)
 
 
@@ -383,49 +384,6 @@ def CheckArguments(args, parser):
     parser.error('--window_overlap cannot by greater than --window_length.')
 
 
-def PrettyTime(t):
-  """ Given input t as seconds, return a nicely formated string.
-  """
-  plural_dict = {True: 's', False: ''}
-  if t < 120:
-    return '%ds' % t
-  if t < 120 * 60:
-    m = floor(t / 60.)
-    s = t % 60
-    return '%dm %ds' % (m, s)
-  if t < 25 * 60 * 60:
-    h = floor(t / 60. / 60.)
-    m = floor((t - (h * 60. * 60.)) / 60.)
-    s = t % 60
-    return '%dh %.0fm %ds' % (h, m, s)
-  if t < 7 * 24 * 60 * 60:
-    d = floor(t / 24. / 60. / 60.)
-    h = floor((t - (d * 24. * 60. * 60.)) / 60. / 60.)
-    m = floor((t
-               - (d * 24. * 60. * 60.)
-               - (h * 60. * 60.))
-              / 60.)
-    s = t % 60
-    d_plural = plural_dict[d > 1]
-    return '%d day%s %dh %dm %ds' % (d, d_plural, h, m, s)
-  w = floor(t / 7. / 24. / 60. / 60.)
-  d = floor((t - (w * 7 * 24 * 60 * 60)) / 24. / 60. / 60.)
-  h = floor((t
-             - (w * 7. * 24. * 60. * 60.)
-             - (d * 24. * 60. * 60.))
-            / 60. / 60.)
-  m = floor((t
-             - (w * 7. * 24. * 60. * 60.)
-             - (d * 24. * 60. * 60.)
-             - (h * 60. * 60.))
-            / 60.)
-  s = t % 60
-  w_plural = plural_dict[w > 1]
-  d_plural = plural_dict[d > 1]
-  return '%d week%s %d day%s %dh %dm %ds' % (w, w_plural, d,
-                                             d_plural, h, m, s)
-
-
 def LaunchBatch(args):
   args.batch_start_time = time.time()
   jobResult = Stack(BatchJob(args)).startJobTree(args)
@@ -435,7 +393,8 @@ def LaunchBatch(args):
   now = time.time()
   f.write('run finished: %s\n' %
           time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)))
-  f.write('elapsed time: %s\n' % PrettyTime(now - args.batch_start_time))
+  f.write('elapsed time: %s\n' % lib_run.PrettyTime(now -
+                                                    args.batch_start_time))
   f.close()
 
 
