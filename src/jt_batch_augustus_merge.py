@@ -140,7 +140,7 @@ def CheckArguments(args, parser):
     else:
       value = os.path.abspath(value)
   # check for existence
-  for name, value in [('in_dir', args.in_dir)
+  for name, value in [('in_dir', args.in_dir),
                       ('merger', args.merger),
                       ]:
     if not os.path.exists(value):
