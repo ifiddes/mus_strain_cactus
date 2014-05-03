@@ -95,14 +95,14 @@ class MergeCall(Target):
     lib_run.LogCommand(self.args.out_dir, comp_cmds,
                            name='jt_issued_commands.%s.log' % self.seq)
     lib_run.RunCommandsSerial(comp_cmds, self.getLocalTempDir(),
-                              out_pipes=comp_out, err_pipes=comp_err)
+                              out_pipes=comp_outs, err_pipes=comp_errs)
     lib_run.TimeStamp(self.args.out_dir, time_start,
                       name='jt_issued_commands.%s.log' % self.seq)
     time_start = lib_run.TimeStamp(self.args.out_dir)
     lib_run.LogCommand(self.args.out_dir, base_cmds,
                            name='jt_issued_commands.%s.log' % self.seq)
     lib_run.RunCommandsSerial(base_cmds, self.getLocalTempDir(),
-                              out_pipes=base_out, err_pipes=base_err)
+                              out_pipes=base_outs, err_pipes=base_errs)
     lib_run.TimeStamp(self.args.out_dir, time_start,
                       name='jt_issued_commands.%s.log' % self.seq)
 
