@@ -75,13 +75,14 @@ class MergeCall(Target):
     self.seq = seq
     self.args = args
   def run(self):
-    comp_gffs = [lib_run.Which('cat')]
-    base_gffs = [lib_run.Which('cat')]
-    comp_out = os.path.join(self.args.out_dir, 'merged.%s.gff' % self.seq)
-    base_out = os.path.join(self.args.out_dir, 'merged.%s.base.gff' % self.seq)
-    comp_err = os.path.join(self.args.out_dir, 'merged.%s.stderr' % self.seq)
-    base_err = os.path.join(
-      self.args.out_dir, 'merged.%s.base.stderr' % self.seq)
+    comp_gffs = [args.merger]
+    base_gffs = [args.merger]
+    comp_outs = [os.path.join(self.args.out_dir, 'merged.%s.gff' % self.seq)]
+    base_outs = [os.path.join(
+        self.args.out_dir, 'merged.%s.base.gff' % self.seq)]
+    comp_errs = [os.path.join(self.args.out_dir, 'merged.%s.stderr' % self.seq)]
+    base_errs = [os.path.join(
+      self.args.out_dir, 'merged.%s.base.stderr' % self.seq)]
     for d in self.dirs:
       if os.path.exists(os.path.join(d, '%s.gff' % self.seq)):
         comp_gffs.append(os.path.join(d, '%s.gff' % self.seq))
@@ -89,23 +90,19 @@ class MergeCall(Target):
         base_gffs.append(os.path.join(d, '%s.base.gff' % self.seq))
     comp_cmds = [comp_gffs]
     base_cmds = [base_gffs]
-    comp_cmds.append([lib_run.Which('sort')])
-    base_cmds.append([lib_run.Which('sort')])
-    comp_cmds.append([lib_run.Which('uniq')])
-    base_cmds.append([lib_run.Which('uniq')])
     time_start = lib_run.TimeStamp(self.args.out_dir,
                                    name='jt_issued_commands.%s.log' % self.seq)
-    lib_run.LogCommandPipe(self.args.out_dir, comp_cmds,
+    lib_run.LogCommand(self.args.out_dir, comp_cmds,
                            name='jt_issued_commands.%s.log' % self.seq)
-    lib_run.RunCommandsPipes(comp_cmds, self.getLocalTempDir(),
-                            out_pipe=comp_out, err_pipe=comp_err)
+    lib_run.RunCommandsSerial(comp_cmds, self.getLocalTempDir(),
+                              out_pipes=comp_out, err_pipes=comp_err)
     lib_run.TimeStamp(self.args.out_dir, time_start,
                       name='jt_issued_commands.%s.log' % self.seq)
     time_start = lib_run.TimeStamp(self.args.out_dir)
-    lib_run.LogCommandPipe(self.args.out_dir, base_cmds,
+    lib_run.LogCommand(self.args.out_dir, base_cmds,
                            name='jt_issued_commands.%s.log' % self.seq)
-    lib_run.RunCommandsPipes(base_cmds, self.getLocalTempDir(),
-                            out_pipe=base_out, err_pipe=base_err)
+    lib_run.RunCommandsSerial(base_cmds, self.getLocalTempDir(),
+                              out_pipes=base_out, err_pipes=base_err)
     lib_run.TimeStamp(self.args.out_dir, time_start,
                       name='jt_issued_commands.%s.log' % self.seq)
 
@@ -128,12 +125,15 @@ def InitializeArguments(parser):
                       help='location of augustus results directory.')
   parser.add_argument('--out_dir', type=str,
                       help='location to write out merged results.')
+  parser.add_argument('--merger', type=str,
+                      help='location of augustus_gff_merge.py.')
 
 
 def CheckArguments(args, parser):
   # check for setting
   for name, value in [('in_dir', args.in_dir),
-                      ('out_dir', args.out_dir)
+                      ('out_dir', args.out_dir),
+                      ('merger', args.merger),
                       ]:
     if value is None:
       parser.error('Specify --%s' % name)
@@ -141,6 +141,7 @@ def CheckArguments(args, parser):
       value = os.path.abspath(value)
   # check for existence
   for name, value in [('in_dir', args.in_dir)
+                      ('merger', args.merger),
                       ]:
     if not os.path.exists(value):
       parser.error('--%s %s does not exist' % (name, value))
@@ -151,8 +152,15 @@ def CheckArguments(args, parser):
                       ]:
     if not os.path.isdir(value):
       parser.error('--%s %s is not a directory' % (name, value))
+  # check for execution
+  # check for executability
+  for value in [args.merger,
+                ]:
+    if not os.access(value, os.X_OK):
+      parser.error('%s is not executable' % value)
   args.in_dir = os.path.abspath(args.in_dir)
   args.out_dir = os.path.abspath(args.out_dir)
+  args.merger = os.path.abspath(args.merger)
   args.calling_command = '%s' % ' '.join(sys.argv[0:])
 
 

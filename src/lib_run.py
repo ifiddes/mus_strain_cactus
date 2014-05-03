@@ -222,6 +222,7 @@ def Which(program, extra_path_list=None):
 def PrettyTime(t):
   """ Given input t as seconds, return a nicely formated string.
   """
+  from math import floor
   plural_dict = {True: 's', False: ''}
   if t < 120:
     return '%ds' % t
