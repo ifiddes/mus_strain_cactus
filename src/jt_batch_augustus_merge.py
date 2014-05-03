@@ -75,8 +75,8 @@ class MergeCall(Target):
     self.seq = seq
     self.args = args
   def run(self):
-    comp_gffs = [args.merger]
-    base_gffs = [args.merger]
+    comp_gffs = [self.args.merger]
+    base_gffs = [self.args.merger]
     comp_outs = [os.path.join(self.args.out_dir, 'merged.%s.gff' % self.seq)]
     base_outs = [os.path.join(
         self.args.out_dir, 'merged.%s.base.gff' % self.seq)]
