@@ -287,6 +287,7 @@ def TimeStamp(out_path, time_start=None, name=None):
 def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
   """ Write out the commands that will be executed for this run.
   """
+  import time
   if name is None:
     filename = os.path.join(out_path, 'jt_issued_commands.log')
   else:
