@@ -52,7 +52,6 @@ class BatchJob(Target):
     count = 0
     for s in sequence_dict:
       window_start, window_end = sequence_dict[s]
-      print self.args.window_length, self.args.window_overlap, self.args.window_length - self.args.window_overlap
       for start in xrange(window_start, window_end,
                           self.args.window_length - self.args.window_overlap):
         count += 1
@@ -176,7 +175,7 @@ class AugustusCall(Target):
                                       self.window_number))
     else:
       self.maf_file = self.args.maf_file_path
-    VerifyMySQLServer(self.args)  # Verify for operational nodes
+    VerifyMySQLServer(self.out_path, self.args)  # Verify for operational nodes
     self.aug_parameters['alnfile'] = self.maf_file
     # extract the region needed as maf
     hal2maf_cmd = [os.path.join(self.args.hal_path, 'bin', 'hal2maf')]
@@ -252,7 +251,7 @@ def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
                         now, command):
   """ Create a summary report in the root output directory.
   """
-  f = open(os.path.join(out_dir, 'summary_report.txt'), 'w')
+  f = open(os.path.join(out_dir, 'jt_summary_report.txt'), 'w')
   f.write('run started: %s\n' % time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                                               time.localtime(now)))
   f.write('command: %s\n' % command)
@@ -430,7 +429,7 @@ def CheckArguments(args, parser):
   args.out_dir = os.path.abspath(args.out_dir)
   if args.window_length - args.window_overlap < 1:
     parser.error('--window_length must be greater than --window_overlap!')
-  VerifyMySQLServer(args)  # Verify for head node
+  VerifyMySQLServer(args.out_dir, args)  # Verify for head node
   logger.debug('Arguments checked.\n'
                'augustus_path:%s\n'
                'hal_path:%s\n'
@@ -442,19 +441,39 @@ def CheckArguments(args, parser):
   args.calling_command = '%s' % ' '.join(sys.argv[0:])
 
 
-def VerifyMySQLServer(args):
+def VerifyMySQLServer(out_dir, args):
   """ Make sure the MySQL server exists and is accesssible.
   """
   dbaccess = ReadDBAccess(args.dbaccess_file)
   db_name, host_name, user_name, password = dbaccess.split(',')
-  db = MySQLdb.connect(host=host_name, user=user_name,
-                       passwd=password, db=db_name)
-  cur = db.cursor()
-  cur.execute('SELECT * FROM speciesnames '
-              'WHERE speciesname = "C56B6NJ" '
-              'LIMIT 10')
-  cur.close()
-  db.close()
+  f = open(os.path.join(out_dir, 'jt_db_ok.log'), 'w')
+  then = time.time()
+  f.write('[%s] Checking host:%s database:%s user:%s pass:********\n'
+          % lib_run.TimeString(then), host_name, db_name, user_name)
+  try:
+    simple_connection_test(host_name, user_name, password, db_name, f)
+  else:
+    f.write('[%s] db okay.\n' % lib_run.TimeString)
+  finally:
+    now = time.time()
+    elapsed_time = now - then
+    f.write('[%s] End (elapsed: %s)\n'
+          % lib_run.TimeString(), lib_run.PrettyTime(elapsed_time))
+  f.close()
+  def simple_connect_test(host_name, user_name, password, db_name, f):
+    db = MySQLdb.connect(host=host_name, user=user_name,
+                         passwd=password, db=db_name)
+    cur = db.cursor()
+    try:
+      cur.execute('SELECT * FROM speciesnames '
+                  'WHERE speciesname = "C56B6NJ" '
+                  'LIMIT 10')
+      rows = cur.fetchall()
+    except MySQLdb.Error, e:
+      f.write('[%s] MySQL Error [%d]: %s\n'
+              % (lib_run.TimeString(), e.args[0], e.args[1]))
+    cur.close()
+    db.close()
 
 
 def LaunchBatch(args):
@@ -462,7 +481,7 @@ def LaunchBatch(args):
   jobResult = Stack(BatchJob(args)).startJobTree(args)
   if jobResult:
     raise RuntimeError('The jobTree contained %d failed jobs!\n' % jobResult)
-  f = open(os.path.join(args.out_dir, 'summary_report.txt'), 'a')
+  f = open(os.path.join(args.out_dir, 'jt_summary_report.txt'), 'a')
   now = time.time()
   f.write('run finished: %s\n' %
           time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)))

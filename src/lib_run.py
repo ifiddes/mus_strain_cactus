@@ -276,13 +276,24 @@ def TimeStamp(out_path, time_start=None, name=None):
   if time_start is not None:
     elapsed_time = now - time_start
     f.write('[%s] End (elapsed: %s)\n' %
-            (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)", time.localtime(now)),
-             PrettyTime(elapsed_time)))
+            (TimeString(now), PrettyTime(elapsed_time)))
+
   else:
-    f.write('[%s] Start\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
-                                            time.localtime(now))))
+    f.write('[%s] Start\n' % (TimeString(now))
   f.close()
   return now
+
+
+def TimeString(now=None):
+  """ Return a prtty timestring for use with timestamps.
+  """
+  import time
+  if now is None:
+    return time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                         time.localtime(time.time()))
+  else:
+    return time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
+                         time.localtime(time.time(now)))
 
 
 def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
@@ -303,8 +314,7 @@ def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
   else:
     err_str = ' 2>%s' % ' '.join(err_pipe)
   for c in cmds:
-    f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
-                                             time.localtime(time.time())),
+    f.write('[%s] %s%s%s\n' % (TimeString(),
                                ' '.join(c),
                                err_str, out_str))
   f.close()
@@ -330,8 +340,7 @@ def LogCommandPipe(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
   else:
     err_str = ' 2>%s' % ' '.join(err_pipe)
   for c in cmds:
-    f.write('[%s] %s%s%s\n' % (time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
-                                             time.localtime(time.time())),
+    f.write('[%s] %s%s%s\n' % (TimeString(),
                                log,
                                err_str, out_str))
   f.close()
