@@ -195,15 +195,6 @@ class AugustusCall(Target):
     hal2maf_cmds = [hal2maf_cmd]
     if self.args.maf_file_path is None:
       self.run_command_list(hal2maf_cmds)
-      time_start = lib_run.TimeStamp(self.out_path)
-      lib_run.LogCommand(self.out_path, hal2maf_cmds)
-      if not self.args.debug:
-        try:
-          lib_run.RunCommandsSerial(hal2maf_cmds, self.getLocalTempDir())
-        finally:
-          lib_run.TimeStamp(self.out_path, time_start)
-      else:
-        lib_run.TimeStamp(self.out_path, time_start)
     # run augustus on the maf
     err_pipe = [os.path.join(self.out_path, 'stderr.out')]
     out_pipe = [os.path.join(self.out_path, 'stdout.out')]
@@ -211,18 +202,7 @@ class AugustusCall(Target):
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
-    time_start = lib_run.TimeStamp(self.out_path)
-    lib_run.LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
-               err_pipe=err_pipe)
-    self.RunCommandList(aug_cmds, out_pipe, err_pipe)
-    if not self.args.debug:
-      try:
-        lib_run.RunCommandsSerial(aug_cmds, self.getLocalTempDir(),
-                                  out_pipes=out_pipe, err_pipes=err_pipe)
-      finally:
-        lib_run.TimeStamp(self.out_path, time_start)
-    else:
-      lib_run.TimeStamp(self.out_path, time_start)
+    self.run_command_list(aug_cmds, out_pipe, err_pipe)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -231,20 +211,13 @@ class AugustusCall(Target):
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
     self.run_command_list(copy_cmds)
-    time_start = lib_run.TimeStamp(self.out_path)
-    lib_run.LogCommand(self.out_path, copy_cmds)
-    if not self.args.debug:
-      # we could use RunCommandsParallel here, but we might hammer
-      # the disk if we did.
-      try:
-        lib_run.RunCommandsSerial(copy_cmds, self.getLocalTempDir())
-      finally:
-        lib_run.TimeStamp(self.out_path, time_start)
-    else:
-      lib_run.TimeStamp(self.out_path, time_start)
+
   def run_command_list(self, cmd_list, out_pipes=None, err_pipes=None):
+    """ Run a command list, log the commands, record timestamps before & after.
+    """
     time_start = lib_run.TimeStamp(self.out_path)
-    lib_run.LogCommand(self.out_path, cmd_list)
+    lib_run.LogCommand(self.out_path, aug_cmds, out_pipe=out_pipes,
+               err_pipe=err_pipes)
     if not self.args.debug:
       try:
         lib_run.RunCommandsSerial(cmd_list, self.getLocalTempDir(),
@@ -477,7 +450,7 @@ def VerifyMySQLServer(args):
   db = MySQLdb.connect(host=host_name, user=user_name,
                        passwd=password, db=db_name)
   cur = db.cursor()
-  cur.execute('SELECT * FROM seqnames WHERE speciesname = "C56B6NJ" LIMIT 10')
+  cur.execute('SELECT * FROM seqnames WHERE speciesnames = "C56B6NJ" LIMIT 10')
   cur.close()
   db.close()
 
