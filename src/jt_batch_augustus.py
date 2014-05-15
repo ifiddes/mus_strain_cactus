@@ -7,6 +7,7 @@ from jobTree.scriptTree.stack import Stack
 from jobTree.scriptTree.target import Target
 from glob import glob
 import lib_run
+import MySQLdb
 import os
 from sonLib.bioio import logger
 import subprocess
@@ -46,22 +47,67 @@ class BatchJob(Target):
     Target.__init__(self)
     self.args = args
   def run(self):
+    sequence_dict = self.collect_sequences()
+    Debug('%s\n' % str(sequence_dict), self.args)
     count = 0
-    for start in xrange(self.args.window_start, self.args.window_end,
-                        self.args.window_length - self.args.window_overlap):
-      count += 1
-      end = min(self.args.window_end, start + self.args.window_length)
-      self.addChildTarget(AugustusCall(self.args.hal_file_path,
-                                       self.args.ref_genome,
-                                       self.args.ref_sequence, start,
-                                       self.args.window_length, end,
-                                       count - 1, self.args))
-    logger.debug('There will be %d AugustusCall children' % count)
+    for s in sequence_dict:
+      window_start, window_end = sequence_dict[s]
+      print self.args.window_length, self.args.window_overlap, self.args.window_length - self.args.window_overlap
+      for start in xrange(window_start, window_end,
+                          self.args.window_length - self.args.window_overlap):
+        count += 1
+        end = min(window_end, start + self.args.window_length)
+        self.addChildTarget(AugustusCall(self.args.hal_file_path,
+                                         self.args.ref_genome,
+                                         s, start,
+                                         self.args.window_length, end,
+                                         count - 1, self.args))
+    Debug('There will be %d AugustusCall children\n' % count, self.args)
     self.args.batch_start_time = CreateSummaryReport(
       self.args.out_dir, self.args.ref_genome, self.args.ref_sequence,
       self.args.window_start, self.args.window_length, self.args.window_overlap,
       self.args.window_end, count, self.args.batch_start_time,
       self.args.calling_command)
+  def collect_sequences(self):
+    if self.args.ref_sequence is None:
+      # handle this by collecting all sequences via a call to
+      # halStats --sequenceStats
+      Debug('ref_sequence is none\n', self.args)
+      return self.run_hal_stats()
+    else:
+      if self.args.window_end is None:
+        # get the end from halStats
+        Debug('window_end is none\n', self.args)
+        return self.run_hal_stats()
+      else:
+        return {self.args.ref_sequence:
+                  (self.args.window_start, self.args.window_end)}
+  def run_hal_stats(self):
+    c = [os.path.join(self.args.hal_path, 'bin', 'halStats'),
+         self.args.hal_file_path, '--sequenceStats',
+         self.args.ref_genome]
+    p = subprocess.Popen(c,
+                         cwd=self.getLocalTempDir(),
+                         stdout=subprocess.PIPE)
+    p_out, p_err = p.communicate()
+    if p_err is not None:
+      raise RuntimeError('Error returned from halStats: %s\n' % p_err)
+    p_list = p_out.split('\n')
+    seqs_dict = {}
+    for i, line in enumerate(p_list, 0):
+      if i == 0:
+        # header
+        continue
+      line = line.strip()
+      if line == '':
+        continue
+      d = line.split(',')
+      if self.args.ref_sequence is not None:
+        if d[0] == self.args.ref_sequence:
+          seqs_dict[d[0]] = (0, int(d[1]))
+      else:
+        seqs_dict[d[0]] = (0, int(d[1]))
+    return seqs_dict
 
 
 class AugustusCall(Target):
@@ -130,11 +176,13 @@ class AugustusCall(Target):
                                       self.window_number))
     else:
       self.maf_file = self.args.maf_file_path
+    VerifyMySQLServer(self.args)  # Verify for operational nodes
     self.aug_parameters['alnfile'] = self.maf_file
     # extract the region needed as maf
     hal2maf_cmd = [os.path.join(self.args.hal_path, 'bin', 'hal2maf')]
     hal2maf_cmd.append('--refGenome')
     hal2maf_cmd.append(self.args.ref_genome)
+    hal2maf_cmd.append('--noAncestors')  # Augustus throws these out.
     hal2maf_cmd.append('--refSequence')
     hal2maf_cmd.append(self.args.ref_sequence)
     hal2maf_cmd.append('--ucscNames')
@@ -146,14 +194,19 @@ class AugustusCall(Target):
     hal2maf_cmd.append(self.maf_file)
     hal2maf_cmds = [hal2maf_cmd]
     if self.args.maf_file_path is None:
+      self.run_command_list(hal2maf_cmds)
       time_start = lib_run.TimeStamp(self.out_path)
       lib_run.LogCommand(self.out_path, hal2maf_cmds)
       if not self.args.debug:
-        lib_run.RunCommandsSerial(hal2maf_cmds, self.getLocalTempDir())
-      lib_run.TimeStamp(self.out_path, time_start)
+        try:
+          lib_run.RunCommandsSerial(hal2maf_cmds, self.getLocalTempDir())
+        finally:
+          lib_run.TimeStamp(self.out_path, time_start)
+      else:
+        lib_run.TimeStamp(self.out_path, time_start)
     # run augustus on the maf
-    err_pipe = [os.path.join(self.getLocalTempDir(), 'stderr.out')]
-    out_pipe = [os.path.join(self.getLocalTempDir(), 'stdout.out')]
+    err_pipe = [os.path.join(self.out_path, 'stderr.out')]
+    out_pipe = [os.path.join(self.out_path, 'stdout.out')]
     aug_cmd = [os.path.join(self.args.augustus_path, 'bin', 'augustus')]
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
@@ -161,10 +214,15 @@ class AugustusCall(Target):
     time_start = lib_run.TimeStamp(self.out_path)
     lib_run.LogCommand(self.out_path, aug_cmds, out_pipe=out_pipe,
                err_pipe=err_pipe)
+    self.RunCommandList(aug_cmds, out_pipe, err_pipe)
     if not self.args.debug:
-      lib_run.RunCommandsSerial(aug_cmds, self.getLocalTempDir(),
-                           out_pipes=out_pipe, err_pipes=err_pipe)
-    lib_run.TimeStamp(self.out_path, time_start)
+      try:
+        lib_run.RunCommandsSerial(aug_cmds, self.getLocalTempDir(),
+                                  out_pipes=out_pipe, err_pipes=err_pipe)
+      finally:
+        lib_run.TimeStamp(self.out_path, time_start)
+    else:
+      lib_run.TimeStamp(self.out_path, time_start)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -172,22 +230,48 @@ class AugustusCall(Target):
       files = glob(os.path.join(self.getLocalTempDir(), '*.%s' % suffix))
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
+    self.run_command_list(copy_cmds)
     time_start = lib_run.TimeStamp(self.out_path)
     lib_run.LogCommand(self.out_path, copy_cmds)
     if not self.args.debug:
       # we could use RunCommandsParallel here, but we might hammer
       # the disk if we did.
-      lib_run.RunCommandsSerial(copy_cmds, self.getLocalTempDir())
-    lib_run.TimeStamp(self.out_path, time_start)
+      try:
+        lib_run.RunCommandsSerial(copy_cmds, self.getLocalTempDir())
+      finally:
+        lib_run.TimeStamp(self.out_path, time_start)
+    else:
+      lib_run.TimeStamp(self.out_path, time_start)
+  def run_command_list(self, cmd_list, out_pipes=None, err_pipes=None):
+    time_start = lib_run.TimeStamp(self.out_path)
+    lib_run.LogCommand(self.out_path, cmd_list)
+    if not self.args.debug:
+      try:
+        lib_run.RunCommandsSerial(cmd_list, self.getLocalTempDir(),
+                                  out_pipes=out_pipes, err_pipes=err_pipes)
+      finally:
+        lib_run.TimeStamp(self.out_path, time_start)
+    else:
+      lib_run.TimeStamp(self.out_path, time_start)
+
+
+def Debug(s, args):
+  if not args.debug:
+    return
+  f = open(os.path.join(args.out_dir, 'debugging.txt'), 'a')
+  f.write('[Debug] %s' % s)
+  f.close()
 
 
 def ReadDBAccess(dbaccess_file):
   """ Open the file and read the first line, report it back.
   """
   f = open(dbaccess_file, 'r')
-  line = f.read()
-  line = line.strip()
-  return line
+  for line in f:
+    if line.startswith('#'):
+      continue
+    line = line.strip()
+    return line
 
 
 def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
@@ -199,11 +283,12 @@ def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
   f.write('run started: %s\n' % time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                                               time.localtime(now)))
   f.write('command: %s\n' % command)
-  f.write('window start:   %d\n' % window_start)
+  f.write('window start:   %s\n' % str(window_start))  # can be None or int
   f.write('window length:  %d\n' % window_length)
   f.write('window overlap: %d\n' % window_overlap)
-  f.write('window end:     %d\n' % window_end)
-  f.write('region length:  %d\n' % (window_end - window_start))
+  f.write('window end:     %s\n' % str(window_end))  # can be None or int
+  if window_start is not None and window_end is not None:
+    f.write('region length:  %d\n' % (window_end - window_start))
   f.write('num windows:    %d\n' % count)
   f.close()
   return now
@@ -370,6 +455,9 @@ def CheckArguments(args, parser):
   args.hal_file_path = os.path.abspath(args.hal_file_path)
   args.tree_path = os.path.abspath(args.tree_path)
   args.out_dir = os.path.abspath(args.out_dir)
+  if args.window_length - args.window_overlap < 1:
+    parser.error('--window_length must be greater than --window_overlap!')
+  VerifyMySQLServer(args)  # Verify for head node
   logger.debug('Arguments checked.\n'
                'augustus_path:%s\n'
                'hal_path:%s\n'
@@ -379,8 +467,19 @@ def CheckArguments(args, parser):
                % (args.augustus_path, args.hal_path, args.hal_file_path,
                   args.tree_path, args.out_dir))
   args.calling_command = '%s' % ' '.join(sys.argv[0:])
-  if args.window_overlap > args.window_length:
-    parser.error('--window_overlap cannot by greater than --window_length.')
+
+
+def VerifyMySQLServer(args):
+  """ Make sure the MySQL server exists and is accesssible.
+  """
+  dbaccess = ReadDBAccess(args.dbaccess_file)
+  db_name, host_name, user_name, password = dbaccess.split(',')
+  db = MySQLdb.connect(host=host_name, user=user_name,
+                       passwd=password, db=db_name)
+  cur = db.cursor()
+  cur.execute('SELECT * FROM seqnames WHERE speciesname = "C56B6NJ" LIMIT 10')
+  cur.close()
+  db.close()
 
 
 def LaunchBatch(args):
