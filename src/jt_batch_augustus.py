@@ -216,8 +216,8 @@ class AugustusCall(Target):
     """ Run a command list, log the commands, record timestamps before & after.
     """
     time_start = lib_run.TimeStamp(self.out_path)
-    lib_run.LogCommand(self.out_path, aug_cmds, out_pipe=out_pipes,
-               err_pipe=err_pipes)
+    lib_run.LogCommand(self.out_path, cmd_list, out_pipe=out_pipes,
+                       err_pipe=err_pipes)
     if not self.args.debug:
       try:
         lib_run.RunCommandsSerial(cmd_list, self.getLocalTempDir(),
@@ -450,7 +450,9 @@ def VerifyMySQLServer(args):
   db = MySQLdb.connect(host=host_name, user=user_name,
                        passwd=password, db=db_name)
   cur = db.cursor()
-  cur.execute('SELECT * FROM seqnames WHERE speciesnames = "C56B6NJ" LIMIT 10')
+  cur.execute('SELECT * FROM speciesnames '
+              'WHERE speciesname = "C56B6NJ" '
+              'LIMIT 10')
   cur.close()
   db.close()
 
