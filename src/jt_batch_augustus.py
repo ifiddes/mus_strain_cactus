@@ -56,6 +56,7 @@ class BatchJob(Target):
                           self.args.window_length - self.args.window_overlap):
         count += 1
         end = min(window_end, start + self.args.window_length)
+        print end, window_end, start, start+self.args.window_length
         self.addChildTarget(AugustusCall(self.args.hal_file_path,
                                          self.args.ref_genome,
                                          s, start,
@@ -192,16 +193,18 @@ class AugustusCall(Target):
     hal2maf_cmd.append(self.args.hal_file_path)
     hal2maf_cmd.append(self.maf_file)
     hal2maf_cmds = [hal2maf_cmd]
+    hal_err_pipe = [os.path.join(self.out_path, 'stderr.hal.out')]
+    hal_out_pipe = [os.path.join(self.out_path, 'stdout.hal.out')]
     if self.args.maf_file_path is None:
-      self.run_command_list(hal2maf_cmds)
+      self.run_command_list(hal2maf_cmds, hal_out_pipe, hal_err_pipe)
     # run augustus on the maf
-    err_pipe = [os.path.join(self.out_path, 'stderr.out')]
-    out_pipe = [os.path.join(self.out_path, 'stdout.out')]
+    aug_err_pipe = [os.path.join(self.out_path, 'stderr.aug.out')]
+    aug_out_pipe = [os.path.join(self.out_path, 'stdout.aug.out')]
     aug_cmd = [os.path.join(self.args.augustus_path, 'bin', 'augustus')]
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
-    self.run_command_list(aug_cmds, out_pipe, err_pipe)
+    self.run_command_list(aug_cmds, aug_out_pipe, aug_err_pipe)
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
@@ -221,6 +224,8 @@ class AugustusCall(Target):
       try:
         lib_run.RunCommandsSerial(cmd_list, self.getLocalTempDir(),
                                   out_pipes=out_pipes, err_pipes=err_pipes)
+      except:
+        raise
       finally:
         lib_run.TimeStamp(self.out_path, time_start)
     else:
@@ -452,6 +457,8 @@ def VerifyMySQLServer(out_dir, args):
           % lib_run.TimeString(then), host_name, db_name, user_name)
   try:
     simple_connection_test(host_name, user_name, password, db_name, f)
+  except:
+    raise
   else:
     f.write('[%s] db okay.\n' % lib_run.TimeString)
   finally:
