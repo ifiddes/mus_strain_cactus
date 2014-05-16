@@ -55,18 +55,17 @@ class BatchJob(Target):
       for start in xrange(window_start, window_end,
                           self.args.window_length - self.args.window_overlap):
         count += 1
-        end = min(window_end, start + self.args.window_length)
-        print end, window_end, start, start+self.args.window_length
+        actual_length = min(window_end - start, self.args.window_length)
         self.addChildTarget(AugustusCall(self.args.hal_file_path,
                                          self.args.ref_genome,
                                          s, start,
-                                         self.args.window_length, end,
+                                         actual_length,
                                          count - 1, self.args))
     Debug('There will be %d AugustusCall children\n' % count, self.args)
     self.args.batch_start_time = CreateSummaryReport(
       self.args.out_dir, self.args.ref_genome, self.args.ref_sequence,
-      self.args.window_start, self.args.window_length, self.args.window_overlap,
-      self.args.window_end, count, self.args.batch_start_time,
+      self.args.window_start, actual_length, self.args.window_overlap,
+      count, self.args.batch_start_time,
       self.args.calling_command)
   def collect_sequences(self):
     if self.args.ref_sequence is None:
@@ -115,7 +114,7 @@ class AugustusCall(Target):
   AugustusCall class calls the augustus binary.
   """
   def __init__(self, hal_file_path, ref_genome, ref_sequence,
-               window_start, window_length, window_end,
+               window_start, window_length,
                window_number, args):
     Target.__init__(self)
     self.hal_file_path = hal_file_path
@@ -123,7 +122,6 @@ class AugustusCall(Target):
     self.ref_sequence = ref_sequence
     self.window_start = window_start
     self.window_length = window_length
-    self.window_end = window_end
     self.window_number = window_number
     self.out_path = os.path.join(args.out_dir,
                                  'window_%s_%s_%03d'
@@ -252,7 +250,7 @@ def ReadDBAccess(dbaccess_file):
 
 
 def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
-                        window_length, window_overlap, window_end, count,
+                        window_length, window_overlap, count,
                         now, command):
   """ Create a summary report in the root output directory.
   """
@@ -263,9 +261,6 @@ def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
   f.write('window start:   %s\n' % str(window_start))  # can be None or int
   f.write('window length:  %d\n' % window_length)
   f.write('window overlap: %d\n' % window_overlap)
-  f.write('window end:     %s\n' % str(window_end))  # can be None or int
-  if window_start is not None and window_end is not None:
-    f.write('region length:  %d\n' % (window_end - window_start))
   f.write('num windows:    %d\n' % count)
   f.close()
   return now
@@ -449,25 +444,7 @@ def CheckArguments(args, parser):
 def VerifyMySQLServer(out_dir, args):
   """ Make sure the MySQL server exists and is accesssible.
   """
-  dbaccess = ReadDBAccess(args.dbaccess_file)
-  db_name, host_name, user_name, password = dbaccess.split(',')
-  f = open(os.path.join(out_dir, 'jt_db_ok.log'), 'w')
-  then = time.time()
-  f.write('[%s] Checking host:%s database:%s user:%s pass:********\n'
-          % lib_run.TimeString(then), host_name, db_name, user_name)
-  try:
-    simple_connection_test(host_name, user_name, password, db_name, f)
-  except:
-    raise
-  else:
-    f.write('[%s] db okay.\n' % lib_run.TimeString)
-  finally:
-    now = time.time()
-    elapsed_time = now - then
-    f.write('[%s] End (elapsed: %s)\n'
-          % lib_run.TimeString(), lib_run.PrettyTime(elapsed_time))
-  f.close()
-  def simple_connect_test(host_name, user_name, password, db_name, f):
+  def simple_connection_test(host_name, user_name, password, db_name, f):
     db = MySQLdb.connect(host=host_name, user=user_name,
                          passwd=password, db=db_name)
     cur = db.cursor()
@@ -481,6 +458,24 @@ def VerifyMySQLServer(out_dir, args):
               % (lib_run.TimeString(), e.args[0], e.args[1]))
     cur.close()
     db.close()
+  dbaccess = ReadDBAccess(args.dbaccess_file)
+  db_name, host_name, user_name, password = dbaccess.split(',')
+  f = open(os.path.join(out_dir, 'jt_db_ok.log'), 'w')
+  then = time.time()
+  f.write('[%s] Checking host:%s database:%s user:%s pass:********\n'
+          % (lib_run.TimeString(then), host_name, db_name, user_name))
+  try:
+    simple_connection_test(host_name, user_name, password, db_name, f)
+  except:
+    raise
+  else:
+    f.write('[%s] db okay.\n' % lib_run.TimeString())
+  finally:
+    now = time.time()
+    elapsed_time = now - then
+    f.write('[%s] End (elapsed: %s)\n'
+          % (lib_run.TimeString(), lib_run.PrettyTime(elapsed_time)))
+  f.close()
 
 
 def LaunchBatch(args):

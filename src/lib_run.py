@@ -283,16 +283,16 @@ def TimeStamp(out_path, time_start=None, name=None):
   return now
 
 
-def TimeString(now=None):
+def TimeString(then=None):
   """ Return a prtty timestring for use with timestamps.
   """
   import time
-  if now is None:
+  if then is None:
     return time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
                          time.localtime(time.time()))
   else:
     return time.strftime("%a, %d %b %Y %H:%M:%S (%Z)",
-                         time.localtime(time.time(now)))
+                         time.localtime(then))
 
 
 def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
