@@ -277,9 +277,8 @@ def TimeStamp(out_path, time_start=None, name=None):
     elapsed_time = now - time_start
     f.write('[%s] End (elapsed: %s)\n' %
             (TimeString(now), PrettyTime(elapsed_time)))
-
   else:
-    f.write('[%s] Start\n' % (TimeString(now))
+    f.write('[%s] Start\n' % (TimeString(now)))
   f.close()
   return now
 
