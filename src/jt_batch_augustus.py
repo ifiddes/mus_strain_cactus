@@ -217,7 +217,7 @@ class AugustusCall(Target):
   def run_command_list(self, cmd_list, out_pipes=None, err_pipes=None, tag=''):
     """ Run a command list, log the commands, record timestamps before & after.
     """
-    time_start = lib_run.TimeStamp(self.out_path, tag)
+    time_start = lib_run.TimeStamp(self.out_path, tag=tag)
     lib_run.LogCommand(self.out_path, cmd_list, out_pipe=out_pipes,
                        err_pipe=err_pipes)
     if not self.args.debug:
@@ -229,10 +229,10 @@ class AugustusCall(Target):
         tag += ':failure'
         raise
       finally:
-        lib_run.TimeStamp(self.out_path, time_start, tag)
+        lib_run.TimeStamp(self.out_path, time_start, tag=tag)
     else:
       tag += ':debug'
-      lib_run.TimeStamp(self.out_path, time_start, tag)
+      lib_run.TimeStamp(self.out_path, time_start, tag=tag)
 
 
 def Debug(s, args):
