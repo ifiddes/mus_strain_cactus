@@ -263,11 +263,13 @@ def PrettyTime(t):
                                              d_plural, h, m, s)
 
 
-def TimeStamp(out_path, time_start=None, name=None):
+def TimeStamp(out_path, time_start=None, name=None, tag=''):
   """ Open up the log file and make a timestamp.
   """
   import time
   now = time.time()
+  if tag != '':
+    tag_s = '  # %s' % tag
   if name is None:
     filename = os.path.join(out_path, 'jt_issued_commands.log')
   else:
@@ -275,10 +277,10 @@ def TimeStamp(out_path, time_start=None, name=None):
   f = open(filename, 'a')
   if time_start is not None:
     elapsed_time = now - time_start
-    f.write('[%s] End (elapsed: %s)\n' %
-            (TimeString(now), PrettyTime(elapsed_time)))
+    f.write('[%s] End (elapsed: %s)%s\n' %
+            (TimeString(now), PrettyTime(elapsed_time), tag_s))
   else:
-    f.write('[%s] Start\n' % (TimeString(now)))
+    f.write('[%s] Start%s\n' % (TimeString(now), tag_s))
   f.close()
   return now
 

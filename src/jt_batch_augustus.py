@@ -194,7 +194,7 @@ class AugustusCall(Target):
     hal_err_pipe = [os.path.join(self.out_path, 'stderr.hal.out')]
     hal_out_pipe = [os.path.join(self.out_path, 'stdout.hal.out')]
     if self.args.maf_file_path is None:
-      self.run_command_list(hal2maf_cmds, hal_out_pipe, hal_err_pipe)
+      self.run_command_list(hal2maf_cmds, hal_out_pipe, hal_err_pipe, 'hal2maf')
     # run augustus on the maf
     aug_err_pipe = [os.path.join(self.out_path, 'stderr.aug.out')]
     aug_out_pipe = [os.path.join(self.out_path, 'stdout.aug.out')]
@@ -202,32 +202,37 @@ class AugustusCall(Target):
     for key in self.aug_parameters:
       aug_cmd.append('--%s=%s' % (key, str(self.aug_parameters[key])))
     aug_cmds = [aug_cmd]
-    self.run_command_list(aug_cmds, aug_out_pipe, aug_err_pipe)
+    self.run_command_list(aug_cmds, aug_out_pipe, aug_err_pipe, tag='augustus')
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
+    cp_err_pipe = [os.path.join(self.out_path, 'stderr.cp.out')]
+    cp_out_pipe = [os.path.join(self.out_path, 'stdout.cp.out')]
     for suffix in ['dot', 'gff', 'gff3', 'out', 'wig']:
       files = glob(os.path.join(self.getLocalTempDir(), '*.%s' % suffix))
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
-    self.run_command_list(copy_cmds)
+    self.run_command_list(copy_cmds, cp_out_pipe, cp_err_pipe, tag='copy back')
 
-  def run_command_list(self, cmd_list, out_pipes=None, err_pipes=None):
+  def run_command_list(self, cmd_list, out_pipes=None, err_pipes=None, tag=''):
     """ Run a command list, log the commands, record timestamps before & after.
     """
-    time_start = lib_run.TimeStamp(self.out_path)
+    time_start = lib_run.TimeStamp(self.out_path, tag)
     lib_run.LogCommand(self.out_path, cmd_list, out_pipe=out_pipes,
                        err_pipe=err_pipes)
     if not self.args.debug:
       try:
         lib_run.RunCommandsSerial(cmd_list, self.getLocalTempDir(),
                                   out_pipes=out_pipes, err_pipes=err_pipes)
+        tag += ':success'
       except:
+        tag += ':failure'
         raise
       finally:
-        lib_run.TimeStamp(self.out_path, time_start)
+        lib_run.TimeStamp(self.out_path, time_start, tag)
     else:
-      lib_run.TimeStamp(self.out_path, time_start)
+      tag += ':debug'
+      lib_run.TimeStamp(self.out_path, time_start, tag)
 
 
 def Debug(s, args):
