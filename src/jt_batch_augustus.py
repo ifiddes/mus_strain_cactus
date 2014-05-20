@@ -206,13 +206,11 @@ class AugustusCall(Target):
     # copy output files from tmp back to the target dir
     copy_cmds = []
     # todo: copy out actual results
-    cp_err_pipe = [os.path.join(self.out_path, 'stderr.cp.out')]
-    cp_out_pipe = [os.path.join(self.out_path, 'stdout.cp.out')]
     for suffix in ['dot', 'gff', 'gff3', 'out', 'wig']:
       files = glob(os.path.join(self.getLocalTempDir(), '*.%s' % suffix))
       for f in files:
         copy_cmds.append([lib_run.Which('cp'), f, os.path.join(self.out_path)])
-    self.run_command_list(copy_cmds, cp_out_pipe, cp_err_pipe, tag='copy back')
+    self.run_command_list(copy_cmds, tag='copy back')
 
   def run_command_list(self, cmd_list, out_pipes=None, err_pipes=None, tag=''):
     """ Run a command list, log the commands, record timestamps before & after.
