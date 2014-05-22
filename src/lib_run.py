@@ -220,7 +220,7 @@ def Which(program, extra_path_list=None):
 
 
 def PrettyTime(t):
-  """ Given input t as seconds, return a nicely formated string.
+  """ Given input t as seconds, return a nicely formatted string.
   """
   from math import floor
   plural_dict = {True: 's', False: ''}
@@ -234,7 +234,7 @@ def PrettyTime(t):
     h = floor(t / 60. / 60.)
     m = floor((t - (h * 60. * 60.)) / 60.)
     s = t % 60
-    return '%dh %.0fm %ds' % (h, m, s)
+    return '%dh %gm %ds' % (h, m, s)
   if t < 7 * 24 * 60 * 60:
     d = floor(t / 24. / 60. / 60.)
     h = floor((t - (d * 24. * 60. * 60.)) / 60. / 60.)
