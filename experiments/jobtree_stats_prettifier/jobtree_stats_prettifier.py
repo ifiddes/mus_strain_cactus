@@ -2,9 +2,6 @@
 """
 takes a jobTreeStats xml output and formats it for a human to read.
 
-~/msca/proj/experiments/009.job_tree_cftr/stats
-/hive/users/benedict/progressiveBenchmarks/output/evolverPrimatesLoci1_rm10_ogGreedy_ot0_saFalse_ktInmemorynosnapshot/out.xml
-
 22 may 2014
 dent earl, dearl (a) soe ucsc edu
 """
