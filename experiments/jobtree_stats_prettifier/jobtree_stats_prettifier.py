@@ -7,8 +7,6 @@ dent earl, dearl (a) soe ucsc edu
 """
 from argparse import ArgumentParser
 import xml.etree.ElementTree as ET
-import xml.parsers.expat as expat # exception handling for empty xml
-
 
 class JTTag(object):
   def __init__(self, tree):
@@ -186,7 +184,7 @@ def ReportNumber(n, args, field=None):
 
 
 def ProcessData(xml_tree, args):
-  """ walk the xml_tree and print out the important bits.
+  """ walk the xml_tree and gather up the important bits.
   """
   root = xml_tree.getroot()
   slave = JTTag(root.find('slave'))
@@ -207,43 +205,38 @@ def PrintTag(key, tag, args):
   if key == 'target':
     print ' %-12s | %7s%7s%7s%7s ' % ('Slave Jobs', 'min', 'med', 'ave', 'max')
     slave_str = '%s| ' % (' ' * 14)
-    slave_str += ReportNumber(tag.min_number_per_slave, args, field=7)
-    slave_str += ReportNumber(tag.median_number_per_slave, args, field=7)
-    slave_str += ReportNumber(tag.average_number_per_slave, args, field=7)
-    slave_str += ReportNumber(tag.max_number_per_slave, args, field=7)
+    for t in [tag.min_number_per_slave, tag.median_number_per_slave,
+              tag.average_number_per_slave, tag.max_number_per_slave]:
+      slave_str += ReportNumber(t, args, field=7)
     print slave_str
   if 'time' in args.categories:
     header += '| %40s ' % 'Time'
     sub_header += '| %10s%10s%10s%10s ' % ('min', 'med', 'ave', 'max')
     tag_str += ' | '
-    tag_str += ReportTime(tag.min_time, args, field=10)
-    tag_str += ReportTime(tag.median_time, args, field=10)
-    tag_str += ReportTime(tag.average_time, args, field=10)
-    tag_str += ReportTime(tag.max_time, args, field=10)
+    for t in [tag.min_time, tag.median_time,
+              tag.average_time, tag.max_time]:
+      tag_str += ReportTime(t, args, field=10)
   if 'clock' in args.categories:
     header += '| %40s ' % 'Clock'
     sub_header += '| %10s%10s%10s%10s ' % ('min', 'med', 'ave', 'max')
     tag_str += ' | '
-    tag_str += ReportTime(tag.min_clock, args, field=10)
-    tag_str += ReportTime(tag.median_clock, args, field=10)
-    tag_str += ReportTime(tag.average_clock, args, field=10)
-    tag_str += ReportTime(tag.max_clock, args, field=10)
+    for t in [tag.min_clock, tag.median_clock,
+              tag.average_clock, tag.max_clock]:
+      tag_str += ReportTime(t, args, field=10)
   if 'wait' in args.categories:
     header += '| %40s ' % 'Wait'
     sub_header += '| %10s%10s%10s%10s ' % ('min', 'med', 'ave', 'max')
     tag_str += ' | '
-    tag_str += ReportTime(tag.min_wait, args, field=10)
-    tag_str += ReportTime(tag.median_wait, args, field=10)
-    tag_str += ReportTime(tag.average_wait, args, field=10)
-    tag_str += ReportTime(tag.max_wait, args, field=10)
+    for t in [tag.min_wait, tag.median_wait,
+              tag.average_wait, tag.max_wait]:
+      tag_str += ReportTime(t, args, field=10)
   if 'memory' in args.categories:
     header += '| %40s ' % 'Memory'
     sub_header += '| %10s%10s%10s%10s ' % ('min', 'med', 'ave', 'max')
     tag_str += ' | '
-    tag_str += ReportMemory(tag.min_memory, args, field=10)
-    tag_str += ReportMemory(tag.median_memory, args, field=10)
-    tag_str += ReportMemory(tag.average_memory, args, field=10)
-    tag_str += ReportMemory(tag.max_memory, args, field=10)
+    for t in [tag.min_memory, tag.median_memory,
+              tag.average_memory, tag.max_memory]:
+      tag_str += ReportMemory(t, args, field=10)
   print header
   print sub_header
   print tag_str
@@ -299,10 +292,11 @@ def ReportData(root, slave, target, target_types, args):
       ReportNumber(Get(root, 'max_threads'), args),
       ))
   print s
-  print 'Total Clock: %s  Total Runtime: %s' % (
-    ReportTime(Get(root, 'total_clock'), args),
-    ReportTime(Get(root, 'total_run_time'), args),
-    )
+  s = ('Total Clock: %s  Total Runtime: %s' % (
+      ReportTime(Get(root, 'total_clock'), args),
+      ReportTime(Get(root, 'total_run_time'), args),
+      ))
+  print s
   print 'Slave'
   PrintTag('slave', slave, args)
   print 'Target'
