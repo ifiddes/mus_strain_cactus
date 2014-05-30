@@ -49,13 +49,17 @@ class BatchJob(Target):
   def run(self):
     sequence_dict = self.collect_sequences()
     Debug('%s\n' % str(sequence_dict), self.args)
-    count = 0
-    for s in sequence_dict:
+    order = sorted(sequence_dict.keys())
+    for s in order:
+      count = 0
       window_start, window_end = sequence_dict[s]
       for start in xrange(window_start, window_end,
                           self.args.window_length - self.args.window_overlap):
         count += 1
         actual_length = min(window_end - start, self.args.window_length)
+        Debug('AugustusCall(%s, %s, %s, %d, %d, %d, args)\n' %
+              (self.args.hal_file_path, self.args.ref_genome, s,
+               start, actual_length, count - 1), self.args)
         self.addChildTarget(AugustusCall(self.args.hal_file_path,
                                          self.args.ref_genome,
                                          s, start,
@@ -124,8 +128,8 @@ class AugustusCall(Target):
     self.window_length = window_length
     self.window_number = window_number
     self.out_path = os.path.join(args.out_dir,
-                                 'window_%s_%s_%03d'
-                                 % (args.ref_genome, args.ref_sequence,
+                                 'window_%s_%s_%04d'
+                                 % (ref_genome, ref_sequence,
                                     window_number))
     self.args = args
     dbaccess = ReadDBAccess(self.args.dbaccess_file)
@@ -168,9 +172,9 @@ class AugustusCall(Target):
       os.mkdir(self.out_path)
     if self.args.maf_file_path is None:
       self.maf_file = os.path.join(self.getLocalTempDir(),
-                                   'window_%s_%s_%03d.maf'
-                                   % (self.args.ref_genome,
-                                      self.args.ref_sequence,
+                                   'window_%s_%s_%04d.maf'
+                                   % (self.ref_genome,
+                                      self.ref_sequence,
                                       self.window_number))
     else:
       self.maf_file = self.args.maf_file_path
@@ -179,10 +183,10 @@ class AugustusCall(Target):
     # extract the region needed as maf
     hal2maf_cmd = [os.path.join(self.args.hal_path, 'bin', 'hal2maf')]
     hal2maf_cmd.append('--refGenome')
-    hal2maf_cmd.append(self.args.ref_genome)
+    hal2maf_cmd.append(self.ref_genome)
     hal2maf_cmd.append('--noAncestors')  # Augustus throws these out.
     hal2maf_cmd.append('--refSequence')
-    hal2maf_cmd.append(self.args.ref_sequence)
+    hal2maf_cmd.append(self.ref_sequence)
     hal2maf_cmd.append('--ucscNames')
     hal2maf_cmd.append('--start')
     hal2maf_cmd.append(str(self.window_start))
@@ -194,7 +198,8 @@ class AugustusCall(Target):
     hal_err_pipe = [os.path.join(self.out_path, 'stderr.hal.out')]
     hal_out_pipe = [os.path.join(self.out_path, 'stdout.hal.out')]
     if self.args.maf_file_path is None:
-      self.run_command_list(hal2maf_cmds, hal_out_pipe, hal_err_pipe, 'hal2maf')
+      self.run_command_list(hal2maf_cmds, hal_out_pipe,
+                            hal_err_pipe, tag='hal2maf')
     # run augustus on the maf
     aug_err_pipe = [os.path.join(self.out_path, 'stderr.aug.out')]
     aug_out_pipe = [os.path.join(self.out_path, 'stdout.aug.out')]
@@ -285,7 +290,7 @@ def InitializeArguments(parser):
                       help='location of dbaccess file containing login info.')
   parser.add_argument('--maf_file_path', type=str,
                       help=('location maf file. Overrides all hal window '
-                            'extraction'))
+                            'extraction. Debugging feature.'))
   parser.add_argument('--debug', default=False, action='store_true',
                       help='turns off execution of commands, just writes logs.')
   window = parser.add_argument_group('Window options')
@@ -389,12 +394,14 @@ def CheckArguments(args, parser):
                       ('hal_file_path', args.hal_path),
                       ('tree_path', args.tree_path),
                       ('out_dir', args.out_dir),
-                      ('dbaccess_file', args.dbaccess_file)]:
+                      ('dbaccess_file', args.dbaccess_file),
+                      ('ref_genome', args.ref_genome),
+                      ]:
     if value is None:
       parser.error('Specify --%s' % name)
     else:
       value = os.path.abspath(value)
-  # check for existence
+  # check for path existence
   for name, value in [('augustus_path', args.augustus_path),
                       ('hal_path', args.hal_path),
                       ('hal_file_path', args.hal_file_path),
@@ -442,6 +449,16 @@ def CheckArguments(args, parser):
                % (args.augustus_path, args.hal_path, args.hal_file_path,
                   args.tree_path, args.out_dir))
   args.calling_command = '%s' % ' '.join(sys.argv[0:])
+  if args.maf_file_path is not None:
+    if args.ref_sequence is None:
+      parser.error('You have selected --maf_file_path, you must also specify '
+                   '--ref_sequence')
+    if args.window_start is None:
+      parser.error('You have selected --maf_file_path, you must also specify '
+                   '--window_start')
+    if args.window_end is None:
+      parser.error('You have selected --maf_file_path, you must also specify '
+                   '--window_end')
 
 
 def VerifyMySQLServer(out_dir, args):

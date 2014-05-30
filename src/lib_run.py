@@ -306,9 +306,8 @@ def LogCommand(out_path, cmds, out_pipe=None, err_pipe=None, name=None):
   else:
     filename = os.path.join(out_path, name)
   f = open(filename, 'a')
-  if out_pipe is None:
-    out_str = ''
-  else:
+  out_str = ''
+  if out_pipe is not None:
     out_str = ' 1>%s' % ' '.join(out_pipe)
   if err_pipe is None:
     err_str = ''
