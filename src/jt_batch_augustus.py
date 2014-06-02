@@ -480,7 +480,7 @@ def VerifyMySQLServer(out_dir, args):
     db.close()
   dbaccess = ReadDBAccess(args.dbaccess_file)
   db_name, host_name, user_name, password = dbaccess.split(',')
-  f = open(os.path.join(out_dir, 'jt_db_ok.log'), 'w')
+  f = open(os.path.join(out_dir, 'jt_db_check.log'), 'w')
   then = time.time()
   f.write('[%s] Checking host:%s database:%s user:%s pass:********\n'
           % (lib_run.TimeString(then), host_name, db_name, user_name))
