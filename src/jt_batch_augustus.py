@@ -487,6 +487,8 @@ def VerifyMySQLServer(out_dir, args):
   try:
     simple_connection_test(host_name, user_name, password, db_name, f)
   except:
+    e = sys.exc_info()[0]
+    f.write('[%s] exception caught: %s.\n' % (lib_run.TimeString(), e))
     raise
   else:
     f.write('[%s] db okay.\n' % lib_run.TimeString())
