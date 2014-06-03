@@ -14,6 +14,9 @@ def InitializeArguments(parser):
   parser.add_argument('--length_threshold', default=1000, type=int,
                       help=('distance threshold for ends of chromosomes. '
                             'default=%(default)s'))
+  parser.add_argument('--print_distances', default=False, action='store_true',
+                      help=('print out the distances to the nearest '
+                            'scaffold edge'))
 
 
 def CheckArguments(args, parser):
@@ -66,6 +69,37 @@ def ReadStrands(args):
 
 
 def ScanGeneCheckDetails(sizes, strands, args):
+  if args.print_distances:
+    ScanGeneCheckDetailsDistances(sizes, strands, args)
+  else:
+    ScanGeneCheckDetailsVanilla(sizes, strands, args)
+
+
+def ScanGeneCheckDetailsDistances(sizes, strands, args):
+  with open(args.gene_check_details, 'r') as f:
+    for line in f:
+      line = line.strip()
+      data = line.split()
+      chrom = data[0]
+      values = data[3].split('/')
+      error = values[0]
+      entry = values[-1]
+      if error not in ['noStart', 'noStop']:
+        continue
+      name = chrom + '_' + entry
+      if strands[name] == '+':
+        if error == 'noStop':
+          print sizes[chrom] - int(data[2])
+        else:
+          print int(data[1])
+      else:
+        if error == 'noStart':
+          print sizes[chrom] - int(data[2])
+        else:
+          print int(data[1])
+
+
+def ScanGeneCheckDetailsVanilla(sizes, strands, args):
   with open(args.gene_check_details, 'r') as f:
     for line in f:
       line = line.strip()

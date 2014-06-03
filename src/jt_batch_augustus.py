@@ -462,7 +462,7 @@ def CheckArguments(args, parser):
 
 
 def VerifyMySQLServer(out_dir, args):
-  """ Make sure the MySQL server exists and is accesssible.
+  """ Make sure the MySQL server exists and is accessible.
   """
   def simple_connection_test(host_name, user_name, password, db_name, f):
     db = MySQLdb.connect(host=host_name, user=user_name,
