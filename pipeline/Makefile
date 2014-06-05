@@ -16,7 +16,8 @@ geneCheck = /hive/groups/recon/local/bin/gene-check
 geneCheckStats = /cluster/home/markd/compbio/code/pycbio/bin/geneCheckStats
 geneCheckBeds = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-16.simpleChain/results/lnb_0001/tracks
 sequenceDir = /hive/groups/recon/projs/mus_strain_cactus/data
-alignmentFile = /hive/users/benedict/mouseHub/all.hal
+alignmentDir = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-16.simpleChain/results/lnb_0001/chained
+halFile = /hive/users/benedict/mouseHub/all.hal
 filtersDir = filters
 filters = $(shell find ${filtersDir}/ -perm 755 -type f)
 
@@ -33,7 +34,7 @@ results/%:
 	--genome $(firstword $(subst /, , $(word 2, $(subst ., ,$*)))) \
 	--geneCheckBed ${geneCheckBeds}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).coding.gene-check.bed \
 	--geneCheckBedDetails ${geneCheckBeds}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).coding.gene-check-details.bed \
-	--alignment ${alignmentFile} \
+	--alignment ${alignmentDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).chained.psl \
 	--sequence ${sequenceDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).fa \
 	--chromSizes ${sequenceDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).sizes \
 	--outDir $(dir $@) > $@.${tmpExt}
