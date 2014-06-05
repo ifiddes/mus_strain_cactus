@@ -68,7 +68,6 @@ def getSequences(seqFile):
   seq = None
   with open(seqFile, 'r') as f:
     for seq in readSequence(f):
-      print seq.name
       seqDict[seq.name] = seq
   return seqDict
 
