@@ -19,6 +19,8 @@ class Sequence(object):
 
 
 def InitializeArguments(parser):
+  """ given an argparse ArgumentParser object, add in the default arguments.
+  """
   parser.add_argument('--refGenome')
   parser.add_argument('--genome')
   parser.add_argument('--geneCheckBed')
@@ -30,6 +32,8 @@ def InitializeArguments(parser):
 
 
 def CheckArguments(args, parser):
+  """ Make sure all of the args are properly set for the default arguments.
+  """
   # setting
   pairs = tuple((item, getattr(args, item)) for item in
                 ['refGenome', 'genome',
