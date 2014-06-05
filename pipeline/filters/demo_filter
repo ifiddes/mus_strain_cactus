@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+"""
+demo_filter
+4 june 2014
+
+dent earl, dearl a soe ucsc edu
+
+Demonstration of what a filter should look like.
+
+"""
+from argparse import ArgumentParser
+import sys
+
+
+def InitializeArguments(parser):
+  parser.add_argument('gene_check_bed')
+  parser.add_argument('gene_check_bed_details')
+  parser.add_argument('genome')
+  parser.add_argument('genomeDir')
+
+
+def CheckArguments(args, parser):
+  pass
+
+
+def main():
+  parser = ArgumentParser()
+  InitializeArguments(parser)
+  args = parser.parse_args()
+  CheckArguments(args, parser)
+  sys.stdout.write('Call: %s %s %s %s %s\n'
+                   % (sys.argv[0],
+                      args.gene_check_bed,
+                      args.gene_check_bed_details,
+                      args.genome,
+                      args.genomeDir))
+
+
+if __name__ == '__main__':
+  main()
