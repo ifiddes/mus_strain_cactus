@@ -13,10 +13,14 @@ import sys
 
 
 def InitializeArguments(parser):
-  parser.add_argument('gene_check_bed')
-  parser.add_argument('gene_check_bed_details')
-  parser.add_argument('genome')
-  parser.add_argument('genomeDir')
+  parser.add_argument('--refGenome')
+  parser.add_argument('--genome')
+  parser.add_argument('--geneCheckBed')
+  parser.add_argument('--geneCheckBedDetails')
+  parser.add_argument('--alignment')
+  parser.add_argument('--sequence')
+  parser.add_argument('--chromSizes')
+  parser.add_argument('--outDir')
 
 
 def CheckArguments(args, parser):
@@ -28,12 +32,17 @@ def main():
   InitializeArguments(parser)
   args = parser.parse_args()
   CheckArguments(args, parser)
-  sys.stdout.write('Call: %s %s %s %s %s\n'
+  sys.stdout.write('Call: %s %s %s %s %s %s %s %s %s\n'
                    % (sys.argv[0],
-                      args.gene_check_bed,
-                      args.gene_check_bed_details,
+                      args.refGenome,
                       args.genome,
-                      args.genomeDir))
+                      args.geneCheckBed,
+                      args.geneCheckBedDetails,
+                      args.alignment,
+                      args.sequence,
+                      args.chromSizes,
+                      args.outDir,
+                      ))
 
 
 if __name__ == '__main__':
