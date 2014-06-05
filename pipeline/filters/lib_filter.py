@@ -79,23 +79,3 @@ def getSequences(seqFile):
         continue
       seq.addSequence(line)
   return seqDict
-
-def getSequence(seqFile, seqName):
-  """ Given a path to a fasta file and a name, return a sequence object.
-  """
-  seq = Name
-  with open(seqFile, 'r') as f:
-    for line in f:
-      line = line.strip()
-      if line == '':
-        continue
-      if line.startswith('>'):
-        if seq is not None:
-          return seq
-        name = line.replace('>', '').strip()
-        if seqName == name:
-          seq = Sequence(name)
-        continue
-      if seq is not None:
-        seq.addSequence(line)
-  return seq
