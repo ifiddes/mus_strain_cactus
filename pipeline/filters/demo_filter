@@ -29,6 +29,10 @@ def main():
                       args.chromSizes,
                       args.outDir,
                       ))
+  seq_dict = lib_filter.getSequences(args.sequence)
+  keys = seq_dict.keys()
+  for i in xrange(0, 10):
+    print keys[i]
 
 
 if __name__ == '__main__':
