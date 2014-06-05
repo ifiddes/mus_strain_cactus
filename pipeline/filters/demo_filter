@@ -10,30 +10,29 @@ Demonstration of what a filter should look like.
 """
 from argparse import ArgumentParser
 import sys
-
-
-def InitializeArguments(parser):
-  parser.add_argument('gene_check_bed')
-  parser.add_argument('gene_check_bed_details')
-  parser.add_argument('genome')
-  parser.add_argument('genomeDir')
-
-
-def CheckArguments(args, parser):
-  pass
+import lib_filter
 
 
 def main():
   parser = ArgumentParser()
-  InitializeArguments(parser)
+  lib_filter.InitializeArguments(parser)
   args = parser.parse_args()
-  CheckArguments(args, parser)
-  sys.stdout.write('Call: %s %s %s %s %s\n'
+  lib_filter.CheckArguments(args, parser)
+  sys.stdout.write('Call: %s %s %s %s %s %s %s %s %s\n'
                    % (sys.argv[0],
-                      args.gene_check_bed,
-                      args.gene_check_bed_details,
+                      args.refGenome,
                       args.genome,
-                      args.genomeDir))
+                      args.geneCheckBed,
+                      args.geneCheckBedDetails,
+                      args.alignment,
+                      args.sequence,
+                      args.chromSizes,
+                      args.outDir,
+                      ))
+  seq_dict = lib_filter.getSequences(args.sequence)
+  keys = seq_dict.keys()
+  for i in xrange(0, 10):
+    print keys[i]
 
 
 if __name__ == '__main__':
