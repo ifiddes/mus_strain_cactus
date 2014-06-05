@@ -10,28 +10,14 @@ Demonstration of what a filter should look like.
 """
 from argparse import ArgumentParser
 import sys
-
-
-def InitializeArguments(parser):
-  parser.add_argument('--refGenome')
-  parser.add_argument('--genome')
-  parser.add_argument('--geneCheckBed')
-  parser.add_argument('--geneCheckBedDetails')
-  parser.add_argument('--alignment')
-  parser.add_argument('--sequence')
-  parser.add_argument('--chromSizes')
-  parser.add_argument('--outDir')
-
-
-def CheckArguments(args, parser):
-  pass
+import lib_filter
 
 
 def main():
   parser = ArgumentParser()
-  InitializeArguments(parser)
+  lib_filter.InitializeArguments(parser)
   args = parser.parse_args()
-  CheckArguments(args, parser)
+  lib_filter.CheckArguments(args, parser)
   sys.stdout.write('Call: %s %s %s %s %s %s %s %s %s\n'
                    % (sys.argv[0],
                       args.refGenome,
