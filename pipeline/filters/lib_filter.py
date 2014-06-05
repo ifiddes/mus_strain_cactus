@@ -3,14 +3,13 @@ convenience library for assisting filters.
 """
 import os
 
+
 class Sequence(object):
   """ Represents a sequence of DNA.
   """
-  def __init__(self, name):
+  def __init__(self, name, sequence):
     self.name = name  # chromosome or scaffold name
-    self._sequence = ''  # ACGTs
-  def addSequence(self, seq):
-    self._sequence += seq
+    self._sequence = sequence  # ACGTs
   def setSequence(self, seq):
     self._sequence = seq
   def getSequence(self):
@@ -68,14 +67,48 @@ def getSequences(seqFile):
   seqDict = {}
   seq = None
   with open(seqFile, 'r') as f:
-    for line in f:
-      line = line.strip()
-      if line == '':
-        continue
-      if line.startswith('>'):
-        name = line.replace('>', '').strip()
-        seq = Sequence(name)
-        seqDict[name] = seq
-        continue
-      seq.addSequence(line)
+    for seq in readSequence(f):
+      print seq.name
+      seqDict[seq.name] = seq
   return seqDict
+
+
+def readSequence(seqFile):
+  """ provide an iterator that reads through fasta files.
+  """
+  buff = None
+  eat_buffer = True
+  while True:
+    if eat_buffer:
+      # new record
+      if buff is None:
+        header = ''
+        while not header.startswith('>'):
+          header = seqFile.readline().strip()
+      else:
+        header = buff
+      assert(header.startswith('>'))
+      name = header.replace('>', '').strip()
+      seq = ''
+    line = seqFile.readline().strip()
+    if line:
+      if line.startswith('>'):
+        # stop processing the record, store this line.
+        buff = line
+        eat_buffer = True
+        yield Sequence(name, seq)
+      else:
+        eat_buffer = False
+        seq += line
+    else:
+      # eof
+      if buff is not None:
+        buff = None
+        yield Sequence(name, seq)
+      else:
+        if seq != '':
+          yield Sequence(name, seq)
+          name = ''
+          seq = ''
+        else:
+          return
