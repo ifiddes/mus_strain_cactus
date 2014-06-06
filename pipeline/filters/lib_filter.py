@@ -193,6 +193,7 @@ def readSequence(infile):
         else:
           return
 
+
 def getChromSizes(infile):
   """ read a chrom sizes file and return a dict keyed by names valued by ints.
   """
@@ -254,7 +255,7 @@ def transcriptIterator(transcriptsBedFile, transcriptClassificationBedFile):
               for i in range(exonNumber)]
     exons = getExons(int(tokens[9]),
                      ",".split(tokens[10]), ",".split(tokens[11]))
-    #Get the transcript annotations
+    # Get the transcript annotations
     annotations = []
     if transcript in transcriptsAnnotations:
       annotations = transcriptsAnnotations[transcript]
