@@ -162,7 +162,7 @@ class transcriptIteratorTests(unittest.TestCase):
     transcriptBedLines = ["1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729 128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301050,301352",
                           "1       2812346 3113783 ENSMUST00000095795.4    0       +       2812370 3038729 128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301050,301352"]
     transcriptDetailsBedLines = ["1       2812370 2812372 noStop/ENSMUST00000095795.4",
-                                 "1       2812370 2812372 noStart/ENSMUST00000095795.4"]
+                                 "1       2812370 2812372 noStart/noStop/ENSMUST00000095795.4"]
     transcripts = [ transcript for transcript in lib_filter.transcriptIterator(transcriptBedLines, transcriptDetailsBedLines) ]
     self.assertTrue(len(transcripts) == 2)
     transcript1, transcript2 = transcripts
@@ -185,12 +185,21 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertTrue(len(transcript2.annotations) == 2)
     self.assertTrue(transcript2.annotations[0].name == "ENSMUST00000095795.4")
     self.assertTrue(transcript2.annotations[1].name == "ENSMUST00000095795.4")
-    self.assertTrue(transcript2.annotations[0].annotation == "noStop")
-    self.assertTrue(transcript2.annotations[1].annotation == "noStart")
+    self.assertTrue(transcript2.annotations[0].annotation == [ "noStop" ])
+    self.assertTrue(transcript2.annotations[1].annotation == [ "noStart", "noStop" ])
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.chromosome == "1")
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.start == 2812370)
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.stop == 2812372)
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.strand == None)
+    #Bed fields
+    self.assertTrue(transcript1.thickStart == 2812370)
+    self.assertTrue(transcript1.thickEnd == 3038729)
+    self.assertTrue(transcript1.itemRgb == "128,0,0")
+    #Check print functions
+    self.assertEquals(transcript1.bedString().split(), transcriptBedLines[0].split())
+    self.assertEquals(transcript2.bedString().split(), transcriptBedLines[1].split())
+    self.assertEquals(transcript2.annotations[0].bedString().split(), transcriptDetailsBedLines[0].split())
+    self.assertEquals(transcript2.annotations[1].bedString().split(), transcriptDetailsBedLines[1].split())
 
 if __name__ == '__main__':
   try:

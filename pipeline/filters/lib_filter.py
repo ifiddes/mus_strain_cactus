@@ -75,6 +75,14 @@ class ChromosomeInterval(object):
     self.stop = int(stop)
     self.strand = strand
 
+  def __cmp__(self, cI):
+    i = (self.chromosome, self.start, self.stop, self.strand)
+    j = (cI.chromosome, cI.start, cI.stop, cI.strand)
+    if i > j:
+        return 1
+    if i < j:
+        return -1
+    return 0
 
 class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
@@ -83,17 +91,50 @@ class TranscriptAnnotation(object):
   def __init__(self, chromosomeInterval, name, annotation):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
-    self.annotation = annotation
-
+    self.annotation = list(annotation)
+    
+  def bedString(self):
+      return "\t".join([ self.chromosomeInterval.chromosome,
+str(self.chromosomeInterval.start), 
+str(self.chromosomeInterval.stop),"/".join(self.annotation + [ self.name ])])
+      
+  def __cmp__(self, annotation):
+    """Sort by chromosome interval, then name
+    """
+    i = (self.chromosomeInterval, self.name)
+    j = (annotation.chromosomeInterval, annotation.name)
+    if i > j:
+        return 1
+    if i < j:
+        return -1
+    return 0
 
 class Transcript(object):
   """ Represent a transcript and its annotations
   """
-  def __init__(self, chromosomeInterval, name, exons, annotations):
+  def __init__(self, chromosomeInterval, name, exons, annotations,
+               score, thickStart, thickEnd, itemRgb):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
     self.exons = exons #Is a list of chromosome intervals
     self.annotations = annotations #Is a list of transcript annotations
+    #Bed fields
+    self.score = score
+    self.thickStart = thickStart
+    self.thickEnd = thickEnd
+    self.itemRgb = itemRgb
+
+  def bedString(self):
+    """Write a transcript object to the given file.
+    """
+    strandChar = "-"
+    if self.chromosomeInterval.strand:
+        strandChar = "+"
+    return "\t".join([ self.chromosomeInterval.chromosome,
+str(self.chromosomeInterval.start), 
+str(self.chromosomeInterval.stop),
+self.name, str(self.score), strandChar, 
+str(self.thickStart), str(self.thickEnd), self.itemRgb, str(len(self.exons)), ",".join([ str(exon.stop - exon.start) for exon in self.exons]), ",".join([ str(exon.start - self.chromosomeInterval.start) for exon in self.exons])])
 
 
 def initializeArguments(parser):
@@ -236,13 +277,13 @@ def tokenizeBedStream(bedStream):
 
 def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   """ Iterates over the transcripts detailed in the two streams, producing
-  Transcript objects. Streams are any iterator that returns bedlines
+  Transcript objects. Streams are any iterator that returns bedlines or empty strings.
   """
   transcriptsAnnotations = {}
   for tokens in tokenizeBedStream(transcriptDetailsBedStream):
     assert len(tokens) == 4
     tA = TranscriptAnnotation(ChromosomeInterval(
-        tokens[0], tokens[1], tokens[2], None), tokens[3].split("/")[-1], "/".join(tokens[3].split("/")[:-1]))
+        tokens[0], tokens[1], tokens[2], None), tokens[3].split("/")[-1], tokens[3].split("/")[:-1])
     if tA.name not in transcriptsAnnotations:
       transcriptsAnnotations[tA.name] = []
     transcriptsAnnotations[tA.name].append(tA)
@@ -268,5 +309,5 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     annotations = []
     if name in transcriptsAnnotations:
       annotations = transcriptsAnnotations[name]
-    yield Transcript(cI, name, exons, annotations)
+    yield Transcript(cI, name, exons, annotations, int(tokens[4]), int(tokens[6]), int(tokens[7]), tokens[8])
 
