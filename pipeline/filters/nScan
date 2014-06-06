@@ -27,7 +27,7 @@ def main():
       chrom = annot.chromosomeInterval.chromosome
       start = annot.chromosomeInterval.start
       stop = annot.chromosomeInterval.stop
-      seq = sliceSequence(seq_dict[chrom].getSequence(), start, stop).upper
+      seq = sliceSequence(seq_dict[chrom].getSequence(), start, stop).upper()
       if 'N' in seq:
         annot.labels.append('containsNs')
         continue
