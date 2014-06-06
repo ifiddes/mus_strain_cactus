@@ -16,6 +16,8 @@ class Sequence(object):
     return self._sequence
   def getLength(self):
     return len(self._sequence)
+  def setUpper(self):
+    self._sequence = self._sequence.upper()
 
 
 class PslRow(object):

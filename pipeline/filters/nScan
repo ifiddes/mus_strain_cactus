@@ -19,6 +19,7 @@ def main():
   args = parser.parse_args()
   lib_filter.CheckArguments(args, parser)
   seq_dict = lib_filter.getSequences(args.sequence)
+  map(lambda key: seq_dict[key].setUpper(), seq_dict)
   chrom_dict = lib_filter.getChromSizes(args.chromSizes)
   bed_file = open(args.geneCheckBed, 'r')
   bed_details_file = open(args.geneCheckBedDetails, 'r')
@@ -27,7 +28,7 @@ def main():
       chrom = annot.chromosomeInterval.chromosome
       start = annot.chromosomeInterval.start
       stop = annot.chromosomeInterval.stop
-      seq = sliceSequence(seq_dict[chrom].getSequence(), start, stop).upper()
+      seq = sliceSequence(seq_dict[chrom].getSequence(), start, stop)
       if 'N' in seq:
         annot.labels.append('containsNs')
         continue
