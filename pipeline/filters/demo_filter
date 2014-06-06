@@ -18,23 +18,23 @@ def main():
   lib_filter.InitializeArguments(parser)
   args = parser.parse_args()
   lib_filter.CheckArguments(args, parser)
-  sys.stdout.write('Call: %s %s %s %s %s %s %s %s %s\n'
-                   % (sys.argv[0],
-                      args.refGenome,
-                      args.genome,
-                      args.geneCheckBed,
-                      args.geneCheckBedDetails,
-                      args.alignment,
-                      args.sequence,
-                      args.chromSizes,
-                      args.outDir,
-                      ))
-  seq_dict = lib_filter.getSequences(args.sequence)
-  chrom_dict = lib_filter.getChromSizes(args.chromSizes)
-  for chrom in chrom_dict:
-    assert(chrom_dict[chrom] == seq_dict[chrom].getLength())
-  for chrom in seq_dict:
-    assert(chrom_dict[chrom] == seq_dict[chrom].getLength())
+  # sys.stdout.write('Call: %s %s %s %s %s %s %s %s %s\n'
+  #                  % (sys.argv[0],
+  #                     args.refGenome,
+  #                     args.genome,
+  #                     args.geneCheckBed,
+  #                     args.geneCheckBedDetails,
+  #                     args.alignment,
+  #                     args.sequence,
+  #                     args.chromSizes,
+  #                     args.outDir,
+  #                     ))
+  # seq_dict = lib_filter.getSequences(args.sequence)
+  # chrom_dict = lib_filter.getChromSizes(args.chromSizes)
+  # for chrom in chrom_dict:
+  #   assert(chrom_dict[chrom] == seq_dict[chrom].getLength())
+  # for chrom in seq_dict:
+  #   assert(chrom_dict[chrom] == seq_dict[chrom].getLength())
 
 
 if __name__ == '__main__':

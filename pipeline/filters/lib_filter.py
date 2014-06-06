@@ -76,27 +76,30 @@ class ChromosomeInterval(object):
     self.strand = strand
 
   def __cmp__(self, cI):
-    return cmp((self.chromosome, self.start, self.stop, self.strand), (cI.chromosome, cI.start, cI.stop, cI.strand))
+    return cmp((self.chromosome, self.start, self.stop, self.strand),
+               (cI.chromosome, cI.start, cI.stop, cI.strand))
 
 
 class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
   classification bed files
   """
-  def __init__(self, chromosomeInterval, name, annotation):
+  def __init__(self, chromosomeInterval, name, label):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
-    self.annotation = list(annotation)
+    self.labels = list(label)  # list of strings
 
   def bedString(self):
       return "\t".join([self.chromosomeInterval.chromosome,
                         str(self.chromosomeInterval.start),
-                        str(self.chromosomeInterval.stop),"/".join(self.annotation + [self.name])])
+                        str(self.chromosomeInterval.stop),
+                        "/".join(self.labels + [self.name])])
 
   def __cmp__(self, annotation):
-    """Sort by chromosome interval, then name
+    """ Sort by chromosome interval, then name
     """
-    return cmp((self.chromosomeInterval, self.name), (annotation.chromosomeInterval, annotation.name))
+    return cmp((self.chromosomeInterval, self.name),
+               (annotation.chromosomeInterval, annotation.name))
 
 class Transcript(object):
   """ Represent a transcript and its annotations
@@ -105,16 +108,16 @@ class Transcript(object):
                score, thickStart, thickEnd, itemRgb):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
-    self.exons = exons #Is a list of chromosome intervals
-    self.annotations = annotations #Is a list of transcript annotations
-    #Bed fields
+    self.exons = exons # list of chromosome intervals
+    self.annotations = annotations # list of TranscriptAnnotation() objects
+    # Bed fields
     self.score = score
     self.thickStart = thickStart
     self.thickEnd = thickEnd
     self.itemRgb = itemRgb
 
   def bedString(self):
-    """Write a transcript object to the given file.
+    """ Write a transcript object to the given file.
     """
     strandChar = "-"
     if self.chromosomeInterval.strand:
@@ -125,11 +128,12 @@ class Transcript(object):
                       self.name, str(self.score), strandChar,
                       str(self.thickStart), str(self.thickEnd),
                       self.itemRgb, str(len(self.exons)),
-                      ",".join([ str(exon.stop - exon.start) for exon in self.exons]),
-                      ",".join([ str(exon.start - self.chromosomeInterval.start) for exon in self.exons])])
+                      ",".join([str(exon.stop - exon.start) for exon in self.exons]),
+                      ",".join([str(exon.start - self.chromosomeInterval.start) for exon in self.exons])])
 
   def __cmp__(self, transcript):
-    return cmp((self.chromosomeInterval, self.name), (transcript.chromosomeInterval, transcript.name))
+    return cmp((self.chromosomeInterval, self.name),
+               (transcript.chromosomeInterval, transcript.name))
 
 def initializeArguments(parser):
   """ given an argparse ArgumentParser object, add in the default arguments.
@@ -168,7 +172,7 @@ def checkArguments(args, parser):
   pairs = tuple((item, getattr(args, item)) for item in
                 ['geneCheckBed', 'geneCheckBedDetails',
                  'alignment', 'sequence', 'chromSizes',
-                 ])
+                ])
   for name, value in pairs:
     if not os.path.isfile(value):
       parser.error('--%s=%s is not a file' % (name, value))
@@ -230,6 +234,13 @@ def readSequence(infile):
           return
 
 
+def sliceSequence(sequence, start, stop):
+  """ return the proper slice of the sequence.
+  BED format coordinates: 0 based start, stop is exclusive
+  """
+  return sequence[start:stop]
+
+
 def getChromSizes(infile):
   """ read a chrom sizes file and return a dict keyed by names valued by ints.
   """
@@ -282,7 +293,7 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   for tokens in tokenizeBedStream(transcriptDetailsBedStream):
     assert len(tokens) == 4
     tA = TranscriptAnnotation(ChromosomeInterval(
-        tokens[0], tokens[1], tokens[2], None), tokens[3].split("/")[-1], tokens[3].split("/")[:-1])
+        tokens[0], tokens[1], tokens[2], None), tokens[3].split('/')[-1], tokens[3].split('/')[:-1])
     if tA.name not in transcriptsAnnotations:
       transcriptsAnnotations[tA.name] = []
     transcriptsAnnotations[tA.name].append(tA)
@@ -303,29 +314,32 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
           cI.start + int(blockStarts[i]) + int(blockSizes[i]), cI.strand)
               for i in range(exonNumber)]
     exons = getExons(int(tokens[9]),
-                     tokens[10].split(","), tokens[11].split(","))
+                     tokens[10].split(','), tokens[11].split(','))
     # Get the name annotations
     annotations = []
     if name in transcriptsAnnotations:
       annotations = transcriptsAnnotations[name]
     yield Transcript(cI, name, exons, annotations, int(tokens[4]), int(tokens[6]), int(tokens[7]), tokens[8])
-    
+
+
 def writeDetailsBedFile(transcripts, detailsBedFile):
   """Writes out a details bed file for a set of transcripts - that is the set of
-  annotations of the transcripts. The bed file must be in chromosome order."""
-  annotations = reduce(lambda x, y : x + y, [ transcript.annotations for transcript in transcripts ])
+  annotations of the transcripts. The bed file must be in chromosome order.
+  """
+  annotations = reduce(lambda x, y : x + y, [transcript.annotations for transcript in transcripts])
   annotations.sort()
-  annotationsFileHandle = open(detailsBedFile, "w")
+  annotationsFileHandle = open(detailsBedFile, 'w')
   for annotation in annotations:
     annotationsFileHandle.write(annotation.bedString())
   annotationsFileHandle.close()
+
 
 def writeTranscriptBedFile(transcripts, bedFile):
   """Writes out an bed file for a set of transcripts.
   """
   transcripts = transcripts[:]
   transcripts.sort()
-  bedFileHandle = open(bedFile, "w")
+  bedFileHandle = open(bedFile, 'w')
   for transcript in transcripts:
     bedFileHandle.write(transcript.bedString())
   bedFileHandle.close()
