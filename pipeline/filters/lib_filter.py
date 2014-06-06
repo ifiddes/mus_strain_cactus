@@ -24,27 +24,28 @@ class PslRow(object):
   """
   def __init__(self, line):
     data = line.split()
-    assert(len(data) == 20)
+    assert(len(data) == 21)
     self.matches = int(data[0])
     self.misMatches = int(data[1])
-    self.nCount = int(data[2])
-    self.qNumInsert = int(data[3])
-    self.qBaseInsert = int(data[4])
-    self.tNumInsert = int(data[5])
-    self.tBaseInsert = int(data[6])
+    self.repMatches = int(data[2])
+    self.nCount = int(data[3])
+    self.qNumInsert = int(data[4])
+    self.qBaseInsert = int(data[5])
+    self.tNumInsert = int(data[6])
+    self.tBaseInsert = int(data[7])
     self.strand = data[7]
     self.qName = data[8]
-    self.qSize = int(data[9])
-    self.qStart = int(data[10])
-    self.qEnd = int(data[11])
+    self.qSize = int(data[10])
+    self.qStart = int(data[11])
+    self.qEnd = int(data[12])
     self.tName = data[12]
-    self.tSize = int(data[13])
-    self.tStart = int(data[14])
-    self.tEnd = int(data[15])
-    self.blockCount = int(data[16])
-    self.blockSizes = int(data[17])
-    self.qStarts = int(data[18])
-    self.tStarts = int(data[19])
+    self.tSize = int(data[14])
+    self.tStart = int(data[15])
+    self.tEnd = int(data[16])
+    self.blockCount = int(data[17])
+    self.blockSizes = data[18]
+    self.qStarts = data[19]
+    self.tStarts = data[20]
 
 
 """The following data types are used for iterating over gene-check-detail and
@@ -209,9 +210,23 @@ def getChromSizes(infile):
 
 
 def getAlignment(infile):
-  """ read a PSL file and return a list of PSL
+  """ read a PSL file and return a list of PslRow objects
   """
-  pass
+  psls = []
+  with open(infile, 'r') as f:
+    for psl in readPsls(f):
+      psls.append(psl)
+  return psls
+
+
+def readPsls(infile):
+  """ provide an iterator that reads through psl files.
+  """
+  while True:
+    line = infile.readline().strip()
+    if line == '':
+      return
+    yield PslRow(line)
 
 
 def tokenizeBedFile(bedFile):
