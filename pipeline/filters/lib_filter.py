@@ -18,7 +18,36 @@ class Sequence(object):
     return len(self._sequence)
 
 
-def InitializeArguments(parser):
+class PslRow(object):
+  """ Represents a single row in a PSL file.
+  http://genome.ucsc.edu/FAQ/FAQformat.html#format2
+  """
+  def __init__(self, line):
+    data = line.split()
+    assert(len(data) == 20)
+    self.matches = int(data[0])
+    self.misMatches = int(data[1])
+    self.nCount = int(data[2])
+    self.qNumInsert = int(data[3])
+    self.qBaseInsert = int(data[4])
+    self.tNumInsert = int(data[5])
+    self.tBaseInsert = int(data[6])
+    self.strand = data[7]
+    self.qName = data[8]
+    self.qSize = int(data[9])
+    self.qStart = int(data[10])
+    self.qEnd = int(data[11])
+    self.tName = data[12]
+    self.tSize = int(data[13])
+    self.tStart = int(data[14])
+    self.tEnd = int(data[15])
+    self.blockCount = int(data[16])
+    self.blockSizes = int(data[17])
+    self.qStarts = int(data[18])
+    self.tStarts = int(data[19])
+
+
+def initializeArguments(parser):
   """ given an argparse ArgumentParser object, add in the default arguments.
   """
   parser.add_argument('--refGenome')
@@ -31,7 +60,7 @@ def InitializeArguments(parser):
   parser.add_argument('--outDir')
 
 
-def CheckArguments(args, parser):
+def checkArguments(args, parser):
   """ Make sure all of the args are properly set for the default arguments.
   """
   # setting
@@ -64,19 +93,19 @@ def CheckArguments(args, parser):
     parser.error('--outDir=%s is not a directory' % args.outDir)
 
 
-def getSequences(seqFile):
+def getSequences(infile):
   """ Given a path to a fasta file, return a dictionary of Sequence objects
   keyed on the sequence name
   """
   seqDict = {}
   seq = None
-  with open(seqFile, 'r') as f:
+  with open(infile, 'r') as f:
     for seq in readSequence(f):
       seqDict[seq.name] = seq
   return seqDict
 
 
-def readSequence(seqFile):
+def readSequence(infile):
   """ provide an iterator that reads through fasta files.
   """
   buff = None
@@ -87,13 +116,13 @@ def readSequence(seqFile):
       if buff is None:
         header = ''
         while not header.startswith('>'):
-          header = seqFile.readline().strip()
+          header = infile.readline().strip()
       else:
         header = buff
       assert(header.startswith('>'))
       name = header.replace('>', '').strip()
       seq = ''
-    line = seqFile.readline().strip()
+    line = infile.readline().strip()
     if line:
       if line.startswith('>'):
         # stop processing the record, store this line.
@@ -115,3 +144,22 @@ def readSequence(seqFile):
           seq = ''
         else:
           return
+
+def getChromSizes(infile):
+  """ read a chrom sizes file and return a dict keyed by names valued by ints.
+  """
+  chromDict = {}
+  with open(infile, 'r') as f:
+    for line in f:
+      line = line.strip()
+      if line == '':
+        continue
+      data = line.split()
+      chromDict[data[0]] = int(data[1])
+  return chromDict
+
+
+def getAlignment(infile):
+  """ read a PSL file and return a list of PSL
+  """
+  pass

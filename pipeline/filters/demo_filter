@@ -30,9 +30,11 @@ def main():
                       args.outDir,
                       ))
   seq_dict = lib_filter.getSequences(args.sequence)
-  keys = seq_dict.keys()
-  for i in xrange(0, 10):
-    print keys[i]
+  chrom_dict = lib_filter.getChromSizes(args.chromSizes)
+  for chrom in chrom_dict:
+    assert(chrom_dict[chrom] == seq_dict[chrom].getLength())
+  for chrom in seq_dict:
+    assert(chrom_dict[chrom] == seq_dict[chrom].getLength())
 
 
 if __name__ == '__main__':
