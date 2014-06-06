@@ -84,6 +84,7 @@ class ChromosomeInterval(object):
         return -1
     return 0
 
+
 class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
   classification bed files
@@ -108,6 +109,7 @@ class TranscriptAnnotation(object):
     if i < j:
         return -1
     return 0
+
 
 class Transcript(object):
   """ Represent a transcript and its annotations
@@ -252,6 +254,7 @@ def getChromSizes(infile):
       chromDict[data[0]] = int(data[1])
   return chromDict
 
+
 def getAlignment(infile):
   """ read a PSL file and return a list of PslRow objects
   """
@@ -260,6 +263,7 @@ def getAlignment(infile):
     for psl in readPsls(f):
       psls.append(psl)
   return psls
+
 
 def readPsls(infile):
   """ provide an iterator that reads through psl files.
@@ -270,6 +274,7 @@ def readPsls(infile):
       return
     yield PslRow(line)
 
+
 def tokenizeBedStream(bedStream):
   """ Iterator through bed file, returning lines as list of tokens
   """
@@ -277,6 +282,7 @@ def tokenizeBedStream(bedStream):
     if line != '':
       tokens = line.split()
       yield tokens
+
 
 def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   """ Iterates over the transcripts detailed in the two streams, producing
