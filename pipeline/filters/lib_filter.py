@@ -18,7 +18,85 @@ class Sequence(object):
     return len(self._sequence)
 
 
-def InitializeArguments(parser):
+class PslRow(object):
+  """ Represents a single row in a PSL file.
+  http://genome.ucsc.edu/FAQ/FAQformat.html#format2
+  """
+  def __init__(self, line):
+    data = line.split()
+    assert(len(data) == 21)
+    self.matches = int(data[0])
+    self.misMatches = int(data[1])
+    self.repMatches = int(data[2])
+    self.nCount = int(data[3])
+    self.qNumInsert = int(data[4])
+    self.qBaseInsert = int(data[5])
+    self.tNumInsert = int(data[6])
+    self.tBaseInsert = int(data[7])
+    self.strand = data[7]
+    self.qName = data[8]
+    self.qSize = int(data[10])
+    self.qStart = int(data[11])
+    self.qEnd = int(data[12])
+    self.tName = data[12]
+    self.tSize = int(data[14])
+    self.tStart = int(data[15])
+    self.tEnd = int(data[16])
+    self.blockCount = int(data[17])
+    self.blockSizes = data[18]
+    self.qStarts = data[19]
+    self.tStarts = data[20]
+
+
+"""The following data types are used for iterating over gene-check-detail and
+gene-check bed files.
+An example of entries from such files:
+
+[benedict@hgwdev tracks]$ more Rattus.coding.gene-check-details.bed
+1       2812370 2812372 noStop/ENSMUST00000065527.4
+1       2812370 2812372 noStop/ENSMUST00000095795.4
+
+[benedict@hgwdev tracks]$ more Rattus.coding.gene-check.bed
+1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729
+128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301
+050,301352
+1       2812346 3113783 ENSMUST00000095795.4    0       -       2812370 3038729
+128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301
+050,301352
+"""
+
+class ChromosomeInterval(object):
+  """ Represents an interval of a chromosome. BED coordinates, strand is True,
+  False or NULL (if no strand)
+  """
+  def __init__(self, chromosome, start, stop, strand):
+    self.chromosome = str(chromosome)
+    self.start = int(start)
+    self.stop = int(stop)
+    self.strand = strand
+
+
+class TranscriptAnnotation(object):
+  """ Represents an annotation of a transcript, from one of the
+  classification bed files
+  """
+  def __init__(self, chromosomeInterval, transcript, annotation):
+    self.chromosomeInterval = chromosomeInterval
+    self.transcript = str(transcript)
+    self.annotation = annotation
+
+
+class Transcript(object):
+  """ Represent a transcript and its annotations
+  """
+  def __init__(self, chromosomeInterval, name, exons, annotations):
+    self.chromosomeInterval = chromosomeInterval
+    self.name = str(name)
+    self.exons = exons #Is a list of chromosome intervals
+    self.annotations = annotations #Is a list of transcript annotations
+
+
+def initializeArguments(parser):
   """ given an argparse ArgumentParser object, add in the default arguments.
   """
   parser.add_argument('--refGenome')
@@ -31,7 +109,7 @@ def InitializeArguments(parser):
   parser.add_argument('--outDir')
 
 
-def CheckArguments(args, parser):
+def checkArguments(args, parser):
   """ Make sure all of the args are properly set for the default arguments.
   """
   # setting
@@ -64,19 +142,19 @@ def CheckArguments(args, parser):
     parser.error('--outDir=%s is not a directory' % args.outDir)
 
 
-def getSequences(seqFile):
+def getSequences(infile):
   """ Given a path to a fasta file, return a dictionary of Sequence objects
   keyed on the sequence name
   """
   seqDict = {}
   seq = None
-  with open(seqFile, 'r') as f:
+  with open(infile, 'r') as f:
     for seq in readSequence(f):
       seqDict[seq.name] = seq
   return seqDict
 
 
-def readSequence(seqFile):
+def readSequence(infile):
   """ provide an iterator that reads through fasta files.
   """
   buff = None
@@ -87,13 +165,13 @@ def readSequence(seqFile):
       if buff is None:
         header = ''
         while not header.startswith('>'):
-          header = seqFile.readline().strip()
+          header = infile.readline().strip()
       else:
         header = buff
       assert(header.startswith('>'))
       name = header.replace('>', '').strip()
       seq = ''
-    line = seqFile.readline().strip()
+    line = infile.readline().strip()
     if line:
       if line.startswith('>'):
         # stop processing the record, store this line.
@@ -116,89 +194,81 @@ def readSequence(seqFile):
         else:
           return
 
-"""The following data types are used for iterating over gene-check-detail and gene-check bed files.
-An example of entries from such files:
 
-[benedict@hgwdev tracks]$ more Rattus.coding.gene-check-details.bed
-1       2812370 2812372 noStop/ENSMUST00000065527.4
-1       2812370 2812372 noStop/ENSMUST00000095795.4
+def getChromSizes(infile):
+  """ read a chrom sizes file and return a dict keyed by names valued by ints.
+  """
+  chromDict = {}
+  with open(infile, 'r') as f:
+    for line in f:
+      line = line.strip()
+      if line == '':
+        continue
+      data = line.split()
+      chromDict[data[0]] = int(data[1])
+  return chromDict
 
-[benedict@hgwdev tracks]$ more Rattus.coding.gene-check.bed 
-1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729
-128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301
-050,301352
-1       2812346 3113783 ENSMUST00000095795.4    0       -       2812370 3038729
-128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301
-050,301352
-"""
+def getAlignment(infile):
+  """ read a PSL file and return a list of PslRow objects
+  """
+  psls = []
+  with open(infile, 'r') as f:
+    for psl in readPsls(f):
+      psls.append(psl)
+  return psls
 
-class ChromosomeInterval:
-    """Represents an interval of a chromosome. BED coordinates, strand is True, False or None (if no strand)
-    """
-    def __init__(self, chromosome, start, stop, strand):
-        self.chromosome = str(chromosome)
-        self.start = int(start)
-        self.stop = int(stop)
-        assert strand in (True, False, None)
-        self.strand = strand
-    
-class TranscriptAnnotation: 
-    """Represents an annotation of a transcript, from one of the bed detail files
-    """
-    def __init__(self, chromosomeInterval, name, annotation):
-        assert chromosomeInterval is ChromosomeInterval
-        self.chromosomeInterval = chromosomeInterval
-        self.name = str(name)
-        self.annotation = annotation
+def readPsls(infile):
+  """ provide an iterator that reads through psl files.
+  """
+  while True:
+    line = infile.readline().strip()
+    if line == '':
+      return
+    yield PslRow(line)
 
-class Transcript: 
-    """Represent a transcript and its annotations
-    """
-    def __init__(self, chromosomeInterval, name, exons, annotations):
-        self.chromosomeInterval = chromosomeInterval
-        self.name = str(name)
-        self.exons = exons #Is a list of chromosome intervals representing the exons
-        self.annotations = annotations #Is a list of transcript annotations
+def tokenizeBedStream(bedStream):
+  """ Iterator through bed file, returning lines as list of tokens
+  """
+  fileHandle = open(bedFile, 'r')
+  for line in fileHandle:
+    if line != '':
+      tokens = line.split()
+      yield tokens
+  fileHandle.close()
 
-def tokenizeBedFile(bedFile):
-    """Iterator through bed file, returning lines as list of tokens
-    """
-    fileHandle = open(bedFile, 'r')
-    for line in fileHandle:
-        if line != '':
-            tokens = line.split()
-            yield tokens
-    fileHandle.close()
+def transcriptIterator(transcriptsBedStream, transcriptClassificationBedStream):
+  """ Iterates over the transcripts detailed in the two files, producing
+  Transcript objects.
+  """
+  transcriptsAnnotations = {}
+  for bedTokens in tokenizeBedStream(transcriptClassificationBedStream):
+    assert len(bedTokens) == 5
+    tA = TranscriptAnnotation(ChromosomeInterval(
+        tokens[0], tokens[1], tokens[2], None), tokens[3], tokens[4])
+    if tA.name not in transcriptsClassifications:
+      transcriptsAnnotations[tA.name] = []
+    transcriptsAnnotations[tA.name].append(tA)
 
-def transcriptIterator(transcriptsBedFile, transcriptDetailsBedFile):
-    """Iterates over the transcripts detailed in the two files, producing Transcript objects.
-    """
-    transcriptsAnnotations = {}
-    for bedTokens in tokenizeBedFile(transcriptDetailsBedFile):
-        assert len(bedTokens) == 5 #We expect to be able to get 5 fields out of this bed.
-        tA = TranscriptAnnotation(ChromosomeInterval(tokens[0], tokens[1], tokens[2], None), tokens[3], tokens[4])
-        if tA.transcript not in transcriptsClassifications:
-            transcriptsAnnotations[tA.transcript] = []
-        transcriptsAnnotations[tA.transcript].append(tA)
-
-    for bedTokens in tokenizeBedFile(transcriptsBedFile):
-        assert len(bedTokens) == 12 #We expect to be able to get 12 fields out of this bed.
-        #Transcript
-        transcript = tokens[3]
-        #Get the chromosome interval
-        assert tokens[5] in ('+', '-')
-        cI = ChromosomeInterval(tokens[0], tokens[1], tokens[2], tokens[5] == '+')
-        #Get the exons
-        def getExons(exonNumber, blockSizes, blockStarts):
-            assert exonNumber == len(blockSizes)
-            assert exonNumber == len(blockStarts)
-            return [ ChromosomeInterval(cI.chromosome, cI.start + int(blockStarts[i]), cI.start + int(blockStarts[i]) + int(blockSizes[i]), cI.strand) \
-                    for i in range(exonNumber) ]
-        exons = getExons(int(tokens[9]), ",".split(tokens[10]), ",".split(tokens[11]))
-        #Get the transcript annotations
-        annotations = []
-        if transcript in transcriptsAnnotations:
-            annotations = transcriptsAnnotations[transcript]
-        yield Transcript(chromosomeInterval, transcript, exons, annotations)
-        
+  for bedTokens in tokenizeBedStream(transcriptsBedStream):
+    assert len(bedTokens) == 12
+    # Transcript
+    transcript = tokens[3]
+    # Get the chromosome interval
+    assert tokens[5] in ('+', '-')
+    cI = ChromosomeInterval(tokens[0], tokens[1], tokens[2], tokens[5] == '+')
+    # Get the exons
+    def getExons(exonNumber, blockSizes, blockStarts):
+      assert exonNumber == len(blockSizes)
+      assert exonNumber == len(blockStarts)
+      return [ChromosomeInterval(
+          cI.chromosome, cI.start + int(blockStarts[i]),
+          cI.start + int(blockStarts[i]) + int(blockSizes[i]), cI.strand)
+              for i in range(exonNumber)]
+    exons = getExons(int(tokens[9]),
+                     ",".split(tokens[10]), ",".split(tokens[11]))
+    # Get the transcript annotations
+    annotations = []
+    if transcript in transcriptsAnnotations:
+      annotations = transcriptsAnnotations[transcript]
+    yield Transcript(chromosomeInterval, transcript, exons, annotations)
 
