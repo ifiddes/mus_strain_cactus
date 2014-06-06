@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+"""
+nScan
+6 June 2014
+
+dent earl, dearl a soe ucsc edu
+
+a filter for the msca project analysis pipeline.
+scans Trascripts for bad transcripts that contain Ns.
+"""
+from argparse import ArgumentParser
+import sys
+import lib_filter
+
+
+def main():
+  parser = ArgumentParser()
+  lib_filter.InitializeArguments(parser)
+  args = parser.parse_args()
+  lib_filter.CheckArguments(args, parser)
+  seq_dict = lib_filter.getSequences(args.sequence)
+  chrom_dict = lib_filter.getChromSizes(args.chromSizes)
+  bed_file = open(args.geneCheckBed, 'r')
+  bed_details_file = open(args.geneCheckBedDetails, 'r')
+  for t in transcriptIterator(bed_file, bed_details_file):
+    for annot in t.annotations:
+      chrom = annot.chromosomeInterval.chromosome
+      start = annot.chromosomeInterval.start
+      stop = annot.chromosomeInterval.stop
+      seq = sliceSequence(seq_dict[chrom].getSequence(), start, stop).upper
+      if 'N' in seq:
+        annot.labels.append('containsNs')
+        continue
+
+
+if __name__ == '__main__':
+  main()
