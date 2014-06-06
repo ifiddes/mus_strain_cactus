@@ -80,9 +80,9 @@ class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
   classification bed files
   """
-  def __init__(self, chromosomeInterval, transcript, annotation):
+  def __init__(self, chromosomeInterval, name, annotation):
     self.chromosomeInterval = chromosomeInterval
-    self.transcript = str(transcript)
+    self.name = str(name)
     self.annotation = annotation
 
 
@@ -229,30 +229,28 @@ def readPsls(infile):
 def tokenizeBedStream(bedStream):
   """ Iterator through bed file, returning lines as list of tokens
   """
-  fileHandle = open(bedFile, 'r')
-  for line in fileHandle:
+  for line in bedStream:
     if line != '':
       tokens = line.split()
       yield tokens
-  fileHandle.close()
 
-def transcriptIterator(transcriptsBedStream, transcriptClassificationBedStream):
-  """ Iterates over the transcripts detailed in the two files, producing
-  Transcript objects.
+def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
+  """ Iterates over the transcripts detailed in the two streams, producing
+  Transcript objects. Streams are any iterator that returns bedlines
   """
   transcriptsAnnotations = {}
-  for bedTokens in tokenizeBedStream(transcriptClassificationBedStream):
-    assert len(bedTokens) == 5
+  for tokens in tokenizeBedStream(transcriptDetailsBedStream):
+    assert len(tokens) == 4
     tA = TranscriptAnnotation(ChromosomeInterval(
-        tokens[0], tokens[1], tokens[2], None), tokens[3], tokens[4])
-    if tA.name not in transcriptsClassifications:
+        tokens[0], tokens[1], tokens[2], None), tokens[3].split("/")[-1], "/".join(tokens[3].split("/")[:-1]))
+    if tA.name not in transcriptsAnnotations:
       transcriptsAnnotations[tA.name] = []
     transcriptsAnnotations[tA.name].append(tA)
 
-  for bedTokens in tokenizeBedStream(transcriptsBedStream):
-    assert len(bedTokens) == 12
+  for tokens in tokenizeBedStream(transcriptsBedStream):
+    assert len(tokens) == 12
     # Transcript
-    transcript = tokens[3]
+    name = tokens[3]
     # Get the chromosome interval
     assert tokens[5] in ('+', '-')
     cI = ChromosomeInterval(tokens[0], tokens[1], tokens[2], tokens[5] == '+')
@@ -265,10 +263,10 @@ def transcriptIterator(transcriptsBedStream, transcriptClassificationBedStream):
           cI.start + int(blockStarts[i]) + int(blockSizes[i]), cI.strand)
               for i in range(exonNumber)]
     exons = getExons(int(tokens[9]),
-                     ",".split(tokens[10]), ",".split(tokens[11]))
-    # Get the transcript annotations
+                     tokens[10].split(","), tokens[11].split(","))
+    # Get the name annotations
     annotations = []
-    if transcript in transcriptsAnnotations:
-      annotations = transcriptsAnnotations[transcript]
-    yield Transcript(chromosomeInterval, transcript, exons, annotations)
+    if name in transcriptsAnnotations:
+      annotations = transcriptsAnnotations[name]
+    yield Transcript(cI, name, exons, annotations)
 
