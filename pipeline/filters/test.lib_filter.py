@@ -200,6 +200,14 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertEquals(transcript2.bedString().split(), transcriptBedLines[1].split())
     self.assertEquals(transcript2.annotations[0].bedString().split(), transcriptDetailsBedLines[0].split())
     self.assertEquals(transcript2.annotations[1].bedString().split(), transcriptDetailsBedLines[1].split())
+    #Check sort function for transcripts
+    transcripts.reverse()
+    self.assertEquals(transcripts[0].name, "ENSMUST00000095795.4")
+    self.assertEquals(transcripts[1].name, "ENSMUST00000178026.1")
+    transcripts.sort()
+    self.assertEquals(transcripts[1].name, "ENSMUST00000095795.4")
+    self.assertEquals(transcripts[0].name, "ENSMUST00000178026.1")
+
 
 if __name__ == '__main__':
   try:
