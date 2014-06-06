@@ -242,7 +242,9 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   for tokens in tokenizeBedStream(transcriptDetailsBedStream):
     assert len(tokens) == 4
     tA = TranscriptAnnotation(ChromosomeInterval(
-        tokens[0], tokens[1], tokens[2], None), tokens[3].split("/")[-1], "/".join(tokens[3].split("/")[:-1]))
+        tokens[0], tokens[1], tokens[2], None),
+                              tokens[3].split("/")[-1],
+                              "/".join(tokens[3].split("/")[:-1]))
     if tA.name not in transcriptsAnnotations:
       transcriptsAnnotations[tA.name] = []
     transcriptsAnnotations[tA.name].append(tA)
