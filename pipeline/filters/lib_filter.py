@@ -225,30 +225,35 @@ def tokenizeBedFile(bedFile):
 
 
 def transcriptIterator(transcriptsBedFile, transcriptClassificationBedFile):
-  """ Iterates over the transcripts detailed in the two files, producing Transcript objects.
+  """ Iterates over the transcripts detailed in the two files, producing
+  Transcript objects.
   """
   transcriptsAnnotations = {}
   for bedTokens in tokenizeBedFile(transcriptClassificationBedFile):
-    assert len(bedTokens) == 5 #We expect to be able to get 5 fields out of this bed.
-    tA = TranscriptAnnotation(ChromosomeInterval(tokens[0], tokens[1], tokens[2], None), tokens[3], tokens[4])
+    assert len(bedTokens) == 5
+    tA = TranscriptAnnotation(ChromosomeInterval(
+        tokens[0], tokens[1], tokens[2], None), tokens[3], tokens[4])
     if tA.transcript not in transcriptsClassifications:
       transcriptsAnnotations[tA.transcript] = []
     transcriptsAnnotations[tA.transcript].append(tA)
 
   for bedTokens in tokenizeBedFile(transcriptsBedFile):
-    assert len(bedTokens) == 12 #We expect to be able to get 12 fields out of this bed.
-    #Transcript
+    assert len(bedTokens) == 12
+    # Transcript
     transcript = tokens[3]
-    #Get the chromosome interval
+    # Get the chromosome interval
     assert tokens[5] in ('+', '-')
     cI = ChromosomeInterval(tokens[0], tokens[1], tokens[2], tokens[5] == '+')
-    #Get the exons
+    # Get the exons
     def getExons(exonNumber, blockSizes, blockStarts):
       assert exonNumber == len(blockSizes)
       assert exonNumber == len(blockStarts)
-      return [ ChromosomeInterval(cI.chromosome, cI.start + int(blockStarts[i]), cI.start + int(blockStarts[i]) + int(blockSizes[i]), cI.strand) \
-          for i in range(exonNumber) ]
-    exons = getExons(int(tokens[9]), ",".split(tokens[10]), ",".split(tokens[11]))
+      return [ChromosomeInterval(
+          cI.chromosome, cI.start + int(blockStarts[i]),
+          cI.start + int(blockStarts[i]) + int(blockSizes[i]), cI.strand)
+              for i in range(exonNumber)]
+    exons = getExons(int(tokens[9]),
+                     ",".split(tokens[10]), ",".split(tokens[11]))
     #Get the transcript annotations
     annotations = []
     if transcript in transcriptsAnnotations:
