@@ -78,6 +78,7 @@ class ChromosomeInterval(object):
   def __cmp__(self, cI):
     return cmp((self.chromosome, self.start, self.stop, self.strand), (cI.chromosome, cI.start, cI.stop, cI.strand))
 
+
 class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
   classification bed files
@@ -86,12 +87,12 @@ class TranscriptAnnotation(object):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
     self.annotation = list(annotation)
-    
+
   def bedString(self):
-      return "\t".join([ self.chromosomeInterval.chromosome,
-str(self.chromosomeInterval.start), 
-str(self.chromosomeInterval.stop),"/".join(self.annotation + [ self.name ])])
-      
+      return "\t".join([self.chromosomeInterval.chromosome,
+                        str(self.chromosomeInterval.start),
+                        str(self.chromosomeInterval.stop),"/".join(self.annotation + [self.name])])
+
   def __cmp__(self, annotation):
     """Sort by chromosome interval, then name
     """
@@ -118,11 +119,14 @@ class Transcript(object):
     strandChar = "-"
     if self.chromosomeInterval.strand:
         strandChar = "+"
-    return "\t".join([ self.chromosomeInterval.chromosome,
-str(self.chromosomeInterval.start), 
-str(self.chromosomeInterval.stop),
-self.name, str(self.score), strandChar, 
-str(self.thickStart), str(self.thickEnd), self.itemRgb, str(len(self.exons)), ",".join([ str(exon.stop - exon.start) for exon in self.exons]), ",".join([ str(exon.start - self.chromosomeInterval.start) for exon in self.exons])])
+    return "\t".join([self.chromosomeInterval.chromosome,
+                      str(self.chromosomeInterval.start),
+                      str(self.chromosomeInterval.stop),
+                      self.name, str(self.score), strandChar,
+                      str(self.thickStart), str(self.thickEnd),
+                      self.itemRgb, str(len(self.exons)),
+                      ",".join([ str(exon.stop - exon.start) for exon in self.exons]),
+                      ",".join([ str(exon.start - self.chromosomeInterval.start) for exon in self.exons])])
 
   def __cmp__(self, transcript):
     return cmp((self.chromosomeInterval, self.name), (transcript.chromosomeInterval, transcript.name))
@@ -239,6 +243,7 @@ def getChromSizes(infile):
       chromDict[data[0]] = int(data[1])
   return chromDict
 
+
 def getAlignment(infile):
   """ read a PSL file and return a list of PslRow objects
   """
@@ -247,6 +252,7 @@ def getAlignment(infile):
     for psl in readPsls(f):
       psls.append(psl)
   return psls
+
 
 def readPsls(infile):
   """ provide an iterator that reads through psl files.
@@ -257,6 +263,7 @@ def readPsls(infile):
       return
     yield PslRow(line)
 
+
 def tokenizeBedStream(bedStream):
   """ Iterator through bed file, returning lines as list of tokens
   """
@@ -265,9 +272,11 @@ def tokenizeBedStream(bedStream):
       tokens = line.split()
       yield tokens
 
+
 def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   """ Iterates over the transcripts detailed in the two streams, producing
-  Transcript objects. Streams are any iterator that returns bedlines or empty strings.
+  Transcript objects. Streams are any iterator that returns bedlines or empty
+  strings.
   """
   transcriptsAnnotations = {}
   for tokens in tokenizeBedStream(transcriptDetailsBedStream):
@@ -302,23 +311,22 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     yield Transcript(cI, name, exons, annotations, int(tokens[4]), int(tokens[6]), int(tokens[7]), tokens[8])
     
 def writeDetailsBedFile(transcripts, detailsBedFile):
-    """Writes out a details bed file for a set of transcripts - that is the set of
-    annotations of the transcripts. The bed file must be in chromosome order.
-    """
-    annotations = reduce(lambda x, y : x + y, [ transcript.annotations for transcript in transcripts ])
-    annotations.sort()
-    annotationsFileHandle = open(detailsBedFile, "w")
-    for annotation in annotations:
-      annotationsFileHandle.write(annotation.bedString())
-    annotationsFileHandle.close()
+  """Writes out a details bed file for a set of transcripts - that is the set of
+  annotations of the transcripts. The bed file must be in chromosome order."""
+  annotations = reduce(lambda x, y : x + y, [ transcript.annotations for transcript in transcripts ])
+  annotations.sort()
+  annotationsFileHandle = open(detailsBedFile, "w")
+  for annotation in annotations:
+    annotationsFileHandle.write(annotation.bedString())
+  annotationsFileHandle.close()
 
 def writeTranscriptBedFile(transcripts, bedFile):
-    """Writes out an bed file for a set of transcripts.
-    """
-    transcripts = transcripts[:]
-    transcripts.sort()
-    bedFileHandle = open(bedFile, "w")
-    for transcript in transcripts:
-        bedFileHandle.write(transcript.bedString())
-    bedFileHandle.close()
+  """Writes out an bed file for a set of transcripts.
+  """
+  transcripts = transcripts[:]
+  transcripts.sort()
+  bedFileHandle = open(bedFile, "w")
+  for transcript in transcripts:
+    bedFileHandle.write(transcript.bedString())
+  bedFileHandle.close()
 

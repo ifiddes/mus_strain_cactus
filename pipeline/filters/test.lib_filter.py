@@ -136,6 +136,12 @@ class sequenceGetterTests(unittest.TestCase):
   def test_getSequences(self):
     """ getSequences must read a fasta and return a dict of Sequence objects.
     """
+    sequences = [('chrA',
+                  'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n'
+                  'ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n'
+                  'ACGT'
+                  ),
+                 ]
     makeTempDirParent()
     tmpDir = os.path.abspath(makeTempDir('getSequences'))
     testFile = createSequenceFile(sequences, tmpDir)
@@ -147,13 +153,6 @@ class sequenceGetterTests(unittest.TestCase):
       self.assertTrue(seqDict[name].getSequence() == seq)
     removeDir(tmpDir)
 
-
-sequences = [('chrA',
-              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n'
-              'ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n'
-              'ACGT'
-              ),
-             ]
 
 class transcriptIteratorTests(unittest.TestCase):
   def test_getSequences(self):
@@ -207,6 +206,7 @@ class transcriptIteratorTests(unittest.TestCase):
     transcripts.sort()
     self.assertEquals(transcripts[1].name, "ENSMUST00000095795.4")
     self.assertEquals(transcripts[0].name, "ENSMUST00000178026.1")
+
 
 
 if __name__ == '__main__':
