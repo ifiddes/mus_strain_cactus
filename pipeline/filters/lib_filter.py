@@ -133,29 +133,31 @@ An example of entries from such files:
 """
 
 class ChromosomeInterval:
-    """Represents an interval of a chromosome. BED coordinates, strand is True, False or NULL (if no strand)
+    """Represents an interval of a chromosome. BED coordinates, strand is True, False or None (if no strand)
     """
     def __init__(self, chromosome, start, stop, strand):
         self.chromosome = str(chromosome)
         self.start = int(start)
         self.stop = int(stop)
+        assert strand in (True, False, None)
         self.strand = strand
     
 class TranscriptAnnotation: 
-    """Represents an annotation of a transcript, from one of the classification bed files
+    """Represents an annotation of a transcript, from one of the bed detail files
     """
-    def __init__(self, chromosomeInterval, transcript, annotation):
+    def __init__(self, chromosomeInterval, name, annotation):
+        assert chromosomeInterval is ChromosomeInterval
         self.chromosomeInterval = chromosomeInterval
-        self.transcript = str(transcript)
+        self.name = str(name)
         self.annotation = annotation
 
 class Transcript: 
     """Represent a transcript and its annotations
     """
-    def __init__(self, chromosomeInterval, transcript, exons, annotations):
+    def __init__(self, chromosomeInterval, name, exons, annotations):
         self.chromosomeInterval = chromosomeInterval
-        self.transcript = str(transcript)
-        self.exons = exons #Is a list of chromosome intervals
+        self.name = str(name)
+        self.exons = exons #Is a list of chromosome intervals representing the exons
         self.annotations = annotations #Is a list of transcript annotations
 
 def tokenizeBedFile(bedFile):
@@ -168,17 +170,17 @@ def tokenizeBedFile(bedFile):
             yield tokens
     fileHandle.close()
 
-def transcriptIterator(transcriptsBedFile, transcriptClassificationBedFile):
+def transcriptIterator(transcriptsBedFile, transcriptDetailsBedFile):
     """Iterates over the transcripts detailed in the two files, producing Transcript objects.
     """
     transcriptsAnnotations = {}
-    for bedTokens in tokenizeBedFile(transcriptClassificationBedFile):
+    for bedTokens in tokenizeBedFile(transcriptDetailsBedFile):
         assert len(bedTokens) == 5 #We expect to be able to get 5 fields out of this bed.
         tA = TranscriptAnnotation(ChromosomeInterval(tokens[0], tokens[1], tokens[2], None), tokens[3], tokens[4])
         if tA.transcript not in transcriptsClassifications:
             transcriptsAnnotations[tA.transcript] = []
         transcriptsAnnotations[tA.transcript].append(tA)
-    
+
     for bedTokens in tokenizeBedFile(transcriptsBedFile):
         assert len(bedTokens) == 12 #We expect to be able to get 12 fields out of this bed.
         #Transcript
