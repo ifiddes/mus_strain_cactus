@@ -355,7 +355,7 @@ def writeDetailsBedFile(transcripts, detailsBedFile):
   annotations.sort()
   annotationsFileHandle = open(detailsBedFile, 'w')
   for annotation in annotations:
-    annotationsFileHandle.write(annotation.bedString())
+    annotationsFileHandle.write(annotation.bedString() + "\n")
   annotationsFileHandle.close()
 
 
@@ -366,6 +366,6 @@ def writeTranscriptBedFile(transcripts, bedFile):
   transcripts.sort()
   bedFileHandle = open(bedFile, 'w')
   for transcript in transcripts:
-    bedFileHandle.write(transcript.bedString())
+    bedFileHandle.write(transcript.bedString() + "\n")
   bedFileHandle.close()
 
