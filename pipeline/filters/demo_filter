@@ -15,9 +15,9 @@ import lib_filter
 
 def main():
   parser = ArgumentParser()
-  lib_filter.InitializeArguments(parser)
+  lib_filter.initializeArguments(parser)
   args = parser.parse_args()
-  lib_filter.CheckArguments(args, parser)
+  lib_filter.checkArguments(args, parser)
   # seq_dict = lib_filter.getSequences(args.sequence)
   # chrom_dict = lib_filter.getChromSizes(args.chromSizes)
   # for chrom in chrom_dict:
