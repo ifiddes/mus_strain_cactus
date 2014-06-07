@@ -23,7 +23,9 @@ def main():
   chrom_dict = lib_filter.getChromSizes(args.chromSizes)
   bed_file = open(args.geneCheckBed, 'r')
   bed_details_file = open(args.geneCheckBedDetails, 'r')
+  transcripts = []
   for t in transcriptIterator(bed_file, bed_details_file):
+    transcripts.append(t)
     for annot in t.annotations:
       chrom = annot.chromosomeInterval.chromosome
       start = annot.chromosomeInterval.start
@@ -32,6 +34,8 @@ def main():
       if 'N' in seq:
         annot.labels.append('containsNs')
         continue
+  out_bed, out_bed_details = lib_filter.getBedOutFiles(args)
+  lib_filter.writeDetailsBedFile(transcipts, out_bed, out_bed_details)
 
 
 if __name__ == '__main__':

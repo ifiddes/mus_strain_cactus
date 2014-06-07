@@ -183,6 +183,14 @@ def checkArguments(args, parser):
     parser.error('--outDir=%s is not a directory' % args.outDir)
 
 
+def getBedOutFiles(args):
+  """ Return the paths of the new bed and bedDetail files.
+  """
+  bed = os.path.join(args.outDir, 'out.bed')
+  bedDetails = os.path.join(args.outDir, 'out_details.bed')
+  return bed, bedDetails
+
+
 def getSequences(infile):
   """ Given a path to a fasta file, return a dictionary of Sequence objects
   keyed on the sequence name
