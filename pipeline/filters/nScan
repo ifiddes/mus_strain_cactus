@@ -35,7 +35,8 @@ def main():
         annot.labels.append('containsNs')
         continue
   out_bed, out_bed_details = lib_filter.getBedOutFiles(args)
-  lib_filter.writeDetailsBedFile(transcripts, out_bed, out_bed_details)
+  lib_filter.writeTranscriptBedFile(transcripts, out_bed)
+  lib_filter.writeDetailsBedFile(transcripts, out_bed_details)
 
 
 if __name__ == '__main__':
