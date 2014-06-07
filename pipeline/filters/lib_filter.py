@@ -2,6 +2,7 @@
 convenience library for assisting filters.
 """
 import os
+import sys
 
 
 class Sequence(object):
@@ -184,18 +185,17 @@ def checkArguments(args, parser):
     parser.error('--outDir=%s is not a directory' % args.outDir)
   # record the issuing command
   with open(os.path.join(args.outDir, 'command.log'), 'w') as f:
-    f.write()
-    sys.stdout.write('%s %s %s %s %s %s %s %s %s\n'
-                     % (sys.argv[0],
-                        args.refGenome,
-                        args.genome,
-                        args.geneCheckBed,
-                        args.geneCheckBedDetails,
-                        args.alignment,
-                        args.sequence,
-                        args.chromSizes,
-                        args.outDir,
-                        ))
+    f.write('%s %s %s %s %s %s %s %s %s\n'
+            % (sys.argv[0],
+               args.refGenome,
+               args.genome,
+               args.geneCheckBed,
+               args.geneCheckBedDetails,
+               args.alignment,
+               args.sequence,
+               args.chromSizes,
+               args.outDir,
+               ))
 
 
 def getBedOutFiles(args):
