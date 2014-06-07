@@ -170,6 +170,7 @@ def checkArguments(args, parser):
   for name, value in pairs:
     if not os.path.exists(value):
       parser.error('--%s=%s does not exist' % (name, value))
+    setattr(args, name, os.path.abspath(value))
   # regular file
   pairs = tuple((item, getattr(args, item)) for item in
                 ['geneCheckBed', 'geneCheckBedDetails',
@@ -181,6 +182,20 @@ def checkArguments(args, parser):
   # directory
   if not os.path.isdir(args.outDir):
     parser.error('--outDir=%s is not a directory' % args.outDir)
+  # record the issuing command
+  with open(os.path.join(args.outDir, 'command.log'), 'w') as f:
+    f.write()
+    sys.stdout.write('%s %s %s %s %s %s %s %s %s\n'
+                     % (sys.argv[0],
+                        args.refGenome,
+                        args.genome,
+                        args.geneCheckBed,
+                        args.geneCheckBedDetails,
+                        args.alignment,
+                        args.sequence,
+                        args.chromSizes,
+                        args.outDir,
+                        ))
 
 
 def getBedOutFiles(args):
