@@ -4,6 +4,7 @@ import os
 import shutil
 import string
 import subprocess
+import sys
 import unittest
 import lib_filter
 
@@ -127,8 +128,8 @@ def createSequenceFile(sequences, tmpDir):
   """
   seqfile = os.path.join(tmpDir, 'seq.fa')
   with open(seqfile, 'w') as f:
-    for name, seq in sequences:
-      f.write('>%s\n%s' % (name, seq))
+    for name in sequences:
+      f.write('>%s\n%s' % (name, sequences[name]))
   return seqfile
 
 
@@ -136,26 +137,46 @@ class sequenceGetterTests(unittest.TestCase):
   def test_getSequences(self):
     """ getSequences must read a fasta and return a dict of Sequence objects.
     """
-    sequences = [('chrA',
-                  'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n'
-                  'ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n'
-                  'ACGT'
-                  ),
-                 ]
+    sequences = {'chrA':
+                   ('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n'
+                    'ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n'
+                    'ACGT')
+                  ,
+                 'bannana.chr0':
+                   ('ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n'
+                    'ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACTTT\n'
+                    'ACGTACGTACGTACGTACGTACGTACGTACG\n')
+                  }
     makeTempDirParent()
     tmpDir = os.path.abspath(makeTempDir('getSequences'))
     testFile = createSequenceFile(sequences, tmpDir)
     seqDict = lib_filter.getSequences(testFile)
-    for name, seq in sequences:
+    for name in sequences:
+      seq = sequences[name]
       seq = seq.replace('\n', '').strip()
       self.assertTrue(name in seqDict)
       self.assertTrue(seqDict[name].getLength() == len(seq))
       self.assertTrue(seqDict[name].getSequence() == seq)
+    for name in seqDict:
+      self.assertTrue(name in sequences)
     removeDir(tmpDir)
 
 
+class alignmentGetterTests(unittest.TestCase):
+  def test_getAlignment(self):
+    """ getAlignment must read a psl file and return a list of PslRow objects.
+    """
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('getAlignments'))
+    testFile = createAlignmentFile(alignments, tmpDir)
+    alignments = lib_filter.getAlignments(testFile)
+    self.assertTrue(False)
+    removeDir(tmpDir)
+
+
+
 class transcriptIteratorTests(unittest.TestCase):
-  def test_getSequences(self):
+  def test_transcriptIterator(self):
     """ tests the transcriptIterator function
     """
     transcriptBedLines = ["1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729 128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301050,301352",
@@ -184,8 +205,8 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertTrue(len(transcript2.annotations) == 2)
     self.assertTrue(transcript2.annotations[0].name == "ENSMUST00000095795.4")
     self.assertTrue(transcript2.annotations[1].name == "ENSMUST00000095795.4")
-    self.assertTrue(transcript2.annotations[0].label == [ "noStop" ])
-    self.assertTrue(transcript2.annotations[1].label == [ "noStart", "noStop" ])
+    self.assertTrue(transcript2.annotations[0].labels == [ "noStop" ])
+    self.assertTrue(transcript2.annotations[1].labels == [ "noStart", "noStop" ])
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.chromosome == "1")
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.start == 2812370)
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.stop == 2812372)
