@@ -42,12 +42,12 @@ class PslRow(object):
     self.qBaseInsert = int(data[5])
     self.tNumInsert = int(data[6])
     self.tBaseInsert = int(data[7])
-    self.strand = data[7]
-    self.qName = data[8]
+    self.strand = data[8]
+    self.qName = data[9]
     self.qSize = int(data[10])
     self.qStart = int(data[11])
     self.qEnd = int(data[12])
-    self.tName = data[12]
+    self.tName = data[13]
     self.tSize = int(data[14])
     self.tStart = int(data[15])
     self.tEnd = int(data[16])
@@ -273,7 +273,7 @@ def getChromSizes(infile):
   return chromDict
 
 
-def getAlignment(infile):
+def getAlignments(infile):
   """ read a PSL file and return a list of PslRow objects
   """
   psls = []

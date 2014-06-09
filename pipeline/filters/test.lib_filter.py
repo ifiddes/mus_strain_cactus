@@ -124,13 +124,23 @@ def handleReturnCode(retcode, cmd):
 
 
 def createSequenceFile(sequences, tmpDir):
-  """ given a list of tuples return path to temp file.
+  """ given a dict (key is name, value is sequence) return path to temp file.
   """
   seqfile = os.path.join(tmpDir, 'seq.fa')
   with open(seqfile, 'w') as f:
     for name in sequences:
       f.write('>%s\n%s' % (name, sequences[name]))
   return seqfile
+
+
+def createAlignmentFile(alignments, tmpDir):
+  """ given a list of alignments, return path to a temp file.
+  """
+  alnfile = os.path.join(tmpDir, 'aln.psl')
+  with open(alnfile, 'w') as f:
+    for a in alignments:
+      f.write('%s\n' % a)
+  return alnfile
 
 
 class sequenceGetterTests(unittest.TestCase):
@@ -166,11 +176,24 @@ class alignmentGetterTests(unittest.TestCase):
   def test_getAlignment(self):
     """ getAlignment must read a psl file and return a list of PslRow objects.
     """
+    alignments = [
+      '141 0 0 0 0 0 0 0 - ENSMUST00000178550.1 141 0 141 scaffold-11326 33702 21065 21206 1 141, 0, 21065,',
+      '309 0 0 0 0 0 0 0 - ENSMUST00000179623.1 309 0 309 scaffold-1475 11716 9284 9593 1 309, 0, 9284,',
+      '700 0 0 0 3 5 2 4 - ENSMUST00000179112.1 705 0 705 scaffold-189833 540197 335509 336213 4 14,129,140,417, 0,15,146,288, 335509,335523,335654,335796,',
+                  ]
+    fields = ['matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert',
+              'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName',
+              'qSize', 'qStart', 'qEnd', 'tName', 'tSize',
+              'tStart', 'tEnd', 'blockCount', 'blockSizes', 'qStarts',
+              'tStarts']
     makeTempDirParent()
     tmpDir = os.path.abspath(makeTempDir('getAlignments'))
     testFile = createAlignmentFile(alignments, tmpDir)
-    alignments = lib_filter.getAlignments(testFile)
-    self.assertTrue(False)
+    libAlignments = lib_filter.getAlignments(testFile)
+    for i, a in enumerate(alignments, 0):
+      for j, field in enumerate(fields, 0):
+        data = a.split()
+        self.assertTrue(data[j] == str(getattr(libAlignments[i], field)))
     removeDir(tmpDir)
 
 
