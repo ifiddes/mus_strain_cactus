@@ -30,13 +30,10 @@ def main():
       chrom = annot.chromosomeInterval.chromosome
       start = annot.chromosomeInterval.start
       stop = annot.chromosomeInterval.stop
-      seq = lib_filter.sliceSequence(seq_dict[chrom].getSequence(), start, stop)
+      seq = seq_dict[chrom].sliceSequence(start, stop)
       if 'N' in seq:
         annot.labels.append('containsNs')
-        continue
-  out_bed, out_bed_details = lib_filter.getBedOutFiles(args)
-  lib_filter.writeTranscriptBedFile(transcripts, out_bed)
-  lib_filter.writeDetailsBedFile(transcripts, out_bed_details)
+  lib_filter.writeAllBeds(transcripts, args)
 
 
 if __name__ == '__main__':

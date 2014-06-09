@@ -19,6 +19,12 @@ class Sequence(object):
     return len(self._sequence)
   def setUpper(self):
     self._sequence = self._sequence.upper()
+  def sliceSequence(self, start, stop):
+    """ return the proper slice of the sequence.
+    BED format coordinates: 0 based start, stop is exclusive
+    [start, stop). so .sliceSequence(0, 3) returns a string length 3.
+    """
+  return self._sequence[start:stop]
 
 
 class PslRow(object):
@@ -125,14 +131,16 @@ class Transcript(object):
     strandChar = "-"
     if self.chromosomeInterval.strand:
         strandChar = "+"
-    return "\t".join([self.chromosomeInterval.chromosome,
-                      str(self.chromosomeInterval.start),
-                      str(self.chromosomeInterval.stop),
-                      self.name, str(self.score), strandChar,
-                      str(self.thickStart), str(self.thickEnd),
-                      self.itemRgb, str(len(self.exons)),
-                      ",".join([str(exon.stop - exon.start) for exon in self.exons]),
-                      ",".join([str(exon.start - self.chromosomeInterval.start) for exon in self.exons])])
+    return "\t".join(
+      [self.chromosomeInterval.chromosome,
+       str(self.chromosomeInterval.start),
+       str(self.chromosomeInterval.stop),
+       self.name, str(self.score), strandChar,
+       str(self.thickStart), str(self.thickEnd),
+       self.itemRgb, str(len(self.exons)),
+       ",".join([str(exon.stop - exon.start) for exon in self.exons]),
+       ",".join([str(exon.start - self.chromosomeInterval.start)
+                 for exon in self.exons])])
 
   def __cmp__(self, transcript):
     return cmp((self.chromosomeInterval, self.name),
@@ -198,14 +206,6 @@ def checkArguments(args, parser):
                ))
 
 
-def getBedOutFiles(args):
-  """ Return the paths of the new bed and bedDetail files.
-  """
-  bed = os.path.join(args.outDir, 'out.bed')
-  bedDetails = os.path.join(args.outDir, 'out_details.bed')
-  return bed, bedDetails
-
-
 def getSequences(infile):
   """ Given a path to a fasta file, return a dictionary of Sequence objects
   keyed on the sequence name
@@ -259,13 +259,6 @@ def readSequence(infile):
           return
 
 
-def sliceSequence(sequence, start, stop):
-  """ return the proper slice of the sequence.
-  BED format coordinates: 0 based start, stop is exclusive
-  """
-  return sequence[start:stop]
-
-
 def getChromSizes(infile):
   """ read a chrom sizes file and return a dict keyed by names valued by ints.
   """
@@ -300,6 +293,16 @@ def readPsls(infile):
     yield PslRow(line)
 
 
+def getTranscripts(bedFile, bedDetailsFile):
+  """ Given a path to a standard BED file and a details BED, return a list of
+  Transcript objects.
+  """
+  transcripts = []
+  for t in transcriptIterator(bedFile, bedDetailsFile):
+    transcripts.append(t)
+  return transcripts
+
+
 def tokenizeBedStream(bedStream):
   """ Iterator through bed file, returning lines as list of tokens
   """
@@ -317,8 +320,9 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   transcriptsAnnotations = {}
   for tokens in tokenizeBedStream(transcriptDetailsBedStream):
     assert len(tokens) == 4
-    tA = TranscriptAnnotation(ChromosomeInterval(
-        tokens[0], tokens[1], tokens[2], None), tokens[3].split('/')[-1], tokens[3].split('/')[:-1])
+    tA = TranscriptAnnotation(
+      ChromosomeInterval(tokens[0], tokens[1], tokens[2], None),
+      tokens[3].split('/')[-1], tokens[3].split('/')[:-1])
     if tA.name not in transcriptsAnnotations:
       transcriptsAnnotations[tA.name] = []
     transcriptsAnnotations[tA.name].append(tA)
@@ -344,14 +348,35 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     annotations = []
     if name in transcriptsAnnotations:
       annotations = transcriptsAnnotations[name]
-    yield Transcript(cI, name, exons, annotations, int(tokens[4]), int(tokens[6]), int(tokens[7]), tokens[8])
+    yield Transcript(
+      cI, name, exons, annotations,
+      int(tokens[4]), int(tokens[6]),
+      int(tokens[7]), tokens[8])
+
+
+def writeAllBeds(transcripts, args):
+  """ Convenience function to take a list of TRANSCRIPTS and write out the
+  standard and details beds to the expected location in args.outDir.
+  """
+  out_bed, out_bed_details = getBedOutFiles(args)
+  writeTranscriptBedFile(transcripts, out_bed)
+  writeDetailsBedFile(transcripts, out_bed_details)
+
+
+def getBedOutFiles(args):
+  """ Return the paths of the new bed and bedDetail files.
+  """
+  bed = os.path.join(args.outDir, 'out.bed')
+  bedDetails = os.path.join(args.outDir, 'out_details.bed')
+  return bed, bedDetails
 
 
 def writeDetailsBedFile(transcripts, detailsBedFile):
   """Writes out a details bed file for a set of transcripts - that is the set of
   annotations of the transcripts. The bed file must be in chromosome order.
   """
-  annotations = reduce(lambda x, y : x + y, [transcript.annotations for transcript in transcripts])
+  annotations = reduce(lambda x, y : x + y,
+                       [transcript.annotations for transcript in transcripts])
   annotations.sort()
   annotationsFileHandle = open(detailsBedFile, 'w')
   for annotation in annotations:
