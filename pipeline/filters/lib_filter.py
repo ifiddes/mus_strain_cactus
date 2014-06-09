@@ -24,7 +24,7 @@ class Sequence(object):
     BED format coordinates: 0 based start, stop is exclusive
     [start, stop). so .sliceSequence(0, 3) returns a string length 3.
     """
-  return self._sequence[start:stop]
+    return self._sequence[start:stop]
 
 
 class PslRow(object):
