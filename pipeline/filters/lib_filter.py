@@ -52,9 +52,9 @@ class PslRow(object):
     self.tStart = int(data[15])
     self.tEnd = int(data[16])
     self.blockCount = int(data[17])
-    self.blockSizes = data[18]
-    self.qStarts = data[19]
-    self.tStarts = data[20]
+    self.blockSizes = map(int, [x for x in data[18].split(',') if x])
+    self.qStarts = map(int, [x for x in data[19].split(',') if x])
+    self.tStarts = map(int, [x for x in data[20].split(',') if x])
 
 
 """The following data types are used for iterating over gene-check-detail and

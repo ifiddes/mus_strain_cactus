@@ -184,16 +184,18 @@ class alignmentGetterTests(unittest.TestCase):
     fields = ['matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert',
               'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'strand', 'qName',
               'qSize', 'qStart', 'qEnd', 'tName', 'tSize',
-              'tStart', 'tEnd', 'blockCount', 'blockSizes', 'qStarts',
-              'tStarts']
+              'tStart', 'tEnd', 'blockCount']
     makeTempDirParent()
     tmpDir = os.path.abspath(makeTempDir('getAlignments'))
     testFile = createAlignmentFile(alignments, tmpDir)
     libAlignments = lib_filter.getAlignments(testFile)
     for i, a in enumerate(alignments, 0):
+      data = a.split()
       for j, field in enumerate(fields, 0):
-        data = a.split()
         self.assertTrue(data[j] == str(getattr(libAlignments[i], field)))
+      for j, field in enumerate(['blockSizes', 'qStarts', 'tStarts'], 18):
+        self.assertTrue(
+          data[j] == ','.join(map(str, getattr(libAlignments[i], field))) + ',')
     removeDir(tmpDir)
 
 
