@@ -52,6 +52,7 @@ class PslRow(object):
     self.tStart = int(data[15])
     self.tEnd = int(data[16])
     self.blockCount = int(data[17])
+    # lists of ints
     self.blockSizes = map(int, [x for x in data[18].split(',') if x])
     self.qStarts = map(int, [x for x in data[19].split(',') if x])
     self.tStarts = map(int, [x for x in data[20].split(',') if x])
