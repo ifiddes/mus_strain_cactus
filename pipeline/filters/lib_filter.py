@@ -299,7 +299,9 @@ def getTranscripts(bedFile, bedDetailsFile):
   Transcript objects.
   """
   transcripts = []
-  for t in transcriptIterator(bedFile, bedDetailsFile):
+  bf = open(bedFile, 'r')
+  bdf = open(bedDetailsFile, 'r')
+  for t in transcriptIterator(bf, bdf):
     transcripts.append(t)
   return transcripts
 
