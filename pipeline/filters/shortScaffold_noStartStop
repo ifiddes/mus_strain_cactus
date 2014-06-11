@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+"""
+shortScaffold_noStartStop
+6 June 2014
+
+dent earl, dearl a soe ucsc edu
+
+a filter for the msca project analysis pipeline.
+scans Trascripts for bad transcripts that contain Ns.
+"""
+from argparse import ArgumentParser
+import sys
+import lib_filter
+
+
+def hashkey(obj):
+  """ given either a PslRow or Transcript, return a string to use as dict key.
+  """
+  if isinstance(obj, lib_filter.PslRow):
+    return '%s_%s' % (obj.qName, obj.tName)
+  elif isinstance(obj, lib_filter.Transcript):
+    return '%s_%s' % (obj.name, obj.chromosomeInterval.chromosome)
+  else:
+    raise RuntimeError('Unknown object type: %s' % obj.__clas__)
+
+
+def main():
+  parser = ArgumentParser()
+  lib_filter.initializeArguments(parser)
+  args = parser.parse_args()
+  lib_filter.checkArguments(args, parser)
+  alignments_dict = {}
+  alignments_dict = {hashkey(x): x for x in
+                     lib_filter.getAlignments(args.alignment)}
+  transcripts = lib_filter.getTranscripts(
+    args.geneCheckBed, args.geneCheckBedDetails)
+  for t in transcripts:
+    for annot in t.annotations:
+      if 'noStart' not in annot.labels and 'noStop 'not in annot.labels:
+        continue
+      a_name = hashkey(t)
+      if a_name not in alignments_dict:
+        continue
+      a = alignments_dict[a_name]
+      if len(a.strand) > 1:
+        # this code assumes the target is always positive strand.
+        # for this project I believe this is true.
+        assert a.strand[1] == '+'
+      #####
+      # If the query does not completely map to the target, mark it.
+      if a.qSize != a.qEnd - a.qStart:
+        annot.labels.append('alignmentPartialMap')
+      #####
+      # If the alignment starts or ends right on top of a transcript, mark it.
+      if a.strand == '' or a.strand.startswith('+'):
+        if 'noStart' in annot.labels and a.tStart == 0 and a.qStart != 0:
+          # aligned: #  unaligned: -  whatever: .  edge: |
+          # query  |---#####....
+          # target    |#####....
+          annot.labels.append('alignmentAbutsEdge')
+        if 'noStop' in annot.labels and a.qEnd != a.qSize and a.tEnd == a.tSize:
+          # query  ...######---|
+          # target ...######|
+          annot.labels.append('alignmentAbutsEdge')
+      else:
+        if 'noStop' in annot.labels and a.tStart == 0 and a.qStart != 0:
+          annot.labels.append('alignmentAbutsEdge')
+        if ('noStart' in annot.labels and a.qEnd != a.qSize
+            and a.tEnd == a.tSize):
+          annot.labels.append('alignmentAbutsEdge')
+      #####
+      # Need a way to flag xscripts that fall off scaffold while in an intron.
+
+
+  lib_filter.writeAllBeds(transcripts, args)
+
+
+if __name__ == '__main__':
+  main()
