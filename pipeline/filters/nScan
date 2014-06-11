@@ -32,7 +32,7 @@ def main():
       stop = annot.chromosomeInterval.stop
       seq = seq_dict[chrom].sliceSequence(start, stop)
       if 'N' in seq:
-        annot.labels.append('containsNs')
+        annot.addLabel('containsNs')
   lib_filter.writeAllBeds(transcripts, args)
 
 

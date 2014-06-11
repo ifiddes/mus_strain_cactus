@@ -99,6 +99,12 @@ class TranscriptAnnotation(object):
     self.name = str(name)
     self.labels = list(label)  # list of strings
 
+  def addLabel(self, label):
+    """ maintain the ordering of self.labels but prevent duplicates
+    """
+    if label not in self.labels:
+      self.labels.append(label)
+
   def bedString(self):
       return "\t".join([self.chromosomeInterval.chromosome,
                         str(self.chromosomeInterval.start),
