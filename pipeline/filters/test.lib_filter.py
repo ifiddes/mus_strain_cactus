@@ -213,8 +213,8 @@ class transcriptIteratorTests(unittest.TestCase):
                           'scaffold-138877  4903  5091  ENSMUST00000034053.5  0  -  4903  4996  128,0,0  1  188  0',
                           'scaffold-2051  13759  24866  ENSMUST00000034053.5  0  -  14291  24866  128,0,0  4  722,112,131,188  0,1977,4316,10919',
                           ]
-    transcriptDetailsBedLines = ['1       2812370 2812372 noStop/ENSMUST00000095795.4',
-                                 '1       2812370 2812372 noStart/noStop/ENSMUST00000095795.4',
+    transcriptDetailsBedLines = ['1       2812346 2812349 noStop/ENSMUST00000095795.4',
+                                 '1       3113780 3113783 noStart/ENSMUST00000095795.4',
                                  'scaffold-100021  466  469  noStop/ENSMUST00000034053.5',
                                  'scaffold-100021  4245  4248  noStart/ENSMUST00000034053.5',
                                  'scaffold-138877  4903  4906  noStop/ENSMUST00000034053.5',
@@ -244,6 +244,7 @@ class transcriptIteratorTests(unittest.TestCase):
                          ]:
       for i, n in enumerate(values, 0):
         self.assertEquals(getattr(transcripts[i], attr), n)
+    # exons
     self.assertEqual(len(transcripts[0].exons), 9)
     self.assertEqual(transcripts[0].exons[0].chromosome, '1')
     self.assertEqual(transcripts[0].exons[0].start, 2812346)
@@ -253,22 +254,41 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertEqual(transcripts[1].exons[0].start, 2812346)
     self.assertEqual(transcripts[1].exons[0].stop, 2812346 + 54)
     self.assertEqual(transcripts[1].exons[0].strand, True)
-    self.assertEqual(transcripts[0].annotations, [])
-    self.assertEqual(len(transcripts[1].annotations), 2)
-    self.assertEqual(transcripts[1].annotations[0].name, 'ENSMUST00000095795.4')
-    self.assertEqual(transcripts[1].annotations[1].name, 'ENSMUST00000095795.4')
-    self.assertEqual(transcripts[1].annotations[0].labels, [ 'noStop' ])
-    self.assertEqual(transcripts[1].annotations[1].labels, [ 'noStart', 'noStop' ])
-    self.assertEqual(transcripts[1].annotations[0].chromosomeInterval.chromosome, '1')
-    self.assertEqual(transcripts[1].annotations[0].chromosomeInterval.start, 2812370)
-    self.assertEqual(transcripts[1].annotations[0].chromosomeInterval.stop, 2812372)
-    self.assertEqual(transcripts[1].annotations[0].chromosomeInterval.strand, None)
-    #Check print functions
+    # annotations
+    testAnnots = [
+      [],
+      [lib_filter.TranscriptAnnotation(
+        lib_filter.ChromosomeInterval('1', 2812346, 2812349, None),
+        'ENSMUST00000095795.4', ['noStop']),
+       lib_filter.TranscriptAnnotation(
+        lib_filter.ChromosomeInterval('1', 3113780, 3113783, None),
+        'ENSMUST00000095795.4', ['noStart']),
+       ],
+      [lib_filter.TranscriptAnnotation(
+        lib_filter.ChromosomeInterval('scaffold-100021', 466, 469, None),
+        'ENSMUST00000034053.5', ['noStop']),
+       lib_filter.TranscriptAnnotation(
+        lib_filter.ChromosomeInterval('scaffold-100021', 4245, 4248, None),
+        'ENSMUST00000034053.5', ['noStop']),
+       ],
+      [lib_filter.TranscriptAnnotation(
+        lib_filter.ChromosomeInterval('scaffold-138877', 4903, 4906, None),
+        'ENSMUST00000034053.5', ['noStop']),
+       ],
+      [lib_filter.TranscriptAnnotation(
+        lib_filter.ChromosomeInterval('scaffold-2051', 24863, 24866, None),
+        'ENSMUST00000034053.5', ['noStart']),
+       ],
+      ]
+    self.assertEqual(len(transcripts), len(testAnnots))
+    for i in xrange(0, len(transcripts)):
+      self.assertEqual(transcripts[i].annotations, testAnnots[i])
+    # Check print functions
     self.assertEquals(transcripts[0].bedString().split(), transcriptBedLines[0].split())
     self.assertEquals(transcripts[1].bedString().split(), transcriptBedLines[1].split())
     self.assertEquals(transcripts[1].annotations[0].bedString().split(), transcriptDetailsBedLines[0].split())
     self.assertEquals(transcripts[1].annotations[1].bedString().split(), transcriptDetailsBedLines[1].split())
-    #Check sort function for transcripts
+    # Check sort function for transcripts
     transcripts.reverse()
     names.reverse()
     for i in xrange(0, len(transcripts)):
