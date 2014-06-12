@@ -353,9 +353,10 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     tA = TranscriptAnnotation(
       ChromosomeInterval(tokens[0], tokens[1], tokens[2], None),
       tokens[3].split('/')[-1], tokens[3].split('/')[:-1])
-    if tA.name not in transcriptsAnnotations:
-      transcriptsAnnotations[tA.name] = []
-    transcriptsAnnotations[tA.name].append(tA)
+    key = (tA.name, tA.chromosomeInterval.chromosome)
+    if key not in transcriptsAnnotations:
+      transcriptsAnnotations[key] = []
+    transcriptsAnnotations[key].append(tA)
 
   for tokens in tokenizeBedStream(transcriptsBedStream):
     assert len(tokens) == 12
@@ -376,8 +377,9 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
                      tokens[10].split(','), tokens[11].split(','))
     # Get the name annotations
     annotations = []
-    if name in transcriptsAnnotations:
-      annotations = transcriptsAnnotations[name]
+    key = (name, cI.chromosome)
+    if key in transcriptsAnnotations:
+      annotations = transcriptsAnnotations[key]
     yield Transcript(
       cI, name, exons, annotations,
       int(tokens[4]), int(tokens[6]),
