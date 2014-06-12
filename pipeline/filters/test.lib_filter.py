@@ -308,6 +308,10 @@ class transcriptIteratorTests(unittest.TestCase):
     transcripts.sort()
     writtenTranscripts.sort()
     for i in xrange(0, len(transcripts)):
+      self.assertEquals(transcripts[i].chromosomeInterval,
+                        writtenTranscripts[i].chromosomeInterval)
+      self.assertEquals(transcripts[i].annotations,
+                        writtenTranscripts[i].annotations)
       self.assertEquals(transcripts[i], writtenTranscripts[i])
     # cleanup
     self.addCleanup(removeDir, tmpDir)
