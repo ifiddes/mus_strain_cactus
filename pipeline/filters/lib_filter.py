@@ -362,7 +362,7 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     # Transcript
     name = tokens[3]
     # Get the chromosome interval
-    assert tokens[5] in ('+', '-')
+    assert tokens[5] in ['+', '-']
     cI = ChromosomeInterval(tokens[0], tokens[1], tokens[2], tokens[5] == '+')
     # Get the exons
     def getExons(exonNumber, blockSizes, blockStarts):
