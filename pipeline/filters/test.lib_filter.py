@@ -1,5 +1,6 @@
 """ Test the lib_filter classes and functions
 """
+from glob import glob
 import os
 import shutil
 import string
@@ -44,6 +45,9 @@ def removeDir(dirpath):
   """
   if os.path.exists(dirpath):
     shutil.rmtree(dirpath)
+  if glob(os.path.join(dirpath, '*')) == []:
+    # if this is the last tempDir to be destroyed, destroy the parent.
+    removeTempDirParent()
 
 
 def which(program):
@@ -169,7 +173,7 @@ class sequenceGetterTests(unittest.TestCase):
       self.assertTrue(seqDict[name].getSequence() == seq)
     for name in seqDict:
       self.assertTrue(name in sequences)
-    removeDir(tmpDir)
+    self.addCleanup(removeDir, tmpDir)
 
 
 class alignmentGetterTests(unittest.TestCase):
@@ -196,8 +200,7 @@ class alignmentGetterTests(unittest.TestCase):
       for j, field in enumerate(['blockSizes', 'qStarts', 'tStarts'], 18):
         self.assertTrue(
           data[j] == ','.join(map(str, getattr(libAlignments[i], field))) + ',')
-    removeDir(tmpDir)
-
+    self.addCleanup(removeDir, tmpDir)
 
 
 class transcriptIteratorTests(unittest.TestCase):
@@ -294,12 +297,8 @@ class transcriptIteratorTests(unittest.TestCase):
     for i in xrange(0, len(transcripts)):
       self.assertTrue(transcripts[i] == writtenTranscripts[i])
     # cleanup
-    # removeDir(tmpDir)
+    self.addCleanup(removeDir, tmpDir)
 
 
 if __name__ == '__main__':
-  try:
-    unittest.main()
-  finally:
-    pass
-    # removeTempDirParent()  # cleanup
+  unittest.main()
