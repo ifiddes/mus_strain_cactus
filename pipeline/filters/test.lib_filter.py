@@ -232,13 +232,18 @@ class transcriptIteratorTests(unittest.TestCase):
                          ('thickEnd', [3038729, 3038729, 4248, 4996, 24866]),
                          ('itemRgb', ['128,0,0', '128,0,0',
                                       '128,0,0', '128,0,0','128,0,0',]),
+                         ('chromosomeInterval',
+                          [
+          lib_filter.ChromosomeInterval('1', 2812346, 3113743, False),
+          lib_filter.ChromosomeInterval('1', 2812346, 3113783, True),
+          lib_filter.ChromosomeInterval('scaffold-100021', 466, 4248, False),
+          lib_filter.ChromosomeInterval('scaffold-138877', 4903, 5091, False),
+          lib_filter.ChromosomeInterval('scaffold-2051', 13759, 24866, False),
+          ]
+                          ),
                          ]:
       for i, n in enumerate(values, 0):
         self.assertEquals(getattr(transcripts[i], attr), n)
-    self.assertEqual(transcripts[0].chromosomeInterval.chromosome, '1')
-    self.assertEqual(transcripts[0].chromosomeInterval.start, 2812346)
-    self.assertEqual(transcripts[0].chromosomeInterval.stop, 3113743)
-    self.assertEqual(transcripts[0].chromosomeInterval.strand, False)
     self.assertEqual(len(transcripts[0].exons), 9)
     self.assertEqual(transcripts[0].exons[0].chromosome, '1')
     self.assertEqual(transcripts[0].exons[0].start, 2812346)
