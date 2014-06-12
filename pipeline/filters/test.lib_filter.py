@@ -269,7 +269,7 @@ class transcriptIteratorTests(unittest.TestCase):
         'ENSMUST00000034053.5', ['noStop']),
        lib_filter.TranscriptAnnotation(
         lib_filter.ChromosomeInterval('scaffold-100021', 4245, 4248, None),
-        'ENSMUST00000034053.5', ['noStop']),
+        'ENSMUST00000034053.5', ['noStart']),
        ],
       [lib_filter.TranscriptAnnotation(
         lib_filter.ChromosomeInterval('scaffold-138877', 4903, 4906, None),
@@ -282,6 +282,7 @@ class transcriptIteratorTests(unittest.TestCase):
       ]
     self.assertEqual(len(transcripts), len(testAnnots))
     for i in xrange(0, len(transcripts)):
+      print 'test: %d' % i
       self.assertEqual(transcripts[i].annotations, testAnnots[i])
     # Check print functions
     self.assertEquals(transcripts[0].bedString().split(), transcriptBedLines[0].split())
