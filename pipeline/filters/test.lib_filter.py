@@ -13,15 +13,15 @@ import lib_filter
 def makeTempDirParent():
   """ make the parent temp dir directory
   """
-  if not os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-    os.mkdir(os.path.join(os.curdir, 'tempTestDir'))
+  if not os.path.exists(os.path.join(os.curdir, '.tempTestDir')):
+    os.mkdir(os.path.join(os.curdir, '.tempTestDir'))
 
 
 def removeTempDirParent():
   """ remove the parent temp dir directory
   """
-  if os.path.exists(os.path.join(os.curdir, 'tempTestDir')):
-    shutil.rmtree(os.path.join(os.curdir, 'tempTestDir'))
+  if os.path.exists(os.path.join(os.curdir, '.tempTestDir')):
+    shutil.rmtree(os.path.join(os.curdir, '.tempTestDir'))
 
 
 def makeTempDir(name=None):
@@ -33,11 +33,11 @@ def makeTempDir(name=None):
     while True:
       name = '%s_%s' % (''.join(random.choice(charSet) for x in xrange(4)),
                         ''.join(random.choice(charSet) for x in xrange(4)))
-      if not os.path.exists(os.path.join(os.curdir, 'tempTestDir', name)):
+      if not os.path.exists(os.path.join(os.curdir, '.tempTestDir', name)):
         break
-  if not os.path.exists(os.path.join(os.curdir, 'tempTestDir', name)):
-    os.mkdir(os.path.join(os.curdir, 'tempTestDir', name))
-  return os.path.join(os.curdir, 'tempTestDir', name)
+  if not os.path.exists(os.path.join(os.curdir, '.tempTestDir', name)):
+    os.mkdir(os.path.join(os.curdir, '.tempTestDir', name))
+  return os.path.join(os.curdir, '.tempTestDir', name)
 
 
 def removeDir(dirpath):
@@ -45,7 +45,7 @@ def removeDir(dirpath):
   """
   if os.path.exists(dirpath):
     shutil.rmtree(dirpath)
-  if glob(os.path.join(dirpath, '*')) == []:
+  if glob(os.path.join(os.path.dirname(dirpath), '*')) == []:
     # if this is the last tempDir to be destroyed, destroy the parent.
     removeTempDirParent()
 
