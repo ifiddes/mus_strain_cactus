@@ -58,7 +58,7 @@ def which(program):
     if is_exe(program):
       return program
   else:
-    for path in os.environ["PATH"].split(os.pathsep):
+    for path in os.environ['PATH'].split(os.pathsep):
       exe_file = os.path.join(path, program)
       if is_exe(exe_file):
         return exe_file
@@ -204,42 +204,46 @@ class transcriptIteratorTests(unittest.TestCase):
   def test_transcriptIterator(self):
     """ tests the transcriptIterator function
     """
-    transcriptBedLines = ["1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729 128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301050,301352",
-                          "1       2812346 3113783 ENSMUST00000095795.4    0       +       2812370 3038729 128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301050,301352"]
-    transcriptDetailsBedLines = ["1       2812370 2812372 noStop/ENSMUST00000095795.4",
-                                 "1       2812370 2812372 noStart/noStop/ENSMUST00000095795.4"]
-    transcripts = [ transcript for transcript in lib_filter.transcriptIterator(transcriptBedLines, transcriptDetailsBedLines) ]
+    transcriptBedLines = ['1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729 128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301050,301352',
+                          '1       2812346 3113783 ENSMUST00000095795.4    0       +       2812370 3038729 128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301050,301352'
+                          ]
+    transcriptDetailsBedLines = ['1       2812370 2812372 noStop/ENSMUST00000095795.4',
+                                 '1       2812370 2812372 noStart/noStop/ENSMUST00000095795.4',
+                                 ]
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
     self.assertTrue(len(transcripts) == 2)
     transcript1, transcript2 = transcripts
-    self.assertTrue(transcript1.name == "ENSMUST00000178026.1")
-    self.assertTrue(transcript2.name == "ENSMUST00000095795.4")
-    self.assertTrue(transcript1.chromosomeInterval.chromosome == "1")
+    self.assertTrue(transcript1.name == 'ENSMUST00000178026.1')
+    self.assertTrue(transcript2.name == 'ENSMUST00000095795.4')
+    self.assertTrue(transcript1.chromosomeInterval.chromosome == '1')
     self.assertTrue(transcript1.chromosomeInterval.start == 2812346)
     self.assertTrue(transcript1.chromosomeInterval.stop == 3113743)
     self.assertTrue(transcript1.chromosomeInterval.strand == False)
     self.assertTrue(len(transcript1.exons) == 9)
-    self.assertTrue(transcript1.exons[0].chromosome == "1")
+    self.assertTrue(transcript1.exons[0].chromosome == '1')
     self.assertTrue(transcript1.exons[0].start == 2812346)
     self.assertTrue(transcript1.exons[0].stop == 2812346 + 54)
     self.assertTrue(transcript1.exons[0].strand == False)
-    self.assertTrue(transcript2.exons[0].chromosome == "1")
+    self.assertTrue(transcript2.exons[0].chromosome == '1')
     self.assertTrue(transcript2.exons[0].start == 2812346)
     self.assertTrue(transcript2.exons[0].stop == 2812346 + 54)
     self.assertTrue(transcript2.exons[0].strand == True)
     self.assertTrue(transcript1.annotations == [])
     self.assertTrue(len(transcript2.annotations) == 2)
-    self.assertTrue(transcript2.annotations[0].name == "ENSMUST00000095795.4")
-    self.assertTrue(transcript2.annotations[1].name == "ENSMUST00000095795.4")
-    self.assertTrue(transcript2.annotations[0].labels == [ "noStop" ])
-    self.assertTrue(transcript2.annotations[1].labels == [ "noStart", "noStop" ])
-    self.assertTrue(transcript2.annotations[0].chromosomeInterval.chromosome == "1")
+    self.assertTrue(transcript2.annotations[0].name == 'ENSMUST00000095795.4')
+    self.assertTrue(transcript2.annotations[1].name == 'ENSMUST00000095795.4')
+    self.assertTrue(transcript2.annotations[0].labels == [ 'noStop' ])
+    self.assertTrue(transcript2.annotations[1].labels == [ 'noStart', 'noStop' ])
+    self.assertTrue(transcript2.annotations[0].chromosomeInterval.chromosome == '1')
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.start == 2812370)
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.stop == 2812372)
     self.assertTrue(transcript2.annotations[0].chromosomeInterval.strand == None)
     #Bed fields
     self.assertTrue(transcript1.thickStart == 2812370)
     self.assertTrue(transcript1.thickEnd == 3038729)
-    self.assertTrue(transcript1.itemRgb == "128,0,0")
+    self.assertTrue(transcript1.itemRgb == '128,0,0')
     #Check print functions
     self.assertEquals(transcript1.bedString().split(), transcriptBedLines[0].split())
     self.assertEquals(transcript2.bedString().split(), transcriptBedLines[1].split())
@@ -247,16 +251,55 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertEquals(transcript2.annotations[1].bedString().split(), transcriptDetailsBedLines[1].split())
     #Check sort function for transcripts
     transcripts.reverse()
-    self.assertEquals(transcripts[0].name, "ENSMUST00000095795.4")
-    self.assertEquals(transcripts[1].name, "ENSMUST00000178026.1")
+    self.assertEquals(transcripts[0].name, 'ENSMUST00000095795.4')
+    self.assertEquals(transcripts[1].name, 'ENSMUST00000178026.1')
     transcripts.sort()
-    self.assertEquals(transcripts[1].name, "ENSMUST00000095795.4")
-    self.assertEquals(transcripts[0].name, "ENSMUST00000178026.1")
+    self.assertEquals(transcripts[1].name, 'ENSMUST00000095795.4')
+    self.assertEquals(transcripts[0].name, 'ENSMUST00000178026.1')
 
+  def test_transcriptWriter(self):
+    """ transcripts should be written out correctly.
+    """
+    transcriptBedLines = ['1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729 128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301050,301352',
+                          '1       2812346 3113783 ENSMUST00000095795.4    0       +       2812370 3038729 128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301050,301352',
+                          'scaffold-100021  466  4248  ENSMUST00000034053.5  0  -  466  4248  128,0,0  2  85,152  0,3630',
+                          'scaffold-138877  4903  5091  ENSMUST00000034053.5  0  -  4903  4996  128,0,0  1  188  0',
+                          'scaffold-2051  13759  24866  ENSMUST00000034053.5  0  -  14291  24866  128,0,0  4  722,112,131,188  0,1977,4316,10919',
+                          ]
+    transcriptDetailsBedLines = ['1       2812370 2812372 noStop/ENSMUST00000095795.4',
+                                 '1       2812370 2812372 noStart/noStop/ENSMUST00000095795.4',
+                                 'scaffold-100021  466  469  noStop/ENSMUST00000034053.5',
+                                 'scaffold-100021  4245  4248  noStart/ENSMUST00000034053.5',
+                                 'scaffold-138877  4903  4906  noStop/ENSMUST00000034053.5',
+                                 'scaffold-2051  24863  24866  noStart/ENSMUST00000034053.5',
+                                 ]
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('transcriptWriter'))
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(outBed, outDetailsBed)
+    # test equality.
+    self.assertTrue(len(transcripts) == len(writtenTranscripts))
+    transcripts.sort()
+    writtenTranscripts.sort()
+    for i in xrange(0, len(transcripts)):
+      self.assertTrue(transcripts[i] == writtenTranscripts[i])
+    # cleanup
+    # removeDir(tmpDir)
 
 
 if __name__ == '__main__':
   try:
     unittest.main()
   finally:
-    removeTempDirParent()  # cleanup
+    pass
+    # removeTempDirParent()  # cleanup

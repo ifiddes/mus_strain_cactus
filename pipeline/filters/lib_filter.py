@@ -85,6 +85,12 @@ class ChromosomeInterval(object):
     self.stop = int(stop)
     self.strand = strand
 
+  def __eq__(self, other):
+    return (self.chromosome == other.chromosome and
+            self.start == other.start and
+            self.stop == other.stop and
+            self.strand == other.strand)
+
   def __cmp__(self, cI):
     return cmp((self.chromosome, self.start, self.stop, self.strand),
                (cI.chromosome, cI.start, cI.stop, cI.strand))
@@ -111,6 +117,11 @@ class TranscriptAnnotation(object):
                         str(self.chromosomeInterval.stop),
                         "/".join(self.labels + [self.name])])
 
+  def __eq__(self, other):
+    return (self.chromosomeInterval == other.chromosomeInterval and
+            self.name == other.name and
+            self.labels == other.labels)
+
   def __cmp__(self, annotation):
     """ Sort by chromosome interval, then name
     """
@@ -131,6 +142,16 @@ class Transcript(object):
     self.thickStart = thickStart
     self.thickEnd = thickEnd
     self.itemRgb = itemRgb
+
+  def __eq__(self, other):
+    return (self.chromosomeInterval == other.chromosomeInterval and
+            self.name == other.name and
+            self.exons == other.exons and
+            self.annotations == other.annotations and
+            self.score == other.score and
+            self.thickStart == other.thickStart and
+            self.thickEnd == other.thickEnd and
+            self.itemRgb == other.itemRgb)
 
   def bedString(self):
     """ Write a transcript object to the given file.
