@@ -17,9 +17,11 @@ def hashkey(obj):
   """ given either a PslRow or Transcript, return a string to use as dict key.
   """
   if isinstance(obj, lib_filter.PslRow):
-    return '%s_%s' % (obj.qName, obj.tName)
+    return '%s_%s_%d_%d' % (obj.qName, obj.tName, obj.tStart, obj.tEnd)
   elif isinstance(obj, lib_filter.Transcript):
-    return '%s_%s' % (obj.name, obj.chromosomeInterval.chromosome)
+    return '%s_%s_%d_%d' % (obj.name, obj.chromosomeInterval.chromosome,
+                            obj.chromosomeInterval.start,
+                            obj.chromosomeInterval.stop)
   else:
     raise RuntimeError('Unknown object type: %s' % obj.__clas__)
 
@@ -29,14 +31,18 @@ def main():
   lib_filter.initializeArguments(parser)
   args = parser.parse_args()
   lib_filter.checkArguments(args, parser)
+  alignments = lib_filter.getAlignments(args.alignment)
   alignments_dict = {}
-  alignments_dict = {hashkey(x): x for x in
-                     lib_filter.getAlignments(args.alignment)}
+  for a in alignments:
+    if hashkey(a) in alignments_dict:
+      # currently first-come first-served. See docs/bugs.txt for this problem.
+      continue
+    alignments_dict[hashkey(a)] = a
   transcripts = lib_filter.getTranscripts(
     args.geneCheckBed, args.geneCheckBedDetails)
   for t in transcripts:
     for annot in t.annotations:
-      if 'noStart' not in annot.labels and 'noStop 'not in annot.labels:
+      if 'noStart' not in annot.labels and 'noStop' not in annot.labels:
         continue
       a_name = hashkey(t)
       if a_name not in alignments_dict:
@@ -52,21 +58,22 @@ def main():
         annot.addLabel('alignmentPartialMap')
       #####
       # If the alignment starts or ends right on top of a transcript, mark it.
-      if a.strand == '' or a.strand.startswith('+'):
+      if a.strand.startswith('+'):
         if 'noStart' in annot.labels and a.tStart == 0 and a.qStart != 0:
           # aligned: #  unaligned: -  whatever: .  edge: |
           # query  |---#####....
           # target    |#####....
           annot.addLabel('alignmentAbutsEdge')
-        if 'noStop' in annot.labels and a.qEnd != a.qSize and a.tEnd == a.tSize:
+        if 'noStop' in annot.labels and a.tEnd == a.tSize and a.qEnd != a.qSize:
           # query  ...######---|
           # target ...######|
           annot.addLabel('alignmentAbutsEdge')
       else:
+        assert(a.strand.startswith('-'))
         if 'noStop' in annot.labels and a.tStart == 0 and a.qStart != 0:
           annot.addLabel('alignmentAbutsEdge')
-        if ('noStart' in annot.labels and a.qEnd != a.qSize
-            and a.tEnd == a.tSize):
+        if ('noStart' in annot.labels and a.tEnd == a.tSize and
+            a.qEnd != a.qSize):
           annot.addLabel('alignmentAbutsEdge')
       #####
       # Need a way to flag xscripts that fall off scaffold while in an intron.
