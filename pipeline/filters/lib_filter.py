@@ -341,6 +341,12 @@ def tokenizeBedStream(bedStream):
       tokens = line.split()
       yield tokens
 
+def normaliseAnnotation(transcriptAnnotation):
+  """Normalises the transcript annotation labels.
+  This is meant to munge the labels of transcript annotations according to hacky needs of the input annotation type labels.
+  """
+  if len(transcriptAnnotation.labels) > 1 and "unknown" in transcriptAnnotation.labels[0]:
+    transcriptAnnotation.labels = [ "_".join(transcriptAnnotation.labels[:2])] + transcriptAnnotation.labels[2:]
 
 def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   """ Iterates over the transcripts detailed in the two streams, producing
@@ -353,6 +359,7 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     tA = TranscriptAnnotation(
       ChromosomeInterval(tokens[0], tokens[1], tokens[2], None),
       tokens[3].split('/')[-1], tokens[3].split('/')[:-1])
+    normaliseAnnotation(tA)
     key = (tA.name, tA.chromosomeInterval.chromosome)
     if key not in transcriptsAnnotations:
       transcriptsAnnotations[key] = []
