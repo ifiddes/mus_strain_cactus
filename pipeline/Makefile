@@ -19,8 +19,7 @@ sequenceDir = /hive/groups/recon/projs/mus_strain_cactus/data
 alignmentDir = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-16.simpleChain/results/lnb_0001/chained
 halFile = /hive/users/benedict/mouseHub/all.hal
 filtersDir = filters
-filters = $(shell find ${filtersDir}/ -perm 755 -type f)
-
+filters = ${filtersDir}/shortScaffold_noStartStop ${filtersDir}/nScan
 
 all: $(foreach f,$(basename $(notdir ${filters})),$(foreach g,${genomes},results/$f.$g/done))
 
