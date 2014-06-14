@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+"""
+metaFilter_shortScaffold_nScan
+13 June 2014
+
+dent earl, dearl a soe ucsc edu
+
+a meta filter for the msca project analysis pipeline.
+Runs shortScaffold_noStartStop and then nScan
+"""
+import sys
+import os
+sys.path.append(
+  os.path.join(
+    os.path.dirname(  # mus_strain_cactus
+      os.path.dirname(  # pipeline
+        os.path.dirname(  # filters
+          os.path.abspath(sys.argv[0])))),
+    'src'))  # so as to import lib_filter
+from argparse import ArgumentParser
+import shutil
+import sys
+import lib_filter
+import lib_run
+
+
+def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
+             alignment, sequence, chromSizes, outDir):
+  """ function to make a call to a filter and record
+  """
+  if not os.path.exists(outDir):
+    os.mkdir(outDir)
+  bin = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), bin)
+  cmd = [bin]
+  for v in ['refGenome', 'genome', 'geneCheckBed', 'geneCheckBedDetails',
+            'alignment', 'sequence', 'chromSizes', 'outDir']:
+    cmd.append('--%s' % v)
+    cmd.append(eval(v))
+  lib_run.RunCommandsSerial([cmd], outDir)
+
+
+def copyResults(fromDir, toDir):
+  fromBed = os.path.join(fromDir, 'out.bed')
+  fromBedDetails = os.path.join(fromDir, 'out_details.bed')
+  toBed = os.path.join(toDir, 'out.bed')
+  toBedDetails = os.path.join(toDir, 'out_details.bed')
+  if os.path.exists(fromBed):
+    shutil.copy2(fromBed, toBed)
+  if os.path.exists(fromBedDetails):
+    shutil.copy2(fromBedDetails, toBedDetails)
+
+
+def main():
+  parser = ArgumentParser()
+  lib_filter.initializeArguments(parser)
+  args = parser.parse_args()
+  lib_filter.checkArguments(args, parser)
+  shortLocation = os.path.join(args.outDir, 'shortScaffold')
+  makeCall('shortScaffold_noStartStop',
+           args.refGenome, args.genome, args.geneCheckBed,
+           args.geneCheckBedDetails, args.alignment,
+           args.sequence, args.chromSizes,
+           shortLocation)
+  nLocation = os.path.join(args.outDir, 'nScan')
+  makeCall('nScan',
+           args.refGenome, args.genome,
+           os.path.join(shortLocation, 'out.bed'),
+           os.path.join(shortLocation, 'out_details.bed'),
+           args.alignment,
+           args.sequence, args.chromSizes,
+           nLocation)
+  copyResults(nLocation, args.outDir)
+
+
+if __name__ == '__main__':
+  main()
