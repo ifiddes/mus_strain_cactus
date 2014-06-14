@@ -6,7 +6,8 @@ shortScaffold_noStartStop
 dent earl, dearl a soe ucsc edu
 
 a filter for the msca project analysis pipeline.
-scans Trascripts for bad transcripts that contain Ns.
+scans Trascripts and PSLs for alignments labeled noStart or noStop
+and then looks for problems with those transcripts.
 """
 from argparse import ArgumentParser
 import sys
