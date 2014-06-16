@@ -19,6 +19,7 @@ sequenceDir = /hive/groups/recon/projs/mus_strain_cactus/data
 alignmentDir = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-16.simpleChain/results/lnb_0001/chained
 halFile = /hive/users/benedict/mouseHub/all.hal
 filtersDir = filters
+stats = src/geneCheckStats.py
 filters = ${filtersDir}/shortScaffold_noStartStop ${filtersDir}/nScan ${filtersDir}/metaFilter_shortScaffold_nScan
 
 all: $(foreach f,$(basename $(notdir ${filters})),$(foreach g,${genomes},results/$f.$g/done))
@@ -36,5 +37,7 @@ results/%:
 	--alignment ${alignmentDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).chained.psl \
 	--sequence ${sequenceDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).fa \
 	--chromSizes ${sequenceDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).sizes \
-	--outDir $(dir $@) > $@.${tmpExt}
+	--outDir $(dir $@) &> $@.${tmpExt}
+	${stats} --geneCheck $(dir $@)/out.bed \
+	--geneCheckDetails $(dir $@)/out_details.bed > $(dir $@)/stats.txt
 	mv $@.${tmpExt} $@
