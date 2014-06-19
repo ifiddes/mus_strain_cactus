@@ -18,8 +18,8 @@ import lib_filter
 
 
 def initializeArguments(parser):
-  parser.add_argument('--geneCheck')
-  parser.add_argument('--geneCheckDetails')
+  parser.add_argument('--geneCheck', type=lib_filter.FileType)
+  parser.add_argument('--geneCheckDetails', type=lib_filter.FileType)
   parser.add_argument('--dontSplit', default=False, action='store_true',
                       help=('do not itemize labels, treat them as-is. '
                             'default=%(default)s'))
@@ -32,16 +32,6 @@ def checkArguments(args, parser):
   for name, value in pairs:
     if value is None:
       parser.error('Specify --%s' % name)
-  # existence
-  pairs = tuple((item, getattr(args, item)) for item in
-                ['geneCheck', 'geneCheckDetails',])
-  for name, value in pairs:
-    if not os.path.exists(value):
-      parser.error('--%s=%s does not exist' % (name, value))
-    setattr(args, name, os.path.abspath(value))
-  # regular file
-  pairs = tuple((item, getattr(args, item)) for item in
-                ['geneCheck', 'geneCheckDetails'])
 
 
 def getAnnotationSet(transAnns, args):
