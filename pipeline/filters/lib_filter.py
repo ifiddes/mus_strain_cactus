@@ -1,9 +1,9 @@
 """
 convenience library for assisting filters.
 """
+from argparse import ArgumentTypeError
 import os
 import sys
-
 
 class Sequence(object):
   """ Represents a sequence of DNA.
@@ -174,17 +174,46 @@ class Transcript(object):
     return cmp((self.chromosomeInterval, self.name),
                (transcript.chromosomeInterval, transcript.name))
 
+
+def DirType(d):
+  """ given a string path to a directory, D, verify it can be used.
+  """
+  d = os.path.abspath(d)
+  if not os.path.exists(d):
+    raise ArgumentTypeError('DirType:%s does not exist' % d)
+  if not os.path.isdir(d):
+    raise ArgumentTypeError('DirType:%s is not a directory' % d)
+  if os.access(d, os.R_OK):
+    return d
+  else:
+    raise ArgumentTypeError('DirType:%s is not a readable dir' % d)
+
+
+def FileType(f):
+  """ given a string path to a file, F, verify it can be used.
+  """
+  f = os.path.abspath(f)
+  if not os.path.exists(f):
+    raise ArgumentTypeError('FileType:%s does not exist' % f)
+  if not os.path.isfile(f):
+    raise ArgumentTypeError('FileType:%s is not a regular file' % f)
+  if os.access(f, os.R_OK):
+    return f
+  else:
+    raise ArgumentTypeError('FileType:%s is not a readable file' % f)
+
+
 def initializeArguments(parser):
   """ given an argparse ArgumentParser object, add in the default arguments.
   """
-  parser.add_argument('--refGenome')
-  parser.add_argument('--genome')
-  parser.add_argument('--geneCheckBed')
-  parser.add_argument('--geneCheckBedDetails')
-  parser.add_argument('--alignment')
-  parser.add_argument('--sequence')
-  parser.add_argument('--chromSizes')
-  parser.add_argument('--outDir')
+  parser.add_argument('--refGenome', type=str)
+  parser.add_argument('--genome', type=str)
+  parser.add_argument('--geneCheckBed', type=FileType)
+  parser.add_argument('--geneCheckBedDetails', type=FileType)
+  parser.add_argument('--alignment', type=FileType)
+  parser.add_argument('--sequence', type=FileType)
+  parser.add_argument('--chromSizes', type=FileType)
+  parser.add_argument('--outDir', type=DirType)
 
 
 def checkArguments(args, parser):
@@ -199,26 +228,6 @@ def checkArguments(args, parser):
   for name, value in pairs:
     if value is None:
       parser.error('Specify --%s' % name)
-  # existence
-  pairs = tuple((item, getattr(args, item)) for item in
-                ['geneCheckBed', 'geneCheckBedDetails',
-                 'alignment', 'sequence', 'chromSizes',
-                 'outDir'])
-  for name, value in pairs:
-    if not os.path.exists(value):
-      parser.error('--%s=%s does not exist' % (name, value))
-    setattr(args, name, os.path.abspath(value))
-  # regular file
-  pairs = tuple((item, getattr(args, item)) for item in
-                ['geneCheckBed', 'geneCheckBedDetails',
-                 'alignment', 'sequence', 'chromSizes',
-                ])
-  for name, value in pairs:
-    if not os.path.isfile(value):
-      parser.error('--%s=%s is not a file' % (name, value))
-  # directory
-  if not os.path.isdir(args.outDir):
-    parser.error('--outDir=%s is not a directory' % args.outDir)
   # record the issuing command
   with open(os.path.join(args.outDir, 'command.log'), 'w') as f:
     f.write('%s %s %s %s %s %s %s %s %s\n'
