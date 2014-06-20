@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
-metaFilter_shortScaffold_nScan
+metaFilter_shortScaffold_nLook
 13 June 2014
 
 dent earl, dearl a soe ucsc edu
 
 a meta filter for the msca project analysis pipeline.
-Runs shortScaffold_noStartStop and then nScan
+Runs shortScaffold_noStartStop and then nLook
 """
 import sys
 import os
@@ -61,8 +61,8 @@ def main():
            args.geneCheckBedDetails, args.alignment,
            args.sequence, args.chromSizes,
            shortLocation)
-  nLocation = os.path.join(args.outDir, 'nScan')
-  makeCall('nScan',
+  nLocation = os.path.join(args.outDir, 'nLook')
+  makeCall('nLook',
            args.refGenome, args.genome,
            os.path.join(shortLocation, 'out.bed'),
            os.path.join(shortLocation, 'out_details.bed'),

@@ -5,6 +5,7 @@ from argparse import ArgumentTypeError
 import os
 import sys
 
+
 class Sequence(object):
   """ Represents a sequence of DNA.
   """
