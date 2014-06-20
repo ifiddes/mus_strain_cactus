@@ -22,7 +22,7 @@ class Sequence(object):
   def sliceSequence(self, start, stop):
     """ return the proper slice of the sequence.
     BED format coordinates: 0 based start, stop is exclusive
-    [start, stop). so .sliceSequence(0, 3) returns a string length 3.
+    [start, stop). E.g. Sequence.sliceSequence(0, 3) returns a string length 3.
     """
     return self._sequence[start:stop]
 
