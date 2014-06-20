@@ -40,6 +40,8 @@ def checkArguments(args, parser):
   for name, value in pairs:
     if value is None:
       parser.error('Specify --%s' % name)
+  if args.resultDirs == []:
+    parser.error('Specify result directories to process.')
 
 
 def dirToTrack(d):
