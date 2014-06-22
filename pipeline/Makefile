@@ -19,7 +19,7 @@ alignmentDir = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCh
 halFile = /hive/users/benedict/mouseHub/all.hal
 filtersDir = filters
 stats = src/geneCheckStats.py
-filters = ${filtersDir}/shortScaffold_noStartStop ${filtersDir}/nLook ${filtersDir}/metaFilter_nLook
+filters = ${filtersDir}/metaFilter ${filtersDir}/shortScaffold_noStartStop ${filtersDir}/nLook ${filtersDir}/noStopCorrecter
 
 all: $(foreach f,$(basename $(notdir ${filters})),$(foreach g,${genomes},results/$f.$g/done))
 

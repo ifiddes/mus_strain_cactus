@@ -14,19 +14,6 @@ import sys
 import lib_filter
 
 
-def hashkey(obj):
-  """ given either a PslRow or Transcript, return a string to use as dict key.
-  """
-  if isinstance(obj, lib_filter.PslRow):
-    return '%s_%s_%d_%d' % (obj.qName, obj.tName, obj.tStart, obj.tEnd)
-  elif isinstance(obj, lib_filter.Transcript):
-    return '%s_%s_%d_%d' % (obj.name, obj.chromosomeInterval.chromosome,
-                            obj.chromosomeInterval.start,
-                            obj.chromosomeInterval.stop)
-  else:
-    raise RuntimeError('Unknown object type: %s' % obj.__clas__)
-
-
 def main():
   parser = ArgumentParser()
   lib_filter.initializeArguments(parser)
@@ -35,17 +22,17 @@ def main():
   alignments = lib_filter.getAlignments(args.alignment)
   alignments_dict = {}
   for a in alignments:
-    if hashkey(a) in alignments_dict:
+    if a.hashkey() in alignments_dict:
       # currently first-come first-served. See docs/bugs.txt for this problem.
       continue
-    alignments_dict[hashkey(a)] = a
+    alignments_dict[a.hashkey()] = a
   transcripts = lib_filter.getTranscripts(
     args.geneCheckBed, args.geneCheckBedDetails)
   for t in transcripts:
     for annot in t.annotations:
       if 'noStart' not in annot.labels and 'noStop' not in annot.labels:
         continue
-      a_name = hashkey(t)
+      a_name = t.hashkey()
       if a_name not in alignments_dict:
         continue
       a = alignments_dict[a_name]

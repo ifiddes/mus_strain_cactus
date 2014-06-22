@@ -57,6 +57,10 @@ class PslRow(object):
     self.blockSizes = map(int, [x for x in data[18].split(',') if x])
     self.qStarts = map(int, [x for x in data[19].split(',') if x])
     self.tStarts = map(int, [x for x in data[20].split(',') if x])
+  def hashkey(self):
+    """ return a string to use as dict key.
+    """
+    return '%s_%s_%d_%d' % (self.qName, self.tName, self.tStart, self.tEnd)
 
 
 """The following data types are used for iterating over gene-check-detail and
@@ -78,7 +82,7 @@ An example of entries from such files:
 
 class ChromosomeInterval(object):
   """ Represents an interval of a chromosome. BED coordinates, strand is True,
-  False or NULL (if no strand)
+  False or None (if no strand)
   """
   def __init__(self, chromosome, start, stop, strand):
     self.chromosome = str(chromosome)
@@ -153,6 +157,13 @@ class Transcript(object):
             self.thickStart == other.thickStart and
             self.thickEnd == other.thickEnd and
             self.itemRgb == other.itemRgb)
+
+  def hashkey(self):
+    """ return a string to use as dict key.
+    """
+    return '%s_%s_%d_%d' % (self.name, self.chromosomeInterval.chromosome,
+                            self.chromosomeInterval.start,
+                            self.chromosomeInterval.stop)
 
   def bedString(self):
     """ Write a transcript object to the given file.
@@ -244,7 +255,7 @@ def checkArguments(args, parser):
                ))
 
 
-def getSequences(infile):
+def getSequences(infile, upper=False):
   """ Given a path to a fasta file, return a dictionary of Sequence objects
   keyed on the sequence name
   """
@@ -252,7 +263,10 @@ def getSequences(infile):
   seq = None
   with open(infile, 'r') as f:
     for seq in readSequence(f):
-      seqDict[seq.name] = seq
+      if upper:
+        seqDict[seq.name] = seq.setUpper()
+      else:
+        seqDict[seq.name] = seq
   return seqDict
 
 

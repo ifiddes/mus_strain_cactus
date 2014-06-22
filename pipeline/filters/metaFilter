@@ -55,21 +55,18 @@ def main():
   lib_filter.initializeArguments(parser)
   args = parser.parse_args()
   lib_filter.checkArguments(args, parser)
-  shortLocation = os.path.join(args.outDir, 'shortScaffold')
-  makeCall('shortScaffold_noStartStop',
-           args.refGenome, args.genome, args.geneCheckBed,
-           args.geneCheckBedDetails, args.alignment,
-           args.sequence, args.chromSizes,
-           shortLocation)
-  nLocation = os.path.join(args.outDir, 'nLook')
-  makeCall('nLook',
-           args.refGenome, args.genome,
-           os.path.join(shortLocation, 'out.bed'),
-           os.path.join(shortLocation, 'out_details.bed'),
-           args.alignment,
-           args.sequence, args.chromSizes,
-           nLocation)
-  copyResults(nLocation, args.outDir)
+  filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter']
+  inputs = [(args.geneCheckBed, args.geneCheckBedDetails)]
+  locations = []
+  for f in filters:
+    locations.append(os.path.join(args.outDir, f))
+    inputs.append((os.path.join(args.outDir, f, 'out.bed'),
+                   os.path.join(args.outDir, f, 'out_details.bed')))
+  for i, i in enumerate(filters, 0):
+    makeCall(f, args.refGenome, args.genome,
+             inputs[i][0], inputs[i][1],
+             args.alignment, args.sequence, args.chromSizes, locations[i])
+  copyResults(locations[-1], args.outDir)
 
 
 if __name__ == '__main__':
