@@ -8,7 +8,6 @@ tmpExt = ${host}.${ppid}.tmp
 export SHELLOPTS=pipefail
 export PATH:=${PATH}:${ROOT}/extern/pycbio/bin:/hive/groups/recon/local/bin
 
-
 genomes = AKRJ BALBcJ C3HHeJ C57B6NJ CBAJ DBA2J FVBNJ NZOHlLtJ Rattus
 refGenome = C57B6J
 
@@ -20,7 +19,7 @@ alignmentDir = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCh
 halFile = /hive/users/benedict/mouseHub/all.hal
 filtersDir = filters
 stats = src/geneCheckStats.py
-filters = ${filtersDir}/shortScaffold_noStartStop ${filtersDir}/nLook ${filtersDir}/metaFilter_shortScaffold_nLook
+filters = ${filtersDir}/shortScaffold_noStartStop ${filtersDir}/nLook ${filtersDir}/metaFilter_nLook
 
 all: $(foreach f,$(basename $(notdir ${filters})),$(foreach g,${genomes},results/$f.$g/done))
 
