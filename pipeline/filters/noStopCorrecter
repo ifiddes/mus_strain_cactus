@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+"""
+noStopCorrecter
+21 June 2014
+
+dent earl, dearl a soe ucsc edu
+
+a filter for the msca project analysis pipeline.
+scans Trascripts and PSLs for alignments labeled noStop
+and then looks to see if there is actually an out of frame stop
+codon.
+as it turns out gene-check assumes that the stop will be inframe,
+but occasionally there will be an insertion within the transcript
+that forces things out of frame. Then, when there is a perfectly
+fine stop codon, gene-check will throw a noStop. This filter looks
+for that and then adds a label if it finds it.
+"""
+from argparse import ArgumentParser
+import sys
+import lib_filter
+
+
+STOP_CODONS = ['TAG', 'TAA', 'TGA']
+
+
+def main():
+  parser = ArgumentParser()
+  lib_filter.initializeArguments(parser)
+  args = parser.parse_args()
+  lib_filter.checkArguments(args, parser)
+  seq_dict = lib_filter.getSequences(args.sequence, upper=True)
+  transcripts = lib_filter.getTranscripts(
+    args.geneCheckBed, args.geneCheckBedDetails)
+  for t in transcripts:
+    thickStart = t.thickStart
+    thickEnd = t.thickEnd
+    for annot in t.annotations:
+      if 'noStop' not in annot.labels:
+        continue
+      chrom = annot.chromosomeInterval.chromosome
+      strand = annot.chromosomeInterval.strand
+      if strand or strand is None:
+        # positive strand
+        seq = seq_dict[chrom].sliceSequence(thickEnd - 3, thickEnd)
+      else:
+        # negative strand
+        seq = seq_dict[chrom].sliceSequence(thickStart, thickStart + 3)
+      if seq in STOP_CODONS:
+        annot.addLabel('outOfFrameStop')
+  lib_filter.writeAllBeds(transcripts, args)
+
+
+if __name__ == '__main__':
+  main()
