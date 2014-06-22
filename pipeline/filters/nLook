@@ -29,6 +29,9 @@ def main():
       chrom = annot.chromosomeInterval.chromosome
       start = annot.chromosomeInterval.start
       stop = annot.chromosomeInterval.stop
+      if chrom not in seq_dict:
+        raise RuntimeError('Missing scaffold! %s: %s'
+                           % (t.name, chrom))
       seq = seq_dict[chrom].sliceSequence(start, stop)
       if 'N' in seq:
         annot.addLabel('containsNs')

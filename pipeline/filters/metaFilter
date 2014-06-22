@@ -26,7 +26,7 @@ import lib_run
 
 def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
              alignment, sequence, chromSizes, outDir):
-  """ function to make a call to a filter and record
+  """ Function to make a call to a filter and handle input / output.
   """
   if not os.path.exists(outDir):
     os.mkdir(outDir)
@@ -40,6 +40,8 @@ def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
 
 
 def copyResults(fromDir, toDir):
+  """ Copy the bed results from FROMDIR to TODIR.
+  """
   fromBed = os.path.join(fromDir, 'out.bed')
   fromBedDetails = os.path.join(fromDir, 'out_details.bed')
   toBed = os.path.join(toDir, 'out.bed')
@@ -55,17 +57,21 @@ def main():
   lib_filter.initializeArguments(parser)
   args = parser.parse_args()
   lib_filter.checkArguments(args, parser)
+  # this is the order that filters will be run
   filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter']
+  # create needed lists containing file / directory locations
   inputs = [(args.geneCheckBed, args.geneCheckBedDetails)]
   locations = []
   for f in filters:
     locations.append(os.path.join(args.outDir, f))
     inputs.append((os.path.join(args.outDir, f, 'out.bed'),
                    os.path.join(args.outDir, f, 'out_details.bed')))
-  for i, i in enumerate(filters, 0):
+  # run filters in sequence
+  for i, f in enumerate(filters, 0):
     makeCall(f, args.refGenome, args.genome,
              inputs[i][0], inputs[i][1],
              args.alignment, args.sequence, args.chromSizes, locations[i])
+  # copy back last filter to the metaFilter directory for end use
   copyResults(locations[-1], args.outDir)
 
 

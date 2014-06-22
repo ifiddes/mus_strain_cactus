@@ -263,10 +263,9 @@ def getSequences(infile, upper=False):
   seq = None
   with open(infile, 'r') as f:
     for seq in readSequence(f):
+      seqDict[seq.name] = seq
       if upper:
-        seqDict[seq.name] = seq.setUpper()
-      else:
-        seqDict[seq.name] = seq
+        seqDict[seq.name].setUpper()
   return seqDict
 
 
