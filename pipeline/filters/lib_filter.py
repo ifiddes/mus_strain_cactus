@@ -265,6 +265,7 @@ def reverseComplement(seq):
                 '-': '-'}
   seq = seq[::-1]  # reverse
   seq = ''.join(map(lambda s: complement[s], seq))
+  return seq
 
 
 def getSequences(infile, upper=False):
