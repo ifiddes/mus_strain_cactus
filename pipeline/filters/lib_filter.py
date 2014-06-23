@@ -258,11 +258,12 @@ def checkArguments(args, parser):
 def reverseComplement(seq):
   """ Given a sequence, return the reverse complement.
   """
-  complement = {'A': 'T',
-                'C': 'G',
-                'G': 'C',
-                'T': 'A',
-                '-': '-'}
+  pairs = [('a', 't'), ('g', 'c')]
+  complement = {}
+  for a, b in pairs:
+    complement[a], complement[b] = b, a
+    complement[a.upper()], complement[b.upper()] = b.upper(), a.upper()
+  complement['-'] = '-'
   seq = seq[::-1]  # reverse
   seq = ''.join(map(lambda s: complement[s], seq))
   return seq
