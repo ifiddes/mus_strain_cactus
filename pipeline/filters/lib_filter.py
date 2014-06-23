@@ -255,6 +255,18 @@ def checkArguments(args, parser):
                ))
 
 
+def reverseComplement(seq):
+  """ Given a sequence, return the reverse complement.
+  """
+  complement = {'A': 'T',
+                'C': 'G',
+                'G': 'C',
+                'T': 'A',
+                '-': '-'}
+  seq = seq[::-1]  # reverse
+  seq = ''.join(map(lambda s: complement[s], seq))
+
+
 def getSequences(infile, upper=False):
   """ Given a path to a fasta file, return a dictionary of Sequence objects
   keyed on the sequence name
