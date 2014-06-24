@@ -16,7 +16,7 @@ sys.path.append(
       os.path.dirname(  # pipeline
         os.path.dirname(  # filters
           os.path.abspath(sys.argv[0])))),
-    'src'))  # so as to import lib_filter
+    'src'))  # to import lib_run
 import shutil
 import sys
 import lib_filter
@@ -55,8 +55,9 @@ def copyResults(fromDir, toDir):
 
 def main():
   args = lib_filter.boilerplateArguments()
-  # this is the order that filters will be run. gigo should always be run last.
-  filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter', 'gigo']
+  # this is the order that filters will be run.
+  filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter']
+  filters.append('gigo')  # gigo should always be run last.
   # create needed lists containing file / directory locations
   inputs = [(args.geneCheckBed, args.geneCheckBedDetails)]
   locations = []
