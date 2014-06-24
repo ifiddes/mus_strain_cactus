@@ -13,7 +13,7 @@ import lib_filter
 
 
 def main():
-  args = lib_filter.boilperplateArguments()
+  args = lib_filter.boilerplateArguments()
   seq_dict = lib_filter.getSequences(args.sequence, upper=True)
   chrom_dict = lib_filter.getChromSizes(args.chromSizes)
   bed_file = open(args.geneCheckBed, 'r')

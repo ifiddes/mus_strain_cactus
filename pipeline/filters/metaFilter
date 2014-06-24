@@ -24,6 +24,7 @@ import lib_run
 
 
 def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
+             geneCheckBedOriginal, geneCheckBedDetailsOriginal,
              alignment, sequence, chromSizes, outDir):
   """ Function to make a call to a filter and handle input / output.
   """
@@ -32,6 +33,7 @@ def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
   bin = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), bin)
   cmd = [bin]
   for v in ['refGenome', 'genome', 'geneCheckBed', 'geneCheckBedDetails',
+            'geneCheckBedOriginal', 'geneCheckBedDetailsOriginal',
             'alignment', 'sequence', 'chromSizes', 'outDir']:
     cmd.append('--%s' % v)
     cmd.append(eval(v))
@@ -52,9 +54,9 @@ def copyResults(fromDir, toDir):
 
 
 def main():
-  args = lib_filter.boilperplateArguments()
-  # this is the order that filters will be run
-  filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter']
+  args = lib_filter.boilerplateArguments()
+  # this is the order that filters will be run. gigo should always be run last.
+  filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter', 'gigo']
   # create needed lists containing file / directory locations
   inputs = [(args.geneCheckBed, args.geneCheckBedDetails)]
   locations = []
@@ -66,6 +68,7 @@ def main():
   for i, f in enumerate(filters, 0):
     makeCall(f, args.refGenome, args.genome,
              inputs[i][0], inputs[i][1],
+             args.geneCheckBedOriginal, args.geneCheckBedDetailsOriginal,
              args.alignment, args.sequence, args.chromSizes, locations[i])
   # copy back last filter to the metaFilter directory for end use
   copyResults(locations[-1], args.outDir)

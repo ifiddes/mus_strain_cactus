@@ -14,7 +14,7 @@ import lib_filter
 
 
 def main():
-  args = lib_filter.boilperplateArguments()
+  args = lib_filter.boilerplateArguments()
   alignments = lib_filter.getAlignments(args.alignment)
   alignments_dict = {}
   for a in alignments:
