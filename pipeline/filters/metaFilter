@@ -24,7 +24,7 @@ import lib_run
 
 
 def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
-             geneCheckBedOriginal, geneCheckBedDetailsOriginal,
+             originalGeneCheckBed, originalGeneCheckBedDetails,
              alignment, sequence, chromSizes, outDir):
   """ Function to make a call to a filter and handle input / output.
   """
