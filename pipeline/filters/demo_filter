@@ -8,16 +8,12 @@ dent earl, dearl a soe ucsc edu
 Demonstration of what a filter should look like.
 
 """
-from argparse import ArgumentParser
 import sys
 import lib_filter
 
 
 def main():
-  parser = ArgumentParser()
-  lib_filter.initializeArguments(parser)
-  args = parser.parse_args()
-  lib_filter.checkArguments(args, parser)
+  args = lib_filter.boilperplateArguments()
   # seq_dict = lib_filter.getSequences(args.sequence)
   # chrom_dict = lib_filter.getChromSizes(args.chromSizes)
   # for chrom in chrom_dict:

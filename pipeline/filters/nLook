@@ -8,16 +8,12 @@ dent earl, dearl a soe ucsc edu
 a filter for the msca project analysis pipeline.
 scans Trascripts for bad transcripts that contain Ns.
 """
-from argparse import ArgumentParser
 import sys
 import lib_filter
 
 
 def main():
-  parser = ArgumentParser()
-  lib_filter.initializeArguments(parser)
-  args = parser.parse_args()
-  lib_filter.checkArguments(args, parser)
+  args = lib_filter.boilperplateArguments()
   seq_dict = lib_filter.getSequences(args.sequence, upper=True)
   chrom_dict = lib_filter.getChromSizes(args.chromSizes)
   bed_file = open(args.geneCheckBed, 'r')

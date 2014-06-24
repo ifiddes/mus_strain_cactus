@@ -17,7 +17,6 @@ sys.path.append(
         os.path.dirname(  # filters
           os.path.abspath(sys.argv[0])))),
     'src'))  # so as to import lib_filter
-from argparse import ArgumentParser
 import shutil
 import sys
 import lib_filter
@@ -53,10 +52,7 @@ def copyResults(fromDir, toDir):
 
 
 def main():
-  parser = ArgumentParser()
-  lib_filter.initializeArguments(parser)
-  args = parser.parse_args()
-  lib_filter.checkArguments(args, parser)
+  args = lib_filter.boilperplateArguments()
   # this is the order that filters will be run
   filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter']
   # create needed lists containing file / directory locations

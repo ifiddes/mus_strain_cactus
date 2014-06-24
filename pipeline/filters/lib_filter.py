@@ -110,11 +110,14 @@ class TranscriptAnnotation(object):
     self.name = str(name)
     self.labels = list(label)  # list of strings
 
-  def addLabel(self, label):
+  def addLabel(self, label, prepend=False):
     """ maintain the ordering of self.labels but prevent duplicates
     """
     if label not in self.labels:
-      self.labels.append(label)
+      if prepend:
+        self.labels.insert(0, label)
+      else:
+        self.labels.append(label)
 
   def bedString(self):
       return "\t".join([self.chromosomeInterval.chromosome,
@@ -215,6 +218,17 @@ def FileType(f):
     raise ArgumentTypeError('FileType:%s is not a readable file' % f)
 
 
+def boilerplateArguments():
+  """ start from scratch and hand back a valid and initialized args object.
+  """
+  from argparse import ArgumentParser
+  parser = ArgumentParser()
+  initializeArguments(parser)
+  args = parser.parse_args()
+  checkArguments(args, parser)
+  return args
+
+
 def initializeArguments(parser):
   """ given an argparse ArgumentParser object, add in the default arguments.
   """
@@ -222,6 +236,8 @@ def initializeArguments(parser):
   parser.add_argument('--genome', type=str)
   parser.add_argument('--geneCheckBed', type=FileType)
   parser.add_argument('--geneCheckBedDetails', type=FileType)
+  parser.add_argument('--originalGeneCheckBed', type=FileType)
+  parser.add_argument('--originalGeneCheckBedDetails', type=FileType)
   parser.add_argument('--alignment', type=FileType)
   parser.add_argument('--sequence', type=FileType)
   parser.add_argument('--chromSizes', type=FileType)
@@ -235,6 +251,7 @@ def checkArguments(args, parser):
   pairs = tuple((item, getattr(args, item)) for item in
                 ['refGenome', 'genome',
                  'geneCheckBed', 'geneCheckBedDetails',
+                 'originalGeneCheckBed', 'originalGeneCheckBedDetails',
                  'alignment', 'sequence', 'chromSizes',
                  'outDir'])
   for name, value in pairs:
@@ -370,6 +387,27 @@ def getTranscripts(bedFile, bedDetailsFile):
   return transcripts
 
 
+def transcriptListToDict(transcripts, noDuplicates=False):
+  """ Given a list af Transcript objects, attempt to transfrom them into a dict
+  of lists. key is transcript name, value is list of Transcript objects.
+  If NODUPLICATES is true, then the value will be a single Transcript object.
+  """
+  result = {}
+  for t in transcripts:
+    if t.name not in result:
+      result[t.name] = []
+    else:
+      if noDuplicates:
+        raise RuntimeError('transcriptListToDict: Discovered a '
+                           'duplicate transcript %s %s'
+                           % (t.name, t.chromosomeInterval.chromosome))
+    if noDuplicates:
+      result[t.name] = t
+    else:
+      result[t.name].append(t)
+  return result
+
+
 def tokenizeBedStream(bedStream):
   """ Iterator through bed file, returning lines as list of tokens
   """
@@ -377,6 +415,7 @@ def tokenizeBedStream(bedStream):
     if line != '':
       tokens = line.split()
       yield tokens
+
 
 def normalizeAnnotation(transcriptAnnotation):
   """ Normalizes the transcript annotation labels.
@@ -397,6 +436,7 @@ def normalizeAnnotation(transcriptAnnotation):
     newLabels = [ "_".join(transcriptAnnotation.labels[:2])]
     newLabels += transcriptAnnotation.labels[2:]
     transcriptAnnotation.labels = newLabels
+
 
 def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   """ Iterates over the transcripts detailed in the two streams, producing
