@@ -32,6 +32,8 @@ def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
     os.mkdir(outDir)
   bin = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), bin)
   cmd = [bin]
+  # todo: if the code hasn't changed and the input data hasn't changed,
+  #       then don't rerun the command.
   for v in ['refGenome', 'genome', 'geneCheckBed', 'geneCheckBedDetails',
             'originalGeneCheckBed', 'originalGeneCheckBedDetails',
             'alignment', 'sequence', 'chromSizes', 'outDir']:
