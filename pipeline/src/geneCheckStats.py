@@ -57,11 +57,23 @@ def getAnnotationSet(transAnns, args):
   return labels
 
 
+def isOk(annots):
+  """ given a list of TranscriptAnnotations, return True if data is OK.
+  """
+  if annots == []:
+    return True
+  for a in annots:
+    for label in a.labels:
+      if label not in ['hasOkCopy', 'hasBadCopy']:
+        return False
+  return True
+
+
 def processTranscripts(args):
   """ Read the transcript bed files and return a dict of categories and counts.
   """
   transcripts = lib_filter.getTranscripts(args.geneCheck, args.geneCheckDetails)
-  categories = ['ok', 'any', 'badFrame', 'cdsGap', 'frameDiscontig',
+  categories = ['ok', 'not ok', 'badFrame', 'cdsGap', 'frameDiscontig',
                 'frameMismatch', 'noStart', 'noStop', 'orfStop',
                 'unknownCdsSplice', 'unknownUtrSplice', 'utrGap',
                 'containsNs', 'alignmentPartialMap', 'alignmentAbutsEdge',
@@ -71,10 +83,10 @@ def processTranscripts(args):
     counts[cat] = 0
   for t in transcripts:
     counts['total'] += 1
-    if t.annotations == []:
+    if isOk(t.annotations):
       counts['ok'] += 1
       continue
-    counts['any'] += 1
+    counts['not ok'] += 1
     labelSet = getAnnotationSet(t.annotations, args)
     for label in labelSet:
       if label not in counts:
@@ -100,11 +112,11 @@ def reportCounts(counts):
   print '%*s %*d (%.3f)' % (max_str, 'total', max_digit, counts['total'], 1.0)
   print '%*s %*d (%.3f)' % (max_str, 'ok', max_digit, counts['ok'],
                             float(counts['ok']) / counts['total'])
-  print '%*s %*d (%.3f)' % (max_str, 'any', max_digit, counts['any'],
-                            float(counts['any']) / counts['total'])
+  print '%*s %*d (%.3f)' % (max_str, 'not ok', max_digit, counts['not ok'],
+                            float(counts['not ok']) / counts['total'])
   order = sorted(counts, key=lambda x: counts[x], reverse=True)
   for cat in order:
-    if cat in ['total', 'ok', 'any']:
+    if cat in ['total', 'ok', 'not ok']:
       continue
     print '%*s %*d (%.3f)' % (max_str, cat, max_digit, counts[cat],
                                float(counts[cat]) / counts['total'])

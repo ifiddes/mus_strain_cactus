@@ -58,7 +58,8 @@ def copyResults(fromDir, toDir):
 def main():
   args = lib_filter.boilerplateArguments()
   # this is the order that filters will be run.
-  filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter']
+  filters = ['shortScaffold_noStartStop', 'nLook', 'noStopCorrecter',
+             'paralogs']
   filters.append('gigo')  # gigo should always be run last.
   # create needed lists containing file / directory locations
   inputs = [(args.geneCheckBed, args.geneCheckBedDetails)]
