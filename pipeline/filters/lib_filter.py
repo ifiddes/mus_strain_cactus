@@ -9,6 +9,7 @@ import sys
 class Sequence(object):
   """ Represents a sequence of DNA.
   """
+  __slots__ = ('name', '_sequence')  # conserve memory
   def __init__(self, name, sequence):
     self.name = name  # chromosome or scaffold name
     self._sequence = sequence  # ACGTs
@@ -32,6 +33,11 @@ class PslRow(object):
   """ Represents a single row in a PSL file.
   http://genome.ucsc.edu/FAQ/FAQformat.html#format2
   """
+  __slots__ = ('matches', 'misMatches', 'repMatches', 'nCount',
+               'qNumInsert', 'qBaseInsert', 'tNumInsert', 'tBaseInsert',
+               'strand', 'qName', 'qSize', 'qStart', 'qEnd',
+               'tName', 'tSize', 'tStart', 'tEnd', 'blockCount',
+               'blockSizes', 'qStarts', 'tStarts')  # conserve memory
   def __init__(self, line):
     data = line.split()
     assert(len(data) == 21)
@@ -84,6 +90,7 @@ class ChromosomeInterval(object):
   """ Represents an interval of a chromosome. BED coordinates, strand is True,
   False or None (if no strand)
   """
+  __slots__ = ('chromosome', 'start', 'stop', 'strand')  # conserve memory
   def __init__(self, chromosome, start, stop, strand):
     self.chromosome = str(chromosome)
     self.start = int(start)
@@ -105,6 +112,7 @@ class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
   classification bed files
   """
+  __slots__ = ('chromosomeInterval', 'name', 'label')  # conserve memory
   def __init__(self, chromosomeInterval, name, label):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
@@ -139,6 +147,8 @@ class TranscriptAnnotation(object):
 class Transcript(object):
   """ Represent a transcript and its annotations
   """
+  __slots__ = ('chromosomeInterval', 'name', 'exons', 'annotations',
+               'score', 'thickStart', 'thickEnd', 'itemRgb')  # conserve memory
   def __init__(self, chromosomeInterval, name, exons, annotations,
                score, thickStart, thickEnd, itemRgb):
     self.chromosomeInterval = chromosomeInterval
