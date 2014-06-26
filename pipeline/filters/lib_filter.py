@@ -112,7 +112,7 @@ class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
   classification bed files
   """
-  __slots__ = ('chromosomeInterval', 'name', 'label')  # conserve memory
+  __slots__ = ('chromosomeInterval', 'name', 'labels')  # conserve memory
   def __init__(self, chromosomeInterval, name, label):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
