@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+"""
+paralogs
+23 June 2014
+
+dent earl, dearl a soe ucsc edu
+
+a filter for the msca project analysis pipeline.
+scans Trascripts and PSLs for transcript alignments located in multiple
+locations and labels them as paralogous.
+"""
+import sys
+import lib_filter
+
+
+def reduceTranscripts(transcripts):
+  """ reduce the list of transcripts down to a list of Transcript objects
+  where there is one list per NAME. Returns a dict of lists. Key is
+  transcript name, value is list of transcripts
+  """
+  reduced = {}
+  for t in transcripts:
+    if t.name not in reduced:
+      reduced[t.name] = []
+    reduced[t.name].append(t)
+  return reduced
+
+
+def hasOkCopy(this, transcriptList):
+  """ given a transcript THIS and a list of transcripts which contains
+  THIS, determine if there is a non-THIS transcript that is OK.
+  """
+  for t in transcriptList:
+    if this == t:
+      continue
+    if t.annotations == []:
+      return True
+  return False
+
+
+def hasBadCopy(this, transcriptList):
+  """ given a transcript THIS and a list of transcripts which contains
+  THIS, determine if there is a non-THIS transcript that is BAD.
+  """
+  for t in transcriptList:
+    if this == t:
+      continue
+    for annot in t.annotations:
+      if len(annot.labels):
+        return True
+  return False
+
+
+def main():
+  args = lib_filter.boilerplateArguments()
+  transcripts = lib_filter.getTranscripts(
+    args.geneCheckBed, args.geneCheckBedDetails)
+  uniqueTranscripts = reduceTranscripts(transcripts)
+  for t in transcripts:
+    if hasOkCopy(t, uniqueTranscripts[t.name]):
+      if t.annotations == []:
+        t.annotations.append(
+          lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
+      for annot in t.annotations:
+        annot.addLabel('hasOkCopy')
+    if hasBadCopy(t, uniqueTranscripts[t.name]):
+      for annot in t.annotations:
+        annot.addLabel('hasBadCopy')
+  lib_filter.writeAllBeds(transcripts, args)
+
+
+if __name__ == '__main__':
+  main()
