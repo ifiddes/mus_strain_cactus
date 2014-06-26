@@ -64,6 +64,9 @@ def main():
       for annot in t.annotations:
         annot.addLabel('hasOkCopy')
     if hasBadCopy(t, uniqueTranscripts[t.name]):
+      if t.annotations == []:
+        t.annotations.append(
+          lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
         annot.addLabel('hasBadCopy')
   lib_filter.writeAllBeds(transcripts, args)
