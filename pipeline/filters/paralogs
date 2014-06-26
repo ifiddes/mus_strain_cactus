@@ -35,19 +35,26 @@ def hasOkCopy(this, transcriptList):
       continue
     if t.annotations == []:
       return True
-  return False
+    for annot in t.annotations:
+      for label in annot.labels:
+        if label is not in ['hasOkCopy', 'hasBadCopy']:
+          return False
+    return True
 
 
 def hasBadCopy(this, transcriptList):
   """ given a transcript THIS and a list of transcripts which contains
   THIS, determine if there is a non-THIS transcript that is BAD.
   """
+  # note there is code duplication here but this is sufficiently confusing when
+  # written in a general fashion to justify duplication.
   for t in transcriptList:
     if this == t:
       continue
     for annot in t.annotations:
-      if len(annot.labels):
-        return True
+      for label in annot.labels:
+        if label is not in ['hasOkCopy', 'hasBadCopy']:
+          return True
   return False
 
 
@@ -59,12 +66,14 @@ def main():
   for t in transcripts:
     if hasOkCopy(t, uniqueTranscripts[t.name]):
       if t.annotations == []:
+        # OK transcripts can have no annotations
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
         annot.addLabel('hasOkCopy')
     if hasBadCopy(t, uniqueTranscripts[t.name]):
       if t.annotations == []:
+        # OK transcripts can have no annotations
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
