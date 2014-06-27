@@ -14,6 +14,7 @@ sys.path.append(
     os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))), 'filters'))
 from argparse import ArgumentParser
 import math
+import numpy
 import lib_filter
 
 
@@ -23,6 +24,9 @@ def initializeArguments(parser):
   parser.add_argument('--dontSplit', default=False, action='store_true',
                       help=('do not itemize labels, treat them as-is. '
                             'default=%(default)s'))
+  parser.add_argument('--summaryCounts', default=False, action='store_true',
+                      help=('put out a summary table of object counts at '
+                            'the end.'))
 
 
 def checkArguments(args, parser):
@@ -73,6 +77,11 @@ def processTranscripts(args):
   """ Read the transcript bed files and return a dict of categories and counts.
   """
   transcripts = lib_filter.getTranscripts(args.geneCheck, args.geneCheckDetails)
+  summary = {}
+  summary['Transcripts'] = len(transcripts)
+  summary['TranscriptAnnotations'] = 0
+  summary['TA_per_T'] = []
+  summary['L_per_TA'] = []
   categories = ['ok', 'not ok', 'badFrame', 'cdsGap', 'frameDiscontig',
                 'frameMismatch', 'noStart', 'noStop', 'orfStop',
                 'unknownCdsSplice', 'unknownUtrSplice', 'utrGap',
@@ -83,16 +92,19 @@ def processTranscripts(args):
     counts[cat] = 0
   for t in transcripts:
     counts['total'] += 1
+    summary['TranscriptAnnotations'] += len(t.annotations)
+    summary['TA_per_T'].append(len(t.annotations))
     if isOk(t.annotations):
       counts['ok'] += 1
       continue
     counts['not ok'] += 1
     labelSet = getAnnotationSet(t.annotations, args)
+    summary['L_per_TA'].append(len(labelSet))
     for label in labelSet:
       if label not in counts:
         counts[label] = 0
       counts[label] += 1
-  return counts
+  return counts, summary
 
 
 def reportCounts(counts):
@@ -122,13 +134,43 @@ def reportCounts(counts):
                                float(counts[cat]) / counts['total'])
 
 
+def reportSummary(summaryCounts, args):
+  """ Given the summaryCounts object, print out a table of data.
+  """
+  if not args.summaryCounts:
+    return
+  print '##############################'
+  print 'Total number of Transcripts: %d' % summaryCounts['Transcripts']
+  print('Total number of TranscriptAnnotations: %d'
+        % summaryCounts['TranscriptAnnotations'])
+  print('%12s %10s %10s %10s %10s %10s'
+        % ('Category', 'min', 'med', 'ave', 'max', 'std'))
+  print('%12s %10d %10.1f %10.1f %10d %10.1f'
+        % ('TA per T',
+           numpy.min(summaryCounts['TA_per_T']),
+           numpy.median(summaryCounts['TA_per_T']),
+           numpy.average(summaryCounts['TA_per_T']),
+           numpy.max(summaryCounts['TA_per_T']),
+           numpy.std(summaryCounts['TA_per_T']),
+           ))
+  print('%12s %10d %10.1f %10.1f %10d %10.1f'
+        % ('Label per TA',
+           numpy.min(summaryCounts['L_per_TA']),
+           numpy.median(summaryCounts['L_per_TA']),
+           numpy.average(summaryCounts['L_per_TA']),
+           numpy.max(summaryCounts['L_per_TA']),
+           numpy.std(summaryCounts['L_per_TA']),
+           ))
+
+
 def main():
   parser = ArgumentParser()
   initializeArguments(parser)
   args = parser.parse_args()
   checkArguments(args, parser)
-  counts = processTranscripts(args)
+  counts, summaryCounts = processTranscripts(args)
   reportCounts(counts)
+  reportSummary(summaryCounts, args)
 
 
 if __name__ == '__main__':
