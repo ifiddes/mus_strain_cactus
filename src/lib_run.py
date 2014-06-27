@@ -219,6 +219,13 @@ def Which(program, extra_path_list=None):
   return None
 
 
+def Touch(path):
+  """ Open PATH and touch the file without modifying, create if non-existant.
+  """
+  with open(path, 'a'):
+    os.utime(path, None)
+
+
 def PrettyTime(t):
   """ Given input t as seconds, return a nicely formatted string.
   """
