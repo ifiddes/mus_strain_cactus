@@ -545,8 +545,9 @@ def writeDetailsBedFile(transcripts, detailsBedFile):
   """ Writes out a details bed file for a set of transcripts - that is the set
   of annotations of the transcripts. The bed file must be in chromosome order.
   """
-  annotations = list(set(reduce(lambda x, y : x + y,
-                       [transcript.annotations for transcript in transcripts])))
+  annotations = list(
+    set(reduce(lambda x, y : x + y,
+               [transcript.annotations for transcript in transcripts])))
   annotations.sort()
   annotationsFileHandle = open(detailsBedFile, 'w')
   for annotation in annotations:
@@ -557,7 +558,7 @@ def writeDetailsBedFile(transcripts, detailsBedFile):
 def writeTranscriptBedFile(transcripts, bedFile):
   """ Writes out an bed file for a set of transcripts.
   """
-  transcripts = transcripts[:]
+  transcripts = transcripts[:]  # no side effects
   transcripts.sort()
   bedFileHandle = open(bedFile, 'w')
   for transcript in transcripts:
