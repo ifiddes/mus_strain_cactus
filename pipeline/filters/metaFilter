@@ -39,7 +39,9 @@ def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
             'alignment', 'sequence', 'chromSizes', 'outDir']:
     cmd.append('--%s' % v)
     cmd.append(eval(v))
+  lib_run.Touch(os.path.join(outDir, 'clocking_in'))
   lib_run.RunCommandsSerial([cmd], outDir)
+  lib_run.Touch(os.path.join(outDir, 'clocking_out'))
 
 
 def copyResults(fromDir, toDir):
