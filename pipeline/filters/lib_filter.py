@@ -93,8 +93,8 @@ class ChromosomeInterval(object):
   __slots__ = ('chromosome', 'start', 'stop', 'strand')  # conserve memory
   def __init__(self, chromosome, start, stop, strand):
     self.chromosome = str(chromosome)
-    self.start = int(start)
-    self.stop = int(stop)
+    self.start = int(start)  # 0 based
+    self.stop = int(stop)  # exclusive
     self.strand = strand
 
   def __eq__(self, other):
@@ -106,6 +106,33 @@ class ChromosomeInterval(object):
   def __cmp__(self, cI):
     return cmp((self.chromosome, self.start, self.stop, self.strand),
                (cI.chromosome, cI.start, cI.stop, cI.strand))
+
+  def contains(self, other):
+    """ Check the other chromosomeInterval to see if it is contained by this
+    CI. If it is not contained return False, else return True.
+    """
+    if not isinstance(other, ChromosomeInterval):
+      raise RuntimeError('ChromosomeInterval:contains expects '
+                         'ChromosomeInterval, not %s' % other.__class__)
+    if self.chromosome != other.chromosome:
+      return False
+    # self  |----*
+    # other         *----|
+    if self.stop <= other.start:
+      return False
+    # self          *----|
+    # other |----*
+    if self.start >= other.stop:
+      return False
+    # self    *------|
+    # other *----|
+    if self.start > other.start:
+      return False
+    # self  |-----*
+    # other    |----*
+    if self.stop < other.stop:
+      return False
+    return True
 
 
 class TranscriptAnnotation(object):
@@ -487,8 +514,12 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     key = (name, cI.chromosome)
     if key in transcriptsAnnotations:
       annotations = transcriptsAnnotations[key]
+    filteredAnnotations = []
+    for tA in annotations:
+      if cI.contains(tA.chromosomeInterval):
+        filteredAnnotations.append(tA)
     yield Transcript(
-      cI, name, exons, annotations,
+      cI, name, exons, filteredAnnotations,
       int(tokens[4]), int(tokens[6]),
       int(tokens[7]), tokens[8])
 
@@ -511,11 +542,11 @@ def getBedOutFiles(args):
 
 
 def writeDetailsBedFile(transcripts, detailsBedFile):
-  """Writes out a details bed file for a set of transcripts - that is the set of
-  annotations of the transcripts. The bed file must be in chromosome order.
+  """ Writes out a details bed file for a set of transcripts - that is the set
+  of annotations of the transcripts. The bed file must be in chromosome order.
   """
-  annotations = reduce(lambda x, y : x + y,
-                       [transcript.annotations for transcript in transcripts])
+  annotations = list(set(reduce(lambda x, y : x + y,
+                       [transcript.annotations for transcript in transcripts])))
   annotations.sort()
   annotationsFileHandle = open(detailsBedFile, 'w')
   for annotation in annotations:
@@ -524,7 +555,7 @@ def writeDetailsBedFile(transcripts, detailsBedFile):
 
 
 def writeTranscriptBedFile(transcripts, bedFile):
-  """Writes out an bed file for a set of transcripts.
+  """ Writes out an bed file for a set of transcripts.
   """
   transcripts = transcripts[:]
   transcripts.sort()
