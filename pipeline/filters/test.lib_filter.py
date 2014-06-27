@@ -147,6 +147,24 @@ def createAlignmentFile(alignments, tmpDir):
   return alnfile
 
 
+def bedLine(chrom, chromStart, chromEnd, name, score=None, strand=None,
+            thickStart=None, thickEnd=None, itemRgb=None, blockCount=None,
+            blockSizes=None, blockStarts=None):
+  """ Give the fields, create a bed line string
+  """
+
+  s = ('%s %d %d %s'
+       % (chrom, chromStart, chromEnd, name))
+  if score is not None:
+    for v in [strand, thickStart, thickEnd, itemRgb,
+              blockCount, blockSizes, blockStarts]:
+      assert(v is not None)
+    s += (' %d %s %d %d %s %d %s %s'
+          % (score, strand, thickStart, thickEnd, itemRgb, blockCount,
+          blockSizes, blockStarts))
+  return s
+
+
 class sequenceGetterTests(unittest.TestCase):
   def test_getSequences(self):
     """ getSequences must read a fasta and return a dict of Sequence objects.
@@ -207,19 +225,38 @@ class transcriptIteratorTests(unittest.TestCase):
   def test_transcriptIterator(self):
     """ tests the transcriptIterator function
     """
-    transcriptBedLines = ['1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729 128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301050,301352',
-                          '1       2812346 3113783 ENSMUST00000095795.4    0       +       2812370 3038729 128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301050,301352',
-                          'scaffold-100021  466  4248  ENSMUST00000034053.5  0  -  466  4248  128,0,0  2  85,152  0,3630',
-                          'scaffold-138877  4903  5091  ENSMUST00000034053.5  0  -  4903  4996  128,0,0  1  188  0',
-                          'scaffold-2051  13759  24866  ENSMUST00000034053.5  0  -  14291  24866  128,0,0  4  722,112,131,188  0,1977,4316,10919',
-                          ]
-    transcriptDetailsBedLines = ['1       2812346 2812349 noStop/ENSMUST00000095795.4',
-                                 '1       3113780 3113783 noStart/ENSMUST00000095795.4',
-                                 'scaffold-100021  466  469  noStop/ENSMUST00000034053.5',
-                                 'scaffold-100021  4245  4248  noStart/ENSMUST00000034053.5',
-                                 'scaffold-138877  4903  4906  noStop/ENSMUST00000034053.5',
-                                 'scaffold-2051  24863  24866  noStart/ENSMUST00000034053.5',
-                                 ]
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        '1', 2812346, 3113743, 'ENSMUST00000178026.1', 0, '-', 2812370, 3038729,
+        '128,0,0', 9, '54,2,89,249,90,165,105,13,45',
+        '0,58,62,698,1209,1305,226292,301050,301352'))
+    transcriptBedLines.append(bedLine(
+        '1', 2812346, 3113783, 'ENSMUST00000095795.4', 0, '+', 2812370, 3038729,
+        '128,0,0', 9, '54,2,89,249,197,52,105,13,85',
+        '0,58,62,698,1209,1418,226292,301050,301352'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-100021', 466, 4248, 'ENSMUST00000034053.5', 0, '-', 466, 4248,
+        '128,0,0', 2, '85,152', '0,3630'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-138877', 4903, 5091, 'ENSMUST00000034053.5', 0, '-', 4903,
+        4996, '128,0,0', 1, '188', '0'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-2051', 13759, 24866, 'ENSMUST00000034053.5', 0, '-', 14291,
+        24866, '128,0,0', 4, '722,112,131,188', '0,1977,4316,10919'))
+
+    transcriptDetailsBedLines = []
+    transcriptDetailsBedLines.append(bedLine(
+        '1', 2812346, 2812349, 'noStop/ENSMUST00000095795.4'))
+    transcriptDetailsBedLines.append(bedLine(
+        '1', 3113780, 3113783, 'noStart/ENSMUST00000095795.4'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-100021', 466, 469, 'noStop/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-100021', 4245, 4248, 'noStart/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-138877', 4903, 4906, 'noStop/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-2051', 24863, 24866, 'noStart/ENSMUST00000034053.5'))
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
@@ -282,7 +319,6 @@ class transcriptIteratorTests(unittest.TestCase):
       ]
     self.assertEqual(len(transcripts), len(testAnnots))
     for i in xrange(0, len(transcripts)):
-      print 'test: %d' % i
       self.assertEqual(transcripts[i].annotations, testAnnots[i])
     # Check print functions
     self.assertEquals(transcripts[0].bedString().split(), transcriptBedLines[0].split())
@@ -302,19 +338,37 @@ class transcriptIteratorTests(unittest.TestCase):
   def test_transcriptWriter(self):
     """ transcripts should be written out correctly.
     """
-    transcriptBedLines = ['1       2812346 3113743 ENSMUST00000178026.1    0       -       2812370 3038729 128,0,0 9       54,2,89,249,90,165,105,13,45    0,58,62,698,1209,1305,226292,301050,301352',
-                          '1       2812346 3113783 ENSMUST00000095795.4    0       +       2812370 3038729 128,0,0 9       54,2,89,249,197,52,105,13,85    0,58,62,698,1209,1418,226292,301050,301352',
-                          'scaffold-100021  466  4248  ENSMUST00000034053.5  0  -  466  4248  128,0,0  2  85,152  0,3630',
-                          'scaffold-138877  4903  5091  ENSMUST00000034053.5  0  -  4903  4996  128,0,0  1  188  0',
-                          'scaffold-2051  13759  24866  ENSMUST00000034053.5  0  -  14291  24866  128,0,0  4  722,112,131,188  0,1977,4316,10919',
-                          ]
-    transcriptDetailsBedLines = ['1       2812370 2812372 noStop/ENSMUST00000095795.4',
-                                 '1       2812370 2812372 noStart/noStop/ENSMUST00000095795.4',
-                                 'scaffold-100021  466  469  noStop/ENSMUST00000034053.5',
-                                 'scaffold-100021  4245  4248  noStart/ENSMUST00000034053.5',
-                                 'scaffold-138877  4903  4906  noStop/ENSMUST00000034053.5',
-                                 'scaffold-2051  24863  24866  noStart/ENSMUST00000034053.5',
-                                 ]
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        '1', 2812346, 3113743, 'ENSMUST00000178026.1', 0, '-', 2812370, 3038729,
+        '128,0,0', 9, '54,2,89,249,90,165,105,13,45',
+        '0,58,62,698,1209,1305,226292,301050,301352'))
+    transcriptBedLines.append(bedLine(
+        '1', 2812346, 3113783, 'ENSMUST00000095795.4', 0, '+', 2812370, 3038729,
+        '128,0,0', 9, '54,2,89,249,197,52,105,13,85',
+        '0,58,62,698,1209,1418,226292,301050,301352'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-100021', 466, 4248, 'ENSMUST00000034053.5', 0, '-', 466, 4248,
+        '128,0,0', 2, '85,152', '0,3630'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-138877', 4903, 5091, 'ENSMUST00000034053.5', 0, '-', 4903,
+        4996, '128,0,0', 1, '188', '0'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-2051', 13759, 24866, 'ENSMUST00000034053.5', 0, '-', 14291,
+        24866, '128,0,0', 4, '722,112,131,188', '0,1977,4316,10919'))
+    transcriptDetailsBedLines = []
+    transcriptDetailsBedLines.append(bedLine(
+        '1', 2812346, 2812349, 'noStop/ENSMUST00000095795.4'))
+    transcriptDetailsBedLines.append(bedLine(
+        '1', 3113780, 3113783, 'noStart/ENSMUST00000095795.4'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-100021', 466, 469, 'noStop/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-100021', 4245, 4248, 'noStart/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-138877', 4903, 4906, 'noStop/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-2051', 24863, 24866, 'noStart/ENSMUST00000034053.5'))
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
@@ -339,6 +393,142 @@ class transcriptIteratorTests(unittest.TestCase):
       self.assertEquals(transcripts[i].annotations,
                         writtenTranscripts[i].annotations)
       self.assertEquals(transcripts[i], writtenTranscripts[i])
+    # cleanup
+    self.addCleanup(removeDir, tmpDir)
+
+  def test_transcriptObjectManagement(self):
+    """ Transcript and TranscriptAnnotation counts should not change.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        '1', 2812346, 3113743, 'ENSMUST00000178026.1', 0, '-', 2812370, 3038729,
+        '128,0,0', 9, '54,2,89,249,90,165,105,13,45',
+        '0,58,62,698,1209,1305,226292,301050,301352'))
+    transcriptBedLines.append(bedLine(
+        '1', 2812346, 3113783, 'ENSMUST00000095795.4', 0, '+', 2812370, 3038729,
+        '128,0,0', 9, '54,2,89,249,197,52,105,13,85',
+        '0,58,62,698,1209,1418,226292,301050,301352'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-100021', 466, 4248, 'ENSMUST00000034053.5', 0, '-', 466, 4248,
+        '128,0,0', 2, '85,152', '0,3630'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-138877', 4903, 5091, 'ENSMUST00000034053.5', 0, '-', 4903,
+        4996, '128,0,0', 1, '188', '0'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-2051', 13759, 24866, 'ENSMUST00000034053.5', 0, '-', 14291,
+        24866, '128,0,0', 4, '722,112,131,188', '0,1977,4316,10919'))
+    # the following bed lines can cause problems because they represent
+    # multilpe instances of a transcript on a single chromosome.
+    transcriptBedLines += [
+      'X 73726551 74227830 ENSMUST00000101560.3 0 + 73726551 74227830 128,0,0 12 110,22,6,14,4,15,21,18,143,6,21,23 0,500953,500979,500987,501006,501011,501028,501050,501069,501213,501220,501256',
+      'X 73726990 74230505 ENSMUST00000101560.3 0 + 73726990 73727560 128,0,0 30 15,10,109,50,54,225,4,44,25,19,1,18,2,56,4,13,20,18,23,199,320,369,88,137,117,67,107,102,348,5 0,19,34,144,195,250,480,487,532,559,580,582,601,501428,501486,501491,501507,501529,501550,501576,501789,502110,502481,502571,502709,502827,502924,503055,503158,503510',
+      'X 74211514 74218259 ENSMUST00000101560.3 0 + 74213333 74218259 128,0,0 8 40,15,18,8,148,254,70,133 0,1726,1742,1761,1770,1919,6540,6612',
+      ]
+    transcriptDetailsBedLines = []
+    transcriptDetailsBedLines.append(bedLine(
+        '1', 2812346, 2812349, 'noStop/ENSMUST00000095795.4'))
+    transcriptDetailsBedLines.append(bedLine(
+        '1', 3113780, 3113783, 'noStart/ENSMUST00000095795.4'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-100021', 466, 469, 'noStop/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-100021', 4245, 4248, 'noStart/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-138877', 4903, 4906, 'noStop/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-2051', 24863, 24866, 'noStart/ENSMUST00000034053.5'))
+    transcriptDetailsBedLines += [
+      'X 73726551 73726554 noStart/ENSMUST00000101560.3',
+      'X 73726551 73726661 frameMismatch/ENSMUST00000101560.3',
+      'X 73726551 74227830 badFrame/ENSMUST00000101560.3',
+      'X 73726990 73726993 noStart/ENSMUST00000101560.3',
+      'X 73726990 73727560 badFrame/ENSMUST00000101560.3',
+      'X 73727005 73727009 cdsGap/ENSMUST00000101560.3',
+      'X 73727009 73727019 frameDiscontig/ENSMUST00000101560.3',
+      'X 73727019 73727024 cdsGap/ENSMUST00000101560.3',
+      'X 73727133 73727134 cdsGap/ENSMUST00000101560.3',
+      'X 73727134 73727184 frameDiscontig/ENSMUST00000101560.3',
+      'X 73727184 73727185 cdsGap/ENSMUST00000101560.3',
+      'X 73727185 73727239 frameDiscontig/ENSMUST00000101560.3',
+      'X 73727239 73727240 cdsGap/ENSMUST00000101560.3',
+      'X 73727465 73727470 cdsGap/ENSMUST00000101560.3',
+      'X 73727470 73727474 frameDiscontig/ENSMUST00000101560.3',
+      'X 73727474 73727477 cdsGap/ENSMUST00000101560.3',
+      'X 73727521 73727522 cdsGap/ENSMUST00000101560.3',
+      'X 73727522 73727547 frameDiscontig/ENSMUST00000101560.3',
+      'X 73727547 73727549 cdsGap/ENSMUST00000101560.3',
+      'X 73727559 73727560 noStop/ENSMUST00000101560.3',
+      'X 73727568 73727570 utrGap/ENSMUST00000101560.3',
+      'X 73727571 73727572 utrGap/ENSMUST00000101560.3',
+      'X 73727590 73727591 utrGap/ENSMUST00000101560.3',
+      'X 73727593 74228418 unknownUtrSplice/GA..AA/ENSMUST00000101560.3',
+      'X 74213255 74213256 utrGap/ENSMUST00000101560.3',
+      'X 74213274 74213275 utrGap/ENSMUST00000101560.3',
+      'X 74213283 74213284 utrGap/ENSMUST00000101560.3',
+      'X 74213333 74218259 badFrame/ENSMUST00000101560.3',
+      'X 74213432 74213433 cdsGap/ENSMUST00000101560.3',
+      'X 74213433 74213687 frameDiscontig/ENSMUST00000101560.3',
+      'X 74218124 74218126 cdsGap/ENSMUST00000101560.3',
+      'X 74218258 74218259 noStop/ENSMUST00000101560.3',
+      'X 74227504 74227526 frameDiscontig/ENSMUST00000101560.3',
+      'X 74227526 74227530 cdsGap/ENSMUST00000101560.3',
+      'X 74227530 74227536 frameDiscontig/ENSMUST00000101560.3',
+      'X 74227536 74227538 cdsGap/ENSMUST00000101560.3',
+      'X 74227552 74227557 cdsGap/ENSMUST00000101560.3',
+      'X 74227561 74227562 cdsGap/ENSMUST00000101560.3',
+      'X 74227562 74227577 frameDiscontig/ENSMUST00000101560.3',
+      'X 74227577 74227579 cdsGap/ENSMUST00000101560.3',
+      'X 74227579 74227600 frameDiscontig/ENSMUST00000101560.3',
+      'X 74227600 74227601 cdsGap/ENSMUST00000101560.3',
+      'X 74227601 74227619 frameDiscontig/ENSMUST00000101560.3',
+      'X 74227619 74227620 cdsGap/ENSMUST00000101560.3',
+      'X 74227620 74227763 frameDiscontig/ENSMUST00000101560.3',
+      'X 74227763 74227764 cdsGap/ENSMUST00000101560.3',
+      'X 74227764 74227770 frameDiscontig/ENSMUST00000101560.3',
+      'X 74227770 74227771 cdsGap/ENSMUST00000101560.3',
+      'X 74227792 74227807 cdsGap/ENSMUST00000101560.3',
+      'X 74227829 74227830 noStop/ENSMUST00000101560.3',
+      'X 74228474 74228476 utrGap/ENSMUST00000101560.3',
+      'X 74228480 74228481 utrGap/ENSMUST00000101560.3',
+      'X 74228494 74228497 utrGap/ENSMUST00000101560.3',
+      'X 74228517 74228519 utrGap/ENSMUST00000101560.3',
+      'X 74228537 74228540 utrGap/ENSMUST00000101560.3',
+      'X 74228563 74228566 utrGap/ENSMUST00000101560.3',
+      'X 74228765 74228779 utrGap/ENSMUST00000101560.3',
+      'X 74229099 74229100 utrGap/ENSMUST00000101560.3',
+      'X 74229469 74229471 utrGap/ENSMUST00000101560.3',
+      'X 74229559 74229561 utrGap/ENSMUST00000101560.3',
+      'X 74229698 74229699 utrGap/ENSMUST00000101560.3',
+      'X 74229816 74229817 utrGap/ENSMUST00000101560.3',
+      'X 74229884 74229914 unknownUtrSplice/AA..GT/ENSMUST00000101560.3',
+      'X 74230021 74230045 unknownUtrSplice/AA..GA/ENSMUST00000101560.3',
+      'X 74230147 74230148 utrGap/ENSMUST00000101560.3',
+      'X 74230496 74230500 utrGap/ENSMUST00000101560.3',
+      ]
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    orignalTranscriptCount = len(transcripts)
+    orignalTranscriptAnnotationCount = sum(
+      map(lambda t:len(t.annotations), transcripts))
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('transcriptWriter'))
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(outBed, outDetailsBed)
+    newTranscriptCount = len(writtenTranscripts)
+    newTranscriptAnnotationCount = sum(
+      map(lambda t:len(t.annotations), writtenTranscripts))
+    # test equality.
+    self.assertEquals(orignalTranscriptCount, newTranscriptCount)
+    self.assertEquals(orignalTranscriptAnnotationCount,
+                      newTranscriptAnnotationCount)
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
