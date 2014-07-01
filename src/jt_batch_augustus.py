@@ -132,12 +132,13 @@ class AugustusCall(Target):
                                  % (ref_genome, ref_sequence,
                                     window_number))
     self.args = args
-    dbaccess = ReadDBAccess(self.args.dbaccess_file)
+    # dbaccess = ReadDBAccess(self.args.dbaccess_file)
     self.aug_parameters = {
       'AUGUSTUS_CONFIG_PATH': os.path.join(self.args.augustus_path, 'config'),
       'treefile': self.args.tree_path,
       'species': self.args.species,
-      'dbaccess': dbaccess,
+      'dbaccess': self.args.sqlite_db,
+      'speciesfilenames': self.args.speciesfilenames,
       'temperature': self.args.temperature,
       '/MeaPrediction/x0_E': self.args._MeaPrediction_x0_E,
       '/MeaPrediction/x0_I': self.args._MeaPrediction_x0_I,
@@ -178,7 +179,7 @@ class AugustusCall(Target):
                                       self.window_number))
     else:
       self.maf_file = self.args.maf_file_path
-    VerifyMySQLServer(self.out_path, self.args)  # Verify for operational nodes
+    # VerifyMySQLServer(self.out_path, self.args)  # Verify for nodes
     self.aug_parameters['alnfile'] = self.maf_file
     # extract the region needed as maf
     hal2maf_cmd = [os.path.join(self.args.hal_path, 'bin', 'hal2maf')]
@@ -286,8 +287,13 @@ def InitializeArguments(parser):
                       help='location newick tree file.')
   parser.add_argument('--out_dir', type=str,
                       help='location to store output files.')
-  parser.add_argument('--dbaccess_file', type=str,
-                      help='location of dbaccess file containing login info.')
+  parser.add_argument('--sqlite_db', type=str,
+                      help='location of sqlite database.')
+  parser.add_argument('--speciesfilenames', type=str,
+                      help=('location of the species file (text, one line per '
+                            'species and location of .fa.'))
+  # parser.add_argument('--dbaccess_file', type=str,
+  #                     help='location of dbaccess file containing login info.')
   parser.add_argument('--maf_file_path', type=str,
                       help=('location maf file. Overrides all hal window '
                             'extraction. Debugging feature.'))
@@ -394,7 +400,8 @@ def CheckArguments(args, parser):
                       ('hal_file_path', args.hal_path),
                       ('tree_path', args.tree_path),
                       ('out_dir', args.out_dir),
-                      ('dbaccess_file', args.dbaccess_file),
+                      ('sqlite_db', args.sqlite_db),
+                      ('speciesfilenames', args.speciesfilenames),
                       ('ref_genome', args.ref_genome),
                       ]:
     if value is None:
@@ -406,7 +413,8 @@ def CheckArguments(args, parser):
                       ('hal_path', args.hal_path),
                       ('hal_file_path', args.hal_file_path),
                       ('tree_path', args.tree_path),
-                      ('dbaccess_file', args.dbaccess_file),
+                      ('sqlite_db', args.sqlite_db),
+                      ('speciesfilenames', args.speciesfilenames),
                       ]:
     if not os.path.exists(value):
       parser.error('--%s %s does not exist' % (name, value))
@@ -423,7 +431,8 @@ def CheckArguments(args, parser):
                 os.path.join(args.hal_path, 'bin', 'hal2maf'),
                 args.hal_file_path,
                 args.tree_path,
-                args.dbaccess_file,
+                args.sqlite_db,
+                args.speciesfilenames,
                 ]:
     if not os.path.isfile(value):
       parser.error('%s is not a file' % value)
@@ -439,7 +448,7 @@ def CheckArguments(args, parser):
   args.out_dir = os.path.abspath(args.out_dir)
   if args.window_length - args.window_overlap < 1:
     parser.error('--window_length must be greater than --window_overlap!')
-  VerifyMySQLServer(args.out_dir, args)  # Verify for head node
+  # VerifyMySQLServer(args.out_dir, args)  # Verify for head node
   logger.debug('Arguments checked.\n'
                'augustus_path:%s\n'
                'hal_path:%s\n'
