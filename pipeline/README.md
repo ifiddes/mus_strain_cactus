@@ -10,16 +10,16 @@ Place executable filters in <code>filters/</code>. Note that filters must not ha
 These labels are applied by `gene-check`.
 * **noStart** -- The transcript does not start with `ATG`.
 * **noStop** -- The transcript does not end (in-frame) with a recognized stop codon, i.e. `TAA` or `TAG` or `TGA`.
-* **badFrame** --
-* **frameMismatch** --
-* **noCDS** --
-* **cdsGap** --
-* **cdsMult3Gap** --
-* **utrGap** --
-* **cdsUnknownSplice** --
-* **cdsNonCanonSplice** --
-* **utrUnknownSplice** --
-* **utrNonCanonSplice** --
+* **badFrame** -- The trascript is not a multiple of three.
+* **frameMismatch** -- At least one exon within the transcript is not a multiple of three.
+* **noCDS** -- The transcript lacks coding sequence.
+* **cdsGap** -- The region between two exons appears to be a gap, not an intron.
+* **cdsMult3Gap** -- The region between two exons is a multiple of three.
+* **utrGap** -- There exists a gap in the transcript that is not within an exon.
+* **cdsUnknownSplice** -- The transcript contains at least one CDS splice site that is not a known site, e.g. `GT..AG`, `GC..AG`, `AT..AC`.
+* **cdsNonCanonSplice** -- The transcript contains at least one CDS splice site is not the cannonical site, i.e. `GT..AG`.
+* **utrUnknownSplice** -- The transcript contains at least one UTR splice site is not a known site, e.g. `GT..AG`, `GC..AG`, `AT..AC`.
+* **utrNonCanonSplice** -- The transcript contains at least one UTR splice site is not the cannonical site, i.e. `GT..AG`.
 
 
 ## Additional labels
