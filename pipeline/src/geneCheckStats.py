@@ -52,7 +52,7 @@ def getAnnotationSet(transAnns, args):
       # all suffixes
       for i in xrange(1, len(a.labels) + 1):
         if i < len(a.labels):
-          suffix = '*'
+          suffix = '+'
         else:
           suffix = ''
         labels.add('%s%s' % ('_'.join(a.labels[0:i]), suffix))
