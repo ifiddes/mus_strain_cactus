@@ -72,7 +72,7 @@ def copyResults(results, args):
     return
   for r in results:
     destDirs = [os.path.join(args.outDir, r.track),
-                os.path.join(args.outDir, r.track + '_detail'),]
+                os.path.join(args.outDir, r.track + '_details'),]
     for d in destDirs:
       if not os.path.exists(d):
         os.mkdir(d)
