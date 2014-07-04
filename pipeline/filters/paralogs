@@ -30,16 +30,22 @@ def hasOkCopy(this, transcriptList):
   """ given a transcript THIS and a list of transcripts which contains
   THIS, determine if there is a non-THIS transcript that is OK.
   """
+  count = 0
   for t in transcriptList:
+    isOk = True
     if this == t:
       continue
     if t.annotations == []:
-      return True
+      count += 1
+      continue
     for annot in t.annotations:
       for label in annot.labels:
         if label not in ['hasOkCopy', 'hasBadCopy']:
-          return False
-    return True
+          isOk = False
+    if isOk:
+      # this transcript is ok
+      count += 1
+  return count
 
 
 def hasBadCopy(this, transcriptList):
@@ -48,14 +54,19 @@ def hasBadCopy(this, transcriptList):
   """
   # note there is code duplication here but this is sufficiently confusing when
   # written in a general fashion to justify duplication.
+  count = 0
   for t in transcriptList:
+    isBad = False
     if this == t:
       continue
     for annot in t.annotations:
       for label in annot.labels:
         if label not in ['hasOkCopy', 'hasBadCopy']:
-          return True
-  return False
+          isBad = True
+    if isBad:
+      # this transcript is bad
+      count += 1
+  return count
 
 
 def main():
@@ -64,20 +75,22 @@ def main():
     args.geneCheckBed, args.geneCheckBedDetails)
   uniqueTranscripts = reduceTranscripts(transcripts)
   for t in transcripts:
-    if hasOkCopy(t, uniqueTranscripts[t.name]):
+    count = hasOkCopy(t, uniqueTranscripts[t.name])
+    if count:
       if t.annotations == []:
-        # OK transcripts can have no annotations
+        # OK transcripts could have no annotations
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
-        annot.addLabel('hasOkCopy')
-    if hasBadCopy(t, uniqueTranscripts[t.name]):
+        annot.addLabel('hasOkCopies.%d' % count)
+    count = hasBadCopy(t, uniqueTranscripts[t.name])
+    if count:
       if t.annotations == []:
-        # OK transcripts can have no annotations
+        # OK transcripts could have no annotations
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
-        annot.addLabel('hasBadCopy')
+        annot.addLabel('hasBadCopies.%d' % count)
   lib_filter.writeAllBeds(transcripts, args)
 
 
