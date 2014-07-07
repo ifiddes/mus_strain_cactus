@@ -560,6 +560,8 @@ class transcriptIteratorTests(unittest.TestCase):
       map(lambda t:len(t.annotations), transcripts))
     # test transcript count
     self.assertEquals(originalTranscriptCount, 2)
+    self.assertEquals(len(transcripts[0].annotations), 2)
+    self.assertEquals(len(transcripts[1].annotations), 0)
     makeTempDirParent()
     tmpDir = os.path.abspath(makeTempDir('transcriptWriter'))
     # write transcripts to files
@@ -576,6 +578,8 @@ class transcriptIteratorTests(unittest.TestCase):
       map(lambda t:len(t.annotations), writtenTranscripts))
     # test transcript count
     self.assertEquals(newTranscriptCount, 2)
+    self.assertEquals(len(writtenTranscripts[0].annotations), 2)
+    self.assertEquals(len(writtenTranscripts[1].annotations), 0)
     # test equality.
     self.assertEquals(originalTranscriptCount, newTranscriptCount)
     self.assertEquals(originalTranscriptAnnotationCount,
