@@ -486,7 +486,7 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     tA = TranscriptAnnotation(
       ChromosomeInterval(tokens[0], tokens[1], tokens[2], None),
       tokens[3].split('/')[-1], tokens[3].split('/')[:-1])
-    normalizeAnnotation(tA)
+    # normalizeAnnotation(tA)  # removing this temporarily to try to improve xml
     key = (tA.name, tA.chromosomeInterval.chromosome)
     if key not in transcriptsAnnotations:
       transcriptsAnnotations[key] = []

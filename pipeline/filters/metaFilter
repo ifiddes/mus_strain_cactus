@@ -23,6 +23,12 @@ import lib_filter
 import lib_run
 
 
+def getBin(bin):
+  """ Given the name of a filter, return the full path to the filter.
+  """
+  return os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), bin)
+
+
 def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
              originalGeneCheckBed, originalGeneCheckBedDetails,
              alignment, sequence, chromSizes, outDir):
@@ -30,10 +36,8 @@ def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
   """
   if not os.path.exists(outDir):
     os.mkdir(outDir)
-  bin = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), bin)
+  bin = getBin(bin)
   cmd = [bin]
-  # todo: if the code hasn't changed and the input data hasn't changed,
-  #       then don't rerun the command.
   for v in ['refGenome', 'genome', 'geneCheckBed', 'geneCheckBedDetails',
             'originalGeneCheckBed', 'originalGeneCheckBedDetails',
             'alignment', 'sequence', 'chromSizes', 'outDir']:
@@ -57,6 +61,46 @@ def copyResults(fromDir, toDir):
     shutil.copy2(fromBedDetails, toBedDetails)
 
 
+def alreadyReady(filt, inBed, inBedDetail, outBed, outBedDetail, location):
+  """ Check to see if this filter actually needs to be run (True).
+  Send true if output does not exist or if
+  """
+  filt = getBin(filt)
+  if not os.path.exists(inBed):
+    raise RuntimeError('input for %s does not exist' % filt)
+  inBedTime = os.path.getmtime(inBed)
+  if not os.path.exists(inBedDetail):
+    raise RuntimeError('input for %s does not exist' % filt)
+  inBedDetailTime = os.path.getmtime(inBedDetail)
+  if not os.path.exists(location):
+    # output directory does not exist: re-run
+    return False
+  if not os.path.exists(outBed):
+    # bed does not exist: re-run
+    return False
+  outBedTime = os.path.getmtime(outBed)
+  if not os.path.exists(outBedDetail):
+    # bed details does not exist: re-run
+    return False
+  outBedDetailTime = os.path.getmtime(outBedDetail)
+  if inBedTime > outBedTime:
+    # newer input than data: re-run
+    return False
+  if inBedDetailTime > outBedDetailTime:
+    # newer input than data: re-run
+    return False
+  filtTime = os.path.getmtime(filt)
+  if filtTime > outBedTime:
+    # newer filter than data: re-run
+    return False
+  if filtTime > outBedDetailTime:
+    # newer filter than data: re-run
+    return False
+  # directory exists, bed exists, bed detail exists,
+  # input is older than data, filter is older than data: do not re-run.
+  return True
+
+
 def main():
   args = lib_filter.boilerplateArguments()
   # this is the order that filters will be run.
@@ -72,6 +116,9 @@ def main():
                    os.path.join(args.outDir, f, 'out_details.bed')))
   # run filters in sequence
   for i, f in enumerate(filters, 0):
+    if alreadyReady(f, inputs[i][0], inputs[i][1],
+                    inputs[i+1][0], inputs[i+1][1], locations[i]):
+      continue
     makeCall(f, args.refGenome, args.genome,
              inputs[i][0], inputs[i][1],
              args.originalGeneCheckBed, args.originalGeneCheckBedDetails,

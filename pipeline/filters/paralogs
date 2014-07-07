@@ -40,7 +40,9 @@ def hasOkCopy(this, transcriptList):
       continue
     for annot in t.annotations:
       for label in annot.labels:
-        if label not in ['hasOkCopy', 'hasBadCopy']:
+        if (label != 'hasOkCopies' and
+            label != 'hasBadCopies' and
+            not label.startswith('count_')):
           isOk = False
     if isOk:
       # this transcript is ok
@@ -61,7 +63,9 @@ def hasBadCopy(this, transcriptList):
       continue
     for annot in t.annotations:
       for label in annot.labels:
-        if label not in ['hasOkCopy', 'hasBadCopy']:
+        if (label != 'hasOkCopies' and
+            label != 'hasBadCopies' and
+            not label.startswith('count_')):
           isBad = True
     if isBad:
       # this transcript is bad
@@ -82,7 +86,8 @@ def main():
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
-        annot.addLabel('hasOkCopies.%d' % count)
+        annot.addLabel('hasOkCopies')
+        annot.addLabel('count_%d' % count)
     count = hasBadCopy(t, uniqueTranscripts[t.name])
     if count:
       if t.annotations == []:
@@ -90,7 +95,8 @@ def main():
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
-        annot.addLabel('hasBadCopies.%d' % count)
+        annot.addLabel('hasBadCopies')
+        annot.addLabel('count_%d' % count)
   lib_filter.writeAllBeds(transcripts, args)
 
 
