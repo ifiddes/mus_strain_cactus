@@ -508,8 +508,8 @@ class transcriptIteratorTests(unittest.TestCase):
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
-    orignalTranscriptCount = len(transcripts)
-    orignalTranscriptAnnotationCount = sum(
+    originalTranscriptCount = len(transcripts)
+    originalTranscriptAnnotationCount = sum(
       map(lambda t:len(t.annotations), transcripts))
     makeTempDirParent()
     tmpDir = os.path.abspath(makeTempDir('transcriptWriter'))
@@ -526,8 +526,59 @@ class transcriptIteratorTests(unittest.TestCase):
     newTranscriptAnnotationCount = sum(
       map(lambda t:len(t.annotations), writtenTranscripts))
     # test equality.
-    self.assertEquals(orignalTranscriptCount, newTranscriptCount)
-    self.assertEquals(orignalTranscriptAnnotationCount,
+    self.assertEquals(originalTranscriptCount, newTranscriptCount)
+    self.assertEquals(originalTranscriptAnnotationCount,
+                      newTranscriptAnnotationCount)
+    # cleanup
+    self.addCleanup(removeDir, tmpDir)
+
+  def test_transcriptReading_0(self):
+    """ Transcript objects should be read in correctly
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'scaffold-444', 41415, 87033, 'ENSMUST00000169901.2', 0, '-', 41415,
+        45156, '128,0,0', 5, '128,12,219,90,27', '0,131,3590,42232,45591'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-444', 72633, 82553, 'ENSMUST00000169901.2', 0, '-', 72782,
+        82485, '0,128,0', 5, '51,156,104,140,219', '0,129,4370,7482,9701'))
+    transcriptDetailsBedLines = []
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-444', 41415, 41418,
+        'noStop/alignmentPartialMap/hasOkCopies/count_1/ENSMUST00000169901.2'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-444', 41543, 41546,
+        'cdsGap/hasOkCopies/count_1/ENSMUST00000169901.2'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-444', 72633, 82553,
+        'hasBadCopies/count_1/ENSMUST00000169901.2'))
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    originalTranscriptCount = len(transcripts)
+    originalTranscriptAnnotationCount = sum(
+      map(lambda t:len(t.annotations), transcripts))
+    # test transcript count
+    self.assertEquals(originalTranscriptCount, 2)
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('transcriptWriter'))
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(outBed, outDetailsBed)
+    newTranscriptCount = len(writtenTranscripts)
+    newTranscriptAnnotationCount = sum(
+      map(lambda t:len(t.annotations), writtenTranscripts))
+    # test transcript count
+    self.assertEquals(newTranscriptCount, 2)
+    # test equality.
+    self.assertEquals(originalTranscriptCount, newTranscriptCount)
+    self.assertEquals(originalTranscriptAnnotationCount,
                       newTranscriptAnnotationCount)
     # cleanup
     self.addCleanup(removeDir, tmpDir)
