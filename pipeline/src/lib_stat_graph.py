@@ -71,6 +71,23 @@ def recordOk(root, transcript):
   """
   ok = root.find('ok')
   addOne(ok, 'transcripts')
+  # flatten the annotations so that there are no duplicates
+  flattenedTree = flattenAnnotations(transcript.annotations)
+  flatTree = flattenedTree
+  depthFirstAddOne(flatTree, ok, isRoot=True)
+
+  # walk the full annotation set as it appears
+  for ta in transcript.annotations:
+    addOne(ok, 'transcript_annotations')
+    prev = ok
+    for label in ta.labels:
+      label = cleanLabel(label)
+      e = prev.find(label)
+      if e is None:
+        raise RuntimeError('Unanticipated tag discovered %s:%s'
+                           % (prev.tag, label))
+      addOne(e, 'transcript_annotations')
+      prev = e
 
 
 def addOne(tag, at):

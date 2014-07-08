@@ -42,5 +42,6 @@ results/%:
 	--chromSizes ${sequenceDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).sizes \
 	--outDir $(dir $@) &> $@.${tmpExt}
 	${stats} --geneCheck $(dir $@)out.bed \
-	--geneCheckDetails $(dir $@)out_details.bed > $(dir $@)stats.txt
+	--geneCheckDetails $(dir $@)out_details.bed \
+	--out $(dir $@)stats.xml &> $(dir $@)stats.out
 	mv $@.${tmpExt} $@
