@@ -114,24 +114,31 @@ class ChromosomeInterval(object):
     if not isinstance(other, ChromosomeInterval):
       raise RuntimeError('ChromosomeInterval:contains expects '
                          'ChromosomeInterval, not %s' % other.__class__)
+    # print 'testing contains! me:[%d,%d), them:[%d,%d)' % (self.start, self.stop, other.start, other.stop)
     if self.chromosome != other.chromosome:
+      # print 'nope'
       return False
     # self  |----*
     # other         *----|
     if self.stop <= other.start:
+      # print 'nope'
       return False
     # self          *----|
     # other |----*
     if self.start >= other.stop:
+      # print 'nope'
       return False
     # self    *------|
     # other *----|
     if self.start > other.start:
+      # print 'nope'
       return False
     # self  |-----*
     # other    |----*
     if self.stop < other.stop:
+      #print 'nope'
       return False
+    # print 'yup!'
     return True
 
 
@@ -515,9 +522,12 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     if key in transcriptsAnnotations:
       annotations = transcriptsAnnotations[key]
     filteredAnnotations = []
+    # print 'working on Transcript, (%d,%d]' % (cI.start, cI.stop)
     for tA in annotations:
       if cI.contains(tA.chromosomeInterval):
         filteredAnnotations.append(tA)
+    # for a in filteredAnnotations:
+    #   print '  addeding these labels: %s' % a.labels
     yield Transcript(
       cI, name, exons, filteredAnnotations,
       int(tokens[4]), int(tokens[6]),
@@ -565,3 +575,14 @@ def writeTranscriptBedFile(transcripts, bedFile):
     bedFileHandle.write(transcript.bedString() + "\n")
   bedFileHandle.close()
 
+
+def removeAlignmentNumber(s):
+  """ If the name of the transcript ends with -d as in
+  ENSMUST00000169901.2-1, return ENSMUST00000169901.2
+  """
+  s = s[:]
+  i = s.find('-')
+  if i == -1:
+    return s
+  else:
+    return s[0:i]
