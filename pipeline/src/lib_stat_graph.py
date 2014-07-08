@@ -52,20 +52,9 @@ def buildStatGraph(args):
   r = g.getroot()
   transcripts = lib_filter.getTranscripts(args.geneCheck, args.geneCheckDetails)
   for t in transcripts:
-    if t.name=='ENSMUST00000169901.2':
-      print 'I see a copy of ENSMUST00000169901.2'
-  for t in transcripts:
-    if t.name=='ENSMUST00000169901.2':
-      print 'ENSMUST00000169901.2 checking if ok'
-      for a in t.annotations:
-        print '  --- labels: %s' % a.labels
-    if isOk(t.annotations, t.name=='ENSMUST00000169901.2'):
-      if t.name=='ENSMUST00000169901.2':
-        print 'ENSMUST00000169901.2 is ok'
+    if isOk(t.annotations):
       recordOk(r, t)
     else:
-      if t.name=='ENSMUST00000169901.2':
-        print 'ENSMUST00000169901.2 is NOT ok'
       recordNotOk(r, t)
   return g
 
@@ -108,10 +97,6 @@ def flattenAnnotations(transcriptAnnotations):
     pos = root
     # descend the implicit heirarchy of the labels and build a tree
     for label in ta.labels:
-      if ta.labels[0] == 'hasBadCopies':
-        print 'ah-ha'
-        for _ta in transcriptAnnotations:
-          print _ta.labels, _ta.chromosomeInterval.chromosome, _ta.chromosomeInterval.start
       label = cleanLabel(label)
       if label not in pos.childrenNames:
         n = StatNode()
@@ -173,29 +158,17 @@ def recordNotOk(root, transcript):
       prev = e
 
 
-def isOk(annots, debug=False):
+def isOk(annots):
   """ given a list of TranscriptAnnotations, return True if data is OK.
   """
-  if debug:
-    print 'isOk()'
-    for a in annots:
-      print '  label: %s' % a.labels
   if annots == []:
     return True
   for a in annots:
-    if debug:
-      print '  labels:%s' % a.labels
     for label in a.labels:
       if (label != 'hasOkCopies' and
           label != 'hasBadCopies' and
           not label.startswith('count_')):
-        if debug:
-          print '  %s:%s:%s' % (label != 'hasOkCopies',
-                                label != 'hasBadCopies',
-                                not label.startswith('count_'))
         return False
-  if debug:
-    print '  Worked out'
   return True
 
 
