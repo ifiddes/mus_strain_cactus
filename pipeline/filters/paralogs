@@ -20,9 +20,10 @@ def reduceTranscripts(transcripts):
   """
   reduced = {}
   for t in transcripts:
-    if t.name not in reduced:
-      reduced[t.name] = []
-    reduced[t.name].append(t)
+    t_name = lib_filter.removeAlignmentNumber(t.name)
+    if t_name not in reduced:
+      reduced[t_name] = []
+    reduced[t_name].append(t)
   return reduced
 
 
@@ -79,19 +80,22 @@ def main():
     args.geneCheckBed, args.geneCheckBedDetails)
   uniqueTranscripts = reduceTranscripts(transcripts)
   for t in transcripts:
-    count = hasOkCopy(t, uniqueTranscripts[t.name])
+    t_name = lib_filter.removeAlignmentNumber(t.name)
+    count = hasOkCopy(t, uniqueTranscripts[t_name])
     if count:
       if t.annotations == []:
         # OK transcripts could have no annotations
+        # use the t.name here to be sure the TA gets stored correctly
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:
         annot.addLabel('hasOkCopies')
         annot.addLabel('count_%d' % count)
-    count = hasBadCopy(t, uniqueTranscripts[t.name])
+    count = hasBadCopy(t, uniqueTranscripts[t_name])
     if count:
       if t.annotations == []:
         # OK transcripts could have no annotations
+        # use the t.name here to be sure the TA gets stored correctly
         t.annotations.append(
           lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, []))
       for annot in t.annotations:

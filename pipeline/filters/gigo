@@ -32,9 +32,10 @@ def main():
   originalTranscriptsDict = lib_filter.transcriptListToDict(
     originalTranscripts, noDuplicates=True)
   for t in transcripts:
-    if t.name not in originalTranscriptsDict:
+    t_name = lib_filter.removeAlignmentNumber(t.name)
+    if t_name not in originalTranscriptsDict:
       continue
-    ot = originalTranscriptsDict[t.name]
+    ot = originalTranscriptsDict[t_name]
     originalLabels = createLabelSet(ot)
     for annot in t.annotations:
       newLabels = []

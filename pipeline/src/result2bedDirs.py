@@ -25,8 +25,8 @@ class Result(object):
     self.original = d
     self.track = dirToTrack(d)
     self.genome = dirToGenome(d)
-    self.bed = os.path.join(d, 'out.bed')
-    self.bedDetails = os.path.join(d, 'out_details.bed')
+    self.bed = os.path.join(d, 'out_clean.bed')
+    self.bedDetails = os.path.join(d, 'out_details_clean.bed')
 
 
 def initializeArguments(parser):

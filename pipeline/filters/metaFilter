@@ -55,10 +55,16 @@ def copyResults(fromDir, toDir):
   fromBedDetails = os.path.join(fromDir, 'out_details.bed')
   toBed = os.path.join(toDir, 'out.bed')
   toBedDetails = os.path.join(toDir, 'out_details.bed')
-  if os.path.exists(fromBed):
-    shutil.copy2(fromBed, toBed)
-  if os.path.exists(fromBedDetails):
-    shutil.copy2(fromBedDetails, toBedDetails)
+  for frm, to in [(os.path.join(fromDir, 'out.bed'),
+                   os.path.join(toDir, 'out.bed')),
+                  (os.path.join(fromDir, 'out_details.bed'),
+                   os.path.join(toDir, 'out_details.bed')),
+                  (os.path.join(fromDir, 'out_clean.bed'),
+                   os.path.join(toDir, 'out_clean.bed')),
+                  (os.path.join(fromDir, 'out_details_clean.bed'),
+                   os.path.join(toDir, 'out_details_clean.bed'))]:
+    if os.path.exists(frm):
+      shutil.copy2(frm, to)
 
 
 def alreadyReady(filt, inBed, inBedDetail, outBed, outBedDetail, location):
@@ -101,11 +107,33 @@ def alreadyReady(filt, inBed, inBedDetail, outBed, outBedDetail, location):
   return True
 
 
+def sanitize(location):
+  """ The bed files need to have their names scrubbed to remove the hyphen
+  names, i.e. ENSMUST00000169901.2-0 and ENSMUST00000169901.2-1 need to become
+  just ENSMUST00000169901.2. We used the hyphen names through the pipeline to
+  try to keep separate instances of transcripts and their annotations separate.
+  But this hypen name space will break our Browser search functionality.
+  """
+  for infile, cleanfile in [('out.bed', 'out_clean.bed'),
+                            ('out_details.bed', 'out_details_clean.bed')]:
+    with open(os.path.join(location, cleanfile), 'w') as clean:
+      with open(os.path.join(location, infile), 'r') as f:
+        for line in f:
+          line = line.strip()
+          data = line.split()
+          data[3] = lib_filter.removeAlignmentNumber(data[3])
+          clean.write('%s\n' % ' '.join(data))
+
+
+
 def main():
   args = lib_filter.boilerplateArguments()
   # this is the order that filters will be run.
-  filters = ['nLook', 'shortScaffold_noStartStop', 'noStopCorrecter',
-             'paralogs']
+  filters = ['uniquify']  # uniquify should always be run first
+  filters.append('nLook')
+  filters.append('shortScaffold_noStartStop')
+  filters.append('noStopCorrecter')
+  filters.append('paralogs')
   filters.append('gigo')  # gigo should always be run last.
   # create needed lists containing file / directory locations
   inputs = [(args.geneCheckBed, args.geneCheckBedDetails)]
@@ -123,6 +151,7 @@ def main():
              inputs[i][0], inputs[i][1],
              args.originalGeneCheckBed, args.originalGeneCheckBedDetails,
              args.alignment, args.sequence, args.chromSizes, locations[i])
+    sanitize(locations[i])
   # copy back last filter to the metaFilter directory for end use
   copyResults(locations[-1], args.outDir)
 
