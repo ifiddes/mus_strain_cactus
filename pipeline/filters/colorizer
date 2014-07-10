@@ -48,13 +48,14 @@ def colorize(t):
             'alignment': '35,125,191',  # blue
             'generic': '163,116,87',  # l brown
             'ok': '181,216,139'}  # avocado
-  c = 'ok'
+  tc = 'ok'
   for a in t.annotations:
+    ac = 'ok'
     for l in a.labels:
-      c = colorCmp(c, classify(l))
-  t.itemRgb = colors[c]
-  for a in t.annotations:
-    a._itemRgb = colors[c]
+      tc = colorCmp(tc, classify(l))
+      ac = colorCmp(ac, classify(l))
+    a._itemRgb = colors[ac]
+  t.itemRgb = colors[tc]
 
 
 def main():
