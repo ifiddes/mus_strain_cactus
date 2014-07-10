@@ -8,7 +8,11 @@ import subprocess
 import sys
 import unittest
 import lib_filter
-
+import imp
+metaFilter = imp.load_source(
+  'metaFilter', os.path.join(
+    os.path.abspath(os.path.dirname(sys.argv[0])), 'metaFilter'))
+metaFilter
 
 def makeTempDirParent():
   """ make the parent temp dir directory
@@ -163,6 +167,16 @@ def bedLine(chrom, chromStart, chromEnd, name, score=None, strand=None,
           % (score, strand, thickStart, thickEnd, itemRgb, blockCount,
           blockSizes, blockStarts))
   return s
+
+
+def numberOfUniqueTranscripts(transcripts):
+  """ Given a list of transcripts, return the number of unique names.
+  """
+  names = set()
+  for t in transcripts:
+    if t not in names:
+      names.add(t)
+  return len(names)
 
 
 class sequenceGetterTests(unittest.TestCase):
@@ -512,7 +526,7 @@ class transcriptIteratorTests(unittest.TestCase):
     originalTranscriptAnnotationCount = sum(
       map(lambda t:len(t.annotations), transcripts))
     makeTempDirParent()
-    tmpDir = os.path.abspath(makeTempDir('transcriptWriter'))
+    tmpDir = os.path.abspath(makeTempDir('transcriptObjectManagement'))
     # write transcripts to files
     outBed = os.path.join(tmpDir, 'test.bed')
     outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
@@ -563,7 +577,7 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertEquals(len(transcripts[0].annotations), 3)
     self.assertEquals(len(transcripts[1].annotations), 1)
     makeTempDirParent()
-    tmpDir = os.path.abspath(makeTempDir('transcriptWriter'))
+    tmpDir = os.path.abspath(makeTempDir('transcriptReading'))
     # write transcripts to files
     outBed = os.path.join(tmpDir, 'test.bed')
     outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
@@ -584,6 +598,61 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertEquals(originalTranscriptCount, newTranscriptCount)
     self.assertEquals(originalTranscriptAnnotationCount,
                       newTranscriptAnnotationCount)
+    # cleanup
+    self.addCleanup(removeDir, tmpDir)
+
+  def test_uniquify_0(self):
+    """ Uniquify should make unique names for transcripts with identical names
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'scaffold-444', 41415, 87033, 'ENSMUST00000169901.2', 0, '-', 41415,
+        45156, '128,0,0', 5, '128,12,219,90,27', '0,131,3590,42232,45591'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-444', 72633, 82553, 'ENSMUST00000169901.2', 0, '-', 72782,
+        82485, '0,128,0', 5, '51,156,104,140,219', '0,129,4370,7482,9701'))
+    transcriptBedLines.append(bedLine(
+        'scaffold-banana', 72633, 82553, 'ENSMUST00000169901.2', 0, '-', 72782,
+        82485, '0,128,0', 5, '51,156,104,140,219', '0,129,4370,7482,9701'))
+    transcriptDetailsBedLines = []
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-444', 41415, 41418,
+        'noStop/alignmentPartialMap/hasOkCopies/count_1/ENSMUST00000169901.2'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-444', 41543, 41546,
+        'cdsGap/hasOkCopies/count_1/ENSMUST00000169901.2'))
+    transcriptDetailsBedLines.append(bedLine(
+        'scaffold-444', 72633, 82553,
+        'hasBadCopies/count_1/ENSMUST00000169901.2'))
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('uniquify'))
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # run uniquify
+    with open(os.path.join(tmpDir, 'dummy.txt'), 'w') as f:
+      f.write('dummy\n')
+    originalGeneCheckBed = os.path.join(tmpDir, 'dummy.txt')
+    originalGeneCheckBedDetails = os.path.join(tmpDir, 'dummy.txt')
+    alignment = os.path.join(tmpDir, 'dummy.txt')
+    sequence = os.path.join(tmpDir, 'dummy.txt')
+    chromSizes = os.path.join(tmpDir, 'dummy.txt')
+    metaFilter.makeCall(
+      'uniquify', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
+      originalGeneCheckBed, originalGeneCheckBedDetails,
+      alignment, sequence, chromSizes, tmpDir)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(
+      os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
+    # test equality.
+    self.assertEquals(numberOfUniqueTranscripts(writtenTranscripts), 3)
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
