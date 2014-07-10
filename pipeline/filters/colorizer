@@ -53,6 +53,8 @@ def colorize(t):
     for l in a.labels:
       c = colorCmp(c, classify(l))
   t.itemRgb = colors[c]
+  for a in t.annotations:
+    a._itemRgb = colors[c]
 
 
 def main():

@@ -146,11 +146,13 @@ class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
   classification bed files
   """
-  __slots__ = ('chromosomeInterval', 'name', 'labels')  # conserve memory
+  # conserve memory with __slots__
+  __slots__ = ('chromosomeInterval', 'name', 'labels', '_itemRgb')
   def __init__(self, chromosomeInterval, name, label):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
     self.labels = list(label)  # list of strings
+    self._itemRgb = ''
 
   def addLabel(self, label, prepend=False):
     """ maintain the ordering of self.labels but prevent duplicates
@@ -162,10 +164,23 @@ class TranscriptAnnotation(object):
         self.labels.append(label)
 
   def bedString(self):
+    strandChar = '-'
+    if self.chromosomeInterval.strand:
+      strandChar = '+'
+    if self._itemRgb == '':
       return '\t'.join([self.chromosomeInterval.chromosome,
                         str(self.chromosomeInterval.start),
                         str(self.chromosomeInterval.stop),
                         '/'.join(self.labels + [self.name])])
+    else:
+      return '\t'.join([self.chromosomeInterval.chromosome,
+                        str(self.chromosomeInterval.start),
+                        str(self.chromosomeInterval.stop),
+                        '/'.join(self.labels + [self.name]),
+                        '0', strandChar,
+                        str(self.chromosomeInterval.start),
+                        str(self.chromosomeInterval.stop),
+                        self._itemRgb])
 
   def __eq__(self, other):
     return (self.chromosomeInterval == other.chromosomeInterval and
@@ -495,11 +510,11 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
   """
   transcriptsAnnotations = {}
   for tokens in tokenizeBedStream(transcriptDetailsBedStream):
-    assert len(tokens) == 4
+    assert (len(tokens) == 4 or len(tokens) == 9)  # 9 if it has color data.
     tA = TranscriptAnnotation(
       ChromosomeInterval(tokens[0], tokens[1], tokens[2], None),
       tokens[3].split('/')[-1], tokens[3].split('/')[:-1])
-    # normalizeAnnotation(tA)  # removing this temporarily to try to improve xml
+    # normalizeAnnotation(tA)  # removed this to improve xml
     key = (tA.name, tA.chromosomeInterval.chromosome)
     if key not in transcriptsAnnotations:
       transcriptsAnnotations[key] = []
