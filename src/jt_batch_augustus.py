@@ -48,7 +48,7 @@ class BatchJob(Target):
     self.args = args
   def run(self):
     sequence_dict = self.collect_sequences()
-    Debug('%s\n' % str(sequence_dict), self.args)
+    debug('%s\n' % str(sequence_dict), self.args)
     order = sorted(sequence_dict.keys())
     for s in order:
       count = 0
@@ -57,7 +57,7 @@ class BatchJob(Target):
                           self.args.window_length - self.args.window_overlap):
         count += 1
         actual_length = min(window_end - start, self.args.window_length)
-        Debug('AugustusCall(%s, %s, %s, %d, %d, %d, args)\n' %
+        debug('AugustusCall(%s, %s, %s, %d, %d, %d, args)\n' %
               (self.args.hal_file_path, self.args.ref_genome, s,
                start, actual_length, count - 1), self.args)
         self.addChildTarget(AugustusCall(self.args.hal_file_path,
@@ -65,8 +65,8 @@ class BatchJob(Target):
                                          s, start,
                                          actual_length,
                                          count - 1, self.args))
-    Debug('There will be %d AugustusCall children\n' % count, self.args)
-    self.args.batch_start_time = CreateSummaryReport(
+    debug('There will be %d AugustusCall children\n' % count, self.args)
+    self.args.batch_start_time = createSummaryReport(
       self.args.out_dir, self.args.ref_genome, self.args.ref_sequence,
       self.args.window_start, actual_length, self.args.window_overlap,
       count, self.args.batch_start_time,
@@ -75,12 +75,12 @@ class BatchJob(Target):
     if self.args.ref_sequence is None:
       # handle this by collecting all sequences via a call to
       # halStats --sequenceStats
-      Debug('ref_sequence is none\n', self.args)
+      debug('ref_sequence is none\n', self.args)
       return self.run_hal_stats()
     else:
       if self.args.window_end is None:
         # get the end from halStats
-        Debug('window_end is none\n', self.args)
+        debug('window_end is none\n', self.args)
         return self.run_hal_stats()
       else:
         return {self.args.ref_sequence:
@@ -132,7 +132,7 @@ class AugustusCall(Target):
                                  % (ref_genome, ref_sequence,
                                     window_number))
     self.args = args
-    # dbaccess = ReadDBAccess(self.args.dbaccess_file)
+    # dbaccess = readDBAccess(self.args.dbaccess_file)
     self.aug_parameters = {
       'AUGUSTUS_CONFIG_PATH': os.path.join(self.args.augustus_path, 'config'),
       'treefile': self.args.tree_path,
@@ -179,7 +179,7 @@ class AugustusCall(Target):
                                       self.window_number))
     else:
       self.maf_file = self.args.maf_file_path
-    # VerifyMySQLServer(self.out_path, self.args)  # Verify for nodes
+    # verifyMySQLServer(self.out_path, self.args)  # Verify for nodes
     self.aug_parameters['alnfile'] = self.maf_file
     # extract the region needed as maf
     hal2maf_cmd = [os.path.join(self.args.hal_path, 'bin', 'hal2maf')]
@@ -239,15 +239,15 @@ class AugustusCall(Target):
       lib_run.TimeStamp(self.out_path, time_start, tag=tag)
 
 
-def Debug(s, args):
+def debug(s, args):
   if not args.debug:
     return
   f = open(os.path.join(args.out_dir, 'debugging.txt'), 'a')
-  f.write('[Debug] %s' % s)
+  f.write('[debug] %s' % s)
   f.close()
 
 
-def ReadDBAccess(dbaccess_file):
+def readDBAccess(dbaccess_file):
   """ Open the file and read the first line, report it back.
   """
   f = open(dbaccess_file, 'r')
@@ -258,7 +258,7 @@ def ReadDBAccess(dbaccess_file):
     return line
 
 
-def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
+def createSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
                         window_length, window_overlap, count,
                         now, command):
   """ Create a summary report in the root output directory.
@@ -275,7 +275,7 @@ def CreateSummaryReport(out_dir, ref_genome, ref_sequence, window_start,
   return now
 
 
-def InitializeArguments(parser):
+def initializeArguments(parser):
   logger.debug('Initializing arguments')
   parser.add_argument('--augustus_path', type=str,
                       help='location of augustus directory.')
@@ -393,7 +393,7 @@ def InitializeArguments(parser):
                         help='Augustus option. default=%(default)s')
 
 
-def CheckArguments(args, parser):
+def checkArguments(args, parser):
   # check for setting
   for name, value in [('augustus_path', args.augustus_path),
                       ('hal_path', args.hal_path),
@@ -448,7 +448,7 @@ def CheckArguments(args, parser):
   args.out_dir = os.path.abspath(args.out_dir)
   if args.window_length - args.window_overlap < 1:
     parser.error('--window_length must be greater than --window_overlap!')
-  # VerifyMySQLServer(args.out_dir, args)  # Verify for head node
+  # verifyMySQLServer(args.out_dir, args)  # Verify for head node
   logger.debug('Arguments checked.\n'
                'augustus_path:%s\n'
                'hal_path:%s\n'
@@ -470,7 +470,7 @@ def CheckArguments(args, parser):
                    '--window_end')
 
 
-def VerifyMySQLServer(out_dir, args):
+def verifyMySQLServer(out_dir, args):
   """ Make sure the MySQL server exists and is accessible.
   """
   def simple_connection_test(host_name, user_name, password, db_name, f):
@@ -487,7 +487,7 @@ def VerifyMySQLServer(out_dir, args):
               % (lib_run.TimeString(), e.args[0], e.args[1]))
     cur.close()
     db.close()
-  dbaccess = ReadDBAccess(args.dbaccess_file)
+  dbaccess = readDBAccess(args.dbaccess_file)
   db_name, host_name, user_name, password = dbaccess.split(',')
   f = open(os.path.join(out_dir, 'jt_db_check.log'), 'w')
   then = time.time()
@@ -509,7 +509,7 @@ def VerifyMySQLServer(out_dir, args):
   f.close()
 
 
-def LaunchBatch(args):
+def launchBatch(args):
   args.batch_start_time = time.time()
   jobResult = Stack(BatchJob(args)).startJobTree(args)
   if jobResult:
@@ -527,12 +527,12 @@ def main():
   description = ('%(prog)s starts a jobTree batch of augustus calls '
                  'for a given input set.')
   parser = ArgumentParser(description=description)
-  InitializeArguments(parser)
+  initializeArguments(parser)
   Stack.addJobTreeOptions(parser)
   args = parser.parse_args()
-  CheckArguments(args, parser)
+  checkArguments(args, parser)
 
-  LaunchBatch(args)
+  launchBatch(args)
 
 
 if __name__ == '__main__':
