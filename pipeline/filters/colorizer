@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+"""
+colorizer
+9 July 2014
+
+dent earl, dearl a soe ucsc edu
+
+a filter for the msca project analysis pipeline.
+Reads through the input and changes the colors in
+the details file.
+"""
+import sys
+import lib_filter
+
+
+def colorCmp(a, b):
+  """ Compare a and b and return the more powerful color.
+  input > assembly > alignment > generic > ok.
+  """
+  if a == b:
+    return a
+  for value in ['input', 'alignment', 'generic', 'ok']:
+    if a == value or b == value:
+      return value
+
+
+def classify(a):
+  """ Given a label A, determine if it is input, assembly, alignment,
+  generic or ok.
+  """
+  if a.startswith('^'):
+    return 'input'
+  if a in ['alignmentPartialMap', 'alignmentAbutsEdge', 'containsNs']:
+    return 'assembly'
+  if a in ['hasOkCopies', 'hasBadCopies']:
+    return 'alignment'
+  # currently no label results in 'ok'... only way to 'ok' is having no labels
+  return 'generic'
+
+
+def colorize(t):
+  """ Given a Transcript t, see if it or any of its TranscriptAnnotations
+  need to have their itemRgb values adjusted.
+  """
+  # rgb colors
+  colors = {'input': '219,220,222',  # grey
+            'assembly': '167,206,226',  # l blue
+            'alignment': '35,125,191',  # blue
+            'generic': '163,116,87',  # l brown
+            'ok': '181,216,139'}  # avocado
+  c = 'ok'
+  for a in t.annotations:
+    for l in a.labels:
+      c = colorCmp(c, classify(l))
+  t.itemRgb = colors[c]
+
+
+def main():
+  args = lib_filter.boilerplateArguments()
+  transcripts = lib_filter.getTranscripts(
+    args.geneCheckBed, args.geneCheckBedDetails)
+  for t in transcripts:
+    colorize(t)
+
+  lib_filter.writeAllBeds(transcripts, args)
+
+
+if __name__ == '__main__':
+  main()
