@@ -162,10 +162,10 @@ class TranscriptAnnotation(object):
         self.labels.append(label)
 
   def bedString(self):
-      return "\t".join([self.chromosomeInterval.chromosome,
+      return '\t'.join([self.chromosomeInterval.chromosome,
                         str(self.chromosomeInterval.start),
                         str(self.chromosomeInterval.stop),
-                        "/".join(self.labels + [self.name])])
+                        '/'.join(self.labels + [self.name])])
 
   def __eq__(self, other):
     return (self.chromosomeInterval == other.chromosomeInterval and
@@ -205,28 +205,34 @@ class Transcript(object):
             self.thickEnd == other.thickEnd and
             self.itemRgb == other.itemRgb)
 
-  def hashkey(self):
+  def hashkey(self, deuniquify=False):
     """ return a string to use as dict key.
     """
-    return '%s_%s_%d_%d' % (self.name, self.chromosomeInterval.chromosome,
-                            self.chromosomeInterval.start,
-                            self.chromosomeInterval.stop)
+    if deuniquify:
+      return '%s_%s_%d_%d' % (removeAlignmentNumber(self.name),
+                              self.chromosomeInterval.chromosome,
+                              self.chromosomeInterval.start,
+                              self.chromosomeInterval.stop)
+    else:
+      return '%s_%s_%d_%d' % (self.name, self.chromosomeInterval.chromosome,
+                              self.chromosomeInterval.start,
+                              self.chromosomeInterval.stop)
 
   def bedString(self):
     """ Write a transcript object to the given file.
     """
-    strandChar = "-"
+    strandChar = '-'
     if self.chromosomeInterval.strand:
-        strandChar = "+"
-    return "\t".join(
+        strandChar = '+'
+    return '\t'.join(
       [self.chromosomeInterval.chromosome,
        str(self.chromosomeInterval.start),
        str(self.chromosomeInterval.stop),
        self.name, str(self.score), strandChar,
        str(self.thickStart), str(self.thickEnd),
        self.itemRgb, str(len(self.exons)),
-       ",".join([str(exon.stop - exon.start) for exon in self.exons]),
-       ",".join([str(exon.start - self.chromosomeInterval.start)
+       ','.join([str(exon.stop - exon.start) for exon in self.exons]),
+       ','.join([str(exon.start - self.chromosomeInterval.start)
                  for exon in self.exons])])
 
   def __cmp__(self, transcript):
@@ -470,14 +476,14 @@ def normalizeAnnotation(transcriptAnnotation):
       (transcriptAnnotation.labels[0].endswith('Splice') and
        len(transcriptAnnotation.labels[1].split('.')) == 3)):
     # try to find lists like ['unknownUtrSplice', 'CC..AC']
-    newLabels = [ "_".join(transcriptAnnotation.labels[:2])]
+    newLabels = [ '_'.join(transcriptAnnotation.labels[:2])]
     newLabels += transcriptAnnotation.labels[2:]
     transcriptAnnotation.labels = newLabels
   elif (len(transcriptAnnotation.labels) > 1 and
         transcriptAnnotation.labels[0] == 'orfStop' and
         transcriptAnnotation.labels[1] in ['TAA', 'TAG', 'TGA']):
     # try to find lists like ['orfStop', 'TAG']
-    newLabels = [ "_".join(transcriptAnnotation.labels[:2])]
+    newLabels = [ '_'.join(transcriptAnnotation.labels[:2])]
     newLabels += transcriptAnnotation.labels[2:]
     transcriptAnnotation.labels = newLabels
 
@@ -561,7 +567,7 @@ def writeDetailsBedFile(transcripts, detailsBedFile):
   annotations.sort()
   annotationsFileHandle = open(detailsBedFile, 'w')
   for annotation in annotations:
-    annotationsFileHandle.write(annotation.bedString() + "\n")
+    annotationsFileHandle.write(annotation.bedString() + '\n')
   annotationsFileHandle.close()
 
 
@@ -572,7 +578,7 @@ def writeTranscriptBedFile(transcripts, bedFile):
   transcripts.sort()
   bedFileHandle = open(bedFile, 'w')
   for transcript in transcripts:
-    bedFileHandle.write(transcript.bedString() + "\n")
+    bedFileHandle.write(transcript.bedString() + '\n')
   bedFileHandle.close()
 
 
