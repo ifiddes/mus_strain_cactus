@@ -122,8 +122,7 @@ def sanitize(location):
           line = line.strip()
           data = line.split()
           data[3] = lib_filter.removeAlignmentNumber(data[3])
-          clean.write('%s\n' % ' '.join(data))
-
+          clean.write('%s\n' % '\t'.join(data))
 
 
 def main():
@@ -134,7 +133,9 @@ def main():
   filters.append('shortScaffold_noStartStop')
   filters.append('noStopCorrecter')
   filters.append('paralogs')
-  filters.append('gigo')  # gigo should always be run last.
+  # Do not change the order of filters below this line
+  filters.append('gigo')
+  filters.append('colorizer')
   # create needed lists containing file / directory locations
   inputs = [(args.geneCheckBed, args.geneCheckBedDetails)]
   locations = []
