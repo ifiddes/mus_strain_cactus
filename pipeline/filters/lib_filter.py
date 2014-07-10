@@ -2,6 +2,7 @@
 convenience library for assisting filters.
 """
 from argparse import ArgumentTypeError
+from collections import deque
 import os
 import sys
 
@@ -151,7 +152,7 @@ class TranscriptAnnotation(object):
   def __init__(self, chromosomeInterval, name, label):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
-    self.labels = list(label)  # list of strings
+    self.labels = deque(label)  # need to be able to append left, -> deque
     self._itemRgb = ''
 
   def addLabel(self, label, prepend=False):
@@ -159,7 +160,7 @@ class TranscriptAnnotation(object):
     """
     if label not in self.labels:
       if prepend:
-        self.labels.insert(0, label)
+        self.labels.appendleft(label)
       else:
         self.labels.append(label)
 
@@ -171,12 +172,12 @@ class TranscriptAnnotation(object):
       return '\t'.join([self.chromosomeInterval.chromosome,
                         str(self.chromosomeInterval.start),
                         str(self.chromosomeInterval.stop),
-                        '/'.join(self.labels + [self.name])])
+                        '/'.join(list(self.labels) + [self.name])])
     else:
       return '\t'.join([self.chromosomeInterval.chromosome,
                         str(self.chromosomeInterval.start),
                         str(self.chromosomeInterval.stop),
-                        '/'.join(self.labels + [self.name]),
+                        '/'.join(list(self.labels) + [self.name]),
                         '0', strandChar,
                         str(self.chromosomeInterval.start),
                         str(self.chromosomeInterval.stop),
