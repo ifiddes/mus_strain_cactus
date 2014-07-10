@@ -28,7 +28,7 @@ def main():
     for annot in t.annotations:
       if 'noStart' not in annot.labels and 'noStop' not in annot.labels:
         continue
-      a_name = t.hashkey()
+      a_name = t.hashkey(deuniquify=True)
       if a_name not in alignments_dict:
         continue
       a = alignments_dict[a_name]
