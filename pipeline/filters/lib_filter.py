@@ -543,12 +543,9 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     if key in transcriptsAnnotations:
       annotations = transcriptsAnnotations[key]
     filteredAnnotations = []
-    # print 'working on Transcript, (%d,%d]' % (cI.start, cI.stop)
     for tA in annotations:
       if cI.contains(tA.chromosomeInterval):
         filteredAnnotations.append(tA)
-    # for a in filteredAnnotations:
-    #   print '  addeding these labels: %s' % a.labels
     yield Transcript(
       cI, name, exons, filteredAnnotations,
       int(tokens[4]), int(tokens[6]),
