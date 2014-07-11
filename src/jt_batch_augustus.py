@@ -7,7 +7,7 @@ from jobTree.scriptTree.stack import Stack
 from jobTree.scriptTree.target import Target
 from glob import glob
 import lib_run
-import MySQLdb
+# import MySQLdb
 import os
 from sonLib.bioio import logger
 import subprocess
