@@ -132,12 +132,9 @@ def formatTime(t, args):
     return lib_run.PrettyTime(t)
 
 
-def main():
-  parser = ArgumentParser()
-  initializeArguments(parser)
-  args = parser.parse_args()
-  checkArguments(args, parser)
-  windows = getWindows(args)
+def reportResults(windows, args):
+  """ Print everything out.
+  """
   print('n: %d. successes: %d. failures: %d. in-progress: %d.' %
         (len(windows), len([w for w in windows if w.success]),
          len(windows) - len([w for w in windows if w.inProgress]) -
@@ -161,6 +158,16 @@ def main():
       tstd = formatTime(numpy.std(times), args)
       print('%9s  %12s %12s %6s %15s %12s' %
             (name, tmean, tmed, tmin, tmax, tstd))
+
+
+def main():
+  parser = ArgumentParser()
+  initializeArguments(parser)
+  args = parser.parse_args()
+  checkArguments(args, parser)
+  windows = getWindows(args)
+  reportResults(windows, args)
+
 
 if __name__ == '__main__':
   main()
