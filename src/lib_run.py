@@ -270,6 +270,55 @@ def PrettyTime(t):
                                              d_plural, h, m, s)
 
 
+def PrettyTimeToSeconds(t):
+  """ Given a string from the PrettyTime() function, turn it back into seconds.
+  """
+  def triageWeek(t):
+    assert(len(t) == 7)
+    assert(t[1].startswith('week'))
+    s = 7 * 24 * 60 * 60 * int(t[0][:-1])
+    return s + triageDay(t[2:])
+  def triageDay(t):
+    assert(len(t) == 5)
+    assert(t[1].startswith('day'))
+    s = 24 * 60 * 60 * int(t[0][:-1])
+    return s + triageHour(t[2:])
+  def triageHour(t):
+    assert(len(t) == 3)
+    assert(t[0].endswith('h'))
+    s = 60 * 60 * int(t[0][:-1])
+    return s + triageMinute(t[1:])
+  def triageMinute(t):
+    assert(len(t) == 2)
+    assert(t[0].endswith('m'))
+    s = 60 * int(t[0][:-1])
+    return s + triageSecond(t[1:])
+  def triageSecond(t):
+    assert(len(t) == 1)
+    assert(t[0].endswith('s'))
+    s = int(t[0][:-1])
+    return s
+  d = t.split()
+  # triage the input to determine the leading unit
+  try:
+    n = float(d[0])
+    # either week or day data leads the list
+    if d[0].startswith('week'):
+      return triageWeek(d)
+    else:
+      return triageDay(d)
+  except ValueError:
+    # if there's a letter on the end then it's one of these three
+    if d[0].endswith('h'):
+      return triageHour(d)
+    elif d[0].endswith('m'):
+      return triageMinute(d)
+    elif d[0].endswith('s'):
+      return triageSecond(d)
+    else:
+      raise RuntimeError('wtf is wrong with this prettyString: %s' % t)
+
+
 def TimeStamp(out_path, time_start=None, name=None, tag=''):
   """ Open up the log file and make a timestamp.
   """
