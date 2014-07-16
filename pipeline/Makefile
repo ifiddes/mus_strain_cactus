@@ -20,7 +20,7 @@ sequenceDir = ${dataDir}
 alignmentDir = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-16.simpleChain/results/lnb_0001/chained
 halFile = /hive/users/benedict/mouseHub/all.hal
 filtersDir = filters
-stats = src/geneCheckStats.py
+stats = src/geneCheckStatCreator.py
 filters = ${filtersDir}/metaFilter
 
 all: $(foreach f,$(basename $(notdir ${filters})),$(foreach g,${genomes},results/$f.$g/done))

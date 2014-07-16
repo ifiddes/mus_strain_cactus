@@ -25,6 +25,18 @@ class StatNode(object):
     self.childrenNames = {}  # dict of StatNode objects
 
 
+class StatCount(object):
+  """ StatCount is used to store the counts of occurences for a tag.
+  """
+  def __init__(self, nodeName):
+    self.nodeName = nodeName  # at this level of the heirarchy
+    self.nodeTranscripts = 0
+    self.nodeTranscriptAnnotations = 0
+    self.tagTranscripts = 0
+    self.tagTranscriptAnnotations = 0
+    self.children = []  # more StatCounts
+
+
 def newElement(parent, tag):
   """
   """
@@ -63,7 +75,7 @@ def recordStatGraph(g, path):
   """ record a stat graph G to a file located in PATH.
   """
   # g = ET.ElementTree(g)
-  g.write(path)
+  g.write(path, xml_declaration=True, encording='utf-8', method='xml')
 
 
 def recordOk(root, transcript):
@@ -215,3 +227,93 @@ def reportCounts(counts):
     print '%*s %*d (%.3f)' % (max_str, cat, max_digit, counts[cat],
                                float(counts[cat]) / counts['total'])
 
+
+def graphToStatCount(node, tag):
+  """ Given a stat graph NODE, return a StatCount of similar structure.
+  """
+  s = StatCount(node.tag)
+  if node.tag != 'stats':
+    s.nodeTranscripts = int(node.attrib['transcripts'])
+    s.nodeTranscriptAnnotations = int(node.attrib['transcript_annotations'])
+    if node.tag == tag:
+      s.tagTranscripts = s.nodeTranscripts
+      s.tagTranscriptAnnotations = s.nodeTranscriptAnnotations
+  for child in node:
+    s.children.append(graphToStatCount(child, tag))
+  if node.tag == 'stats':
+    for child in s.children:
+      s.nodeTranscripts += child.nodeTranscripts
+      s.nodeTranscriptAnnotations += child.nodeTranscriptAnnotations
+  return s
+
+
+def statCountContainsTag(node, tag):
+  """ Walk the entire NODE tree and if any tags match TAG, return True.
+  """
+  if node.nodeName == tag:
+    return True
+  if node.children == []:
+    return False
+  c = False
+  for child in node.children:
+    if statCountContainsTag(child, tag):
+      return True
+  return False
+
+
+def pruneStatCountBranches(node, tag):
+  """ Given label TAG and StatCount NODE, remove branches without TAG leafs.
+  """
+  if node.nodeName == tag:
+    node.children = []  # we don't care about anything beyond the tag.
+  newChildren = []
+  for child in node.children:
+    if statCountContainsTag(child, tag):
+      newChildren.append(child)
+  node.children = newChildren
+  for child in node.children:
+    pruneStatCountBranches(child, tag)
+
+
+def sendUpStatCountTagCounts(node, tag):
+  """ Given label TAG and StatCount NODE, update counts for nodes leaf to root.
+  """
+  def pushUp(node):
+    t = 0
+    ta = 0
+    for child in node.children:
+      tc, tac = pushUp(child)
+      t += tc
+      ta += tac
+    node.tagTranscripts += t
+    node.tagTranscriptAnnotations += ta
+    return node.tagTranscripts, node.tagTranscriptAnnotations
+  pushUp(node)
+
+
+def getTagStats(graph, tag):
+  """ Given a stat graph GRAPH and a tag name TAG, return stats from GRAPH.
+  """
+  r = graph.getroot()
+  s = graphToStatCount(r, tag)
+  pruneStatCountBranches(s, tag)
+  sendUpStatCountTagCounts(s, tag)
+  return s
+
+
+def reportTagStats(stats, lower):
+  """ Given some tag statistics STATS, report the data.
+  """
+  level = 0
+  increment = 2
+  def printTree(level, t, lower):
+    if t.tagTranscripts > lower:
+      print('%s%s %10d, %5d, %5d (%.2f%%), %5d (%.2f%%)' %
+            (' ' * level, t.nodeName,
+             t.nodeTranscripts, t.nodeTranscriptAnnotations,
+             t.tagTranscripts, 100. * t.tagTranscripts / t.nodeTranscripts,
+             t.tagTranscriptAnnotations,
+             100. * t.tagTranscriptAnnotations / t.nodeTranscriptAnnotations))
+    for c in t.children:
+      printTree(level + increment, c, lower)
+  printTree(level, stats, lower)
