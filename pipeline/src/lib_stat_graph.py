@@ -75,7 +75,7 @@ def recordStatGraph(g, path):
   """ record a stat graph G to a file located in PATH.
   """
   # g = ET.ElementTree(g)
-  g.write(path, xml_declaration=True, encording='utf-8', method='xml')
+  g.write(path, xml_declaration=True, encoding='utf-8', method='xml')
 
 
 def readStatGraph(xml):
