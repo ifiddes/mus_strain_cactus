@@ -314,12 +314,15 @@ def reportTagStats(stats, lower):
   increment = 2
   def printTree(level, t, lower):
     if t.tagTranscripts > lower:
-      print('%s%s %10d, %5d, %5d (%.2f%%), %5d (%.2f%%)' %
-            (' ' * level, t.nodeName,
-             t.nodeTranscripts, t.nodeTranscriptAnnotations,
-             t.tagTranscripts, 100. * t.tagTranscripts / t.nodeTranscripts,
-             t.tagTranscriptAnnotations,
-             100. * t.tagTranscriptAnnotations / t.nodeTranscriptAnnotations))
+      s =  '%10d, %6d, %6d (%6.2f%%), %6d (%6.2f%%)' % (
+        t.nodeTranscripts, t.nodeTranscriptAnnotations,
+        t.tagTranscripts, 100. * t.tagTranscripts / t.nodeTranscripts,
+        t.tagTranscriptAnnotations,
+        100. * t.tagTranscriptAnnotations / t.nodeTranscriptAnnotations)
+      title = '%s%s' % ('| ' * (level / 2), t.nodeName)
+      buff = '.' * (40 - len(title))
+      print '%s%s%s' % (title, buff, s)
+
     for c in t.children:
       printTree(level + increment, c, lower)
   printTree(level, stats, lower)
