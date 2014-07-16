@@ -18,10 +18,8 @@ import lib_stat_graph as lsg
 
 
 def initializeArguments(parser):
-  parser.add_argument('--geneCheck', type=lib_filter.FileType)
-  parser.add_argument('--geneCheckDetails', type=lib_filter.FileType)
-  parser.add_argument('--out', type=str, help='output xml file.')
-  parser.add_argument('--tagStats', type=str,
+  parser.add_argument('--xml', type=lib_filter.FileType)
+  parser.add_argument('--tag', type=str,
                       help='gather stats on a specific tag')
   parser.add_argument('--tagLowerBound', type=int,
                       help='filter out all counts below this value')
@@ -30,7 +28,7 @@ def initializeArguments(parser):
 def checkArguments(args, parser):
   # check for setting
   pairs = tuple((item, getattr(args, item)) for item in
-                ['geneCheck', 'geneCheckDetails'])
+                ['xml', 'tag'])
   for name, value in pairs:
     if value is None:
       parser.error('Specify --%s' % name)
@@ -41,12 +39,9 @@ def main():
   initializeArguments(parser)
   args = parser.parse_args()
   checkArguments(args, parser)
-  graph = lsg.buildStatGraph(args)
-  if args.tagStats is not None:
-    stats = lsg.getTagStats(graph, args.tagStats)
-    lsg.reportTagStats(stats, args.tagLowerBound)
-  if args.out is not None:
-    lsg.recordStatGraph(graph, args.out)
+  graph = lsg.readStatGraph(args.xml)
+  stats = lsg.getTagStats(graph, args.tag)
+  lsg.reportTagStats(stats, args.tagLowerBound)
 
 
 if __name__ == '__main__':

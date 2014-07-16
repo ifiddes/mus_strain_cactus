@@ -78,6 +78,12 @@ def recordStatGraph(g, path):
   g.write(path, xml_declaration=True, encording='utf-8', method='xml')
 
 
+def readStatGraph(xml):
+  """ read a stat graph located at path PATH.
+  """
+  return ET.parse(xml)
+
+
 def recordOk(root, transcript):
   """ Record in the graph that this transcript is ok.
   """
