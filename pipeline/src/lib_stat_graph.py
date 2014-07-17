@@ -285,15 +285,12 @@ def sendUpStatCountTagCounts(node, tag):
   """ Given label TAG and StatCount NODE, update counts for nodes leaf to root.
   """
   def pushUp(node):
-    t = 0
     ta = 0
     for child in node.children:
-      tc, tac = pushUp(child)
-      t += tc
+      tac = pushUp(child)
       ta += tac
-    node.tagTranscripts += t
     node.tagTranscriptAnnotations += ta
-    return node.tagTranscripts, node.tagTranscriptAnnotations
+    return node.tagTranscriptAnnotations
   pushUp(node)
 
 
@@ -313,10 +310,9 @@ def reportTagStats(stats, lower):
   level = 0
   increment = 2
   def printTree(level, t, lower):
-    if t.tagTranscripts > lower:
-      s =  '%10d, %6d, %6d (%6.2f%%), %6d (%6.2f%%)' % (
+    if t.tagTranscriptAnnotations > lower:
+      s =  '%7d, %7d, %6d (%6.2f%%)' % (
         t.nodeTranscripts, t.nodeTranscriptAnnotations,
-        t.tagTranscripts, 100. * t.tagTranscripts / t.nodeTranscripts,
         t.tagTranscriptAnnotations,
         100. * t.tagTranscriptAnnotations / t.nodeTranscriptAnnotations)
       title = '%s%s' % ('| ' * (level / 2), t.nodeName)
