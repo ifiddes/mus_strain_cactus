@@ -88,7 +88,7 @@ def main():
     count = hasBadCopy(t, uniqueTranscripts[t_name])
     if count:
       a = lib_filter.TranscriptAnnotation(t.chromosomeInterval, t.name, [])
-      a.addLabel('hasBadCoies')
+      a.addLabel('hasBadCopies')
       a.addLabel('count_%d' % count)
       t.annotations.append(a)
   lib_filter.writeAllBeds(transcripts, args)

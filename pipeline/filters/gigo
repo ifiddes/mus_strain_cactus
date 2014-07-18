@@ -41,8 +41,7 @@ def main():
       newLabels = []
       for label in annot.labels:
         if label in originalLabels:
-          # ^ character means an original label
-          newLabels.append('^%s' % label)
+          newLabels.append('%s_preexisting' % label)
         else:
           newLabels.append(label)
       annot.labels = newLabels

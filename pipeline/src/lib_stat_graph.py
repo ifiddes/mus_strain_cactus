@@ -41,7 +41,7 @@ def newElement(parent, tag):
   """
   """
   if tag.startswith('^'):
-    tag = tag[1:] + '_prexisting'
+    tag = tag[1:] + '_preexisting'
   e = ET.SubElement(parent, tag)
   e.attrib['transcripts'] = '0'
   e.attrib['transcript_annotations'] = '0'
@@ -147,7 +147,7 @@ def flattenAnnotations(transcriptAnnotations):
 
 def depthFirstAddOne(node, notOkTree, isRoot=False):
   """ descend the tree in a depth-first pre-order fashion and record in the
-  notOkTree one 'transcript' per node.
+  not_ok tree one 'transcript' per node.
   """
   if not isRoot:
     e = notOkTree
@@ -156,10 +156,6 @@ def depthFirstAddOne(node, notOkTree, isRoot=False):
       label = cleanLabel(label)
       e = prev.find(label)
       if e is None:
-        if prev.tag == 'not_ok' and label.startswith('hasBadCopies'):
-          print node.name, node.parent.name, map(lambda x: x.name, node.children)
-          raise RuntimeError('dfao adding %s:%s, %s' %
-                             (prev.tag, label, str(node.heirarchy)))
         e = newElement(prev, label)
       prev = e
     addOne(e, 'transcripts')
