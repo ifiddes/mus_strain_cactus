@@ -281,12 +281,15 @@ def sendUpStatCountTagCounts(node, tag):
   """ Given label TAG and StatCount NODE, update counts for nodes leaf to root.
   """
   def pushUp(node):
+    t = 0
     ta = 0
     for child in node.children:
-      tac = pushUp(child)
+      tc, tac = pushUp(child)
       ta += tac
+      t += tc
     node.tagTranscriptAnnotations += ta
-    return node.tagTranscriptAnnotations
+    node.tagTranscripts += t
+    return node.tagTranscripts, node.tagTranscriptAnnotations
   pushUp(node)
 
 
@@ -300,18 +303,31 @@ def getTagStats(graph, tag):
   return s
 
 
-def reportTagStats(stats, lower):
+def reportTagStats(stats, tag, lower):
   """ Given some tag statistics STATS, report the data.
   """
   level = 0
-  increment = 2
+  increment = 1
+  if tag in ['hasOkCopies', 'hasBadCopies']:
+    header = '%40s %7s  %7s  %15s' % ('tree', 'Tran.s',
+                                      'Annot.s', 'Trans. Tags')
+  else:
+    header = '%40s %7s  %7s  %15s' % ('tree', 'Tran.s',
+                                      'Annot.s', 'Annot. Tags')
+  print header
   def printTree(level, t, lower):
     if t.tagTranscriptAnnotations > lower:
-      s =  '%7d, %7d, %6d (%6.2f%%)' % (
-        t.nodeTranscripts, t.nodeTranscriptAnnotations,
-        t.tagTranscriptAnnotations,
-        100. * t.tagTranscriptAnnotations / t.nodeTranscriptAnnotations)
-      title = '%s%s' % ('| ' * (level / 2), t.nodeName)
+      if tag in ['hasOkCopies', 'hasBadCopies']:
+        count = '%6d (%6.2f%%)' % (
+          t.tagTranscripts,
+          100. * t.tagTranscripts / t.nodeTranscripts)
+      else:
+        count = '%6d (%6.2f%%)' % (
+          t.tagTranscriptAnnotations,
+          100. * t.tagTranscriptAnnotations / t.nodeTranscriptAnnotations)
+      s =  '%7d, %7d, %s' % (
+        t.nodeTranscripts, t.nodeTranscriptAnnotations, count)
+      title = '%s%s' % ('| ' * level, t.nodeName)
       buff = '.' * (40 - len(title))
       print '%s%s%s' % (title, buff, s)
 
