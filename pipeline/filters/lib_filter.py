@@ -96,7 +96,7 @@ class ChromosomeInterval(object):
     self.chromosome = str(chromosome)
     self.start = int(start)  # 0 based
     self.stop = int(stop)  # exclusive
-    self.strand = strand
+    self.strand = strand  # True or False
 
   def __eq__(self, other):
     return (self.chromosome == other.chromosome and
@@ -546,6 +546,7 @@ def transcriptIterator(transcriptsBedStream, transcriptDetailsBedStream):
     filteredAnnotations = []
     for tA in annotations:
       if cI.contains(tA.chromosomeInterval):
+        tA.chromosomeInterval.strand = cI.strand
         filteredAnnotations.append(tA)
     yield Transcript(
       cI, name, exons, filteredAnnotations,
