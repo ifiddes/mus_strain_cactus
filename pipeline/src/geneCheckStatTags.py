@@ -21,7 +21,7 @@ def initializeArguments(parser):
   parser.add_argument('--xml', type=lib_filter.FileType)
   parser.add_argument('--tag', type=str,
                       help='gather stats on a specific tag')
-  parser.add_argument('--tagLowerBound', type=int,
+  parser.add_argument('--tagLowerBound', '--lowerBound', type=int,
                       help='filter out all counts below this value')
 
 
@@ -41,7 +41,7 @@ def main():
   checkArguments(args, parser)
   graph = lsg.readStatGraph(args.xml)
   stats = lsg.getTagStats(graph, args.tag)
-  lsg.reportTagStats(stats, args.tagLowerBound)
+  lsg.reportTagStats(stats, args.tag, args.tagLowerBound)
 
 
 if __name__ == '__main__':
