@@ -8,6 +8,7 @@ script to read through the name fields in bed files to collect information
 about names that end in hyphen number (i.e. ENSMUST00000161846.1-3).
 """
 from argparse import ArgumentParser
+import numpy
 import os
 import sys
 sys.path.append(
@@ -66,8 +67,14 @@ def validateData(names):
       if namesCount[n] <= 1:
         print n, namesCount[n]
       assert(namesCount[n] > 1)
-  print 'names: %d' % len(names)
-  print 'namesCount: %d' % len(namesCount)
+  print 'Total number of transcripts: %d' % len(names)
+  print 'Number of transcripts after name deduplication: %d' % len(namesCount)
+  counts = numpy.array([namesCount[k] for k in namesCount if namesCount[k] > 1])
+  s = ('ave: %.1f  med: %.1f  min: %d  max: %d  stdev: %.2f' %
+       (numpy.mean(counts), numpy.median(counts), numpy.min(counts),
+        numpy.max(counts), numpy.std(counts)))
+  print 'Of duplicated transcripts, statistics of copy counts:'
+  print s
 
 
 def main():
