@@ -7,13 +7,14 @@ dent earl, dearl a soe ucsc edu
 Script to scan through the mouse annotation project gene check pipeline
 and pull out transcripts by their labels.
 """
+from argparse import ArgumentParser
+import itertools
+import math
 import sys
 import os
 sys.path.append(
   os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0]))), 'filters'))
-from argparse import ArgumentParser
-import math
 import lib_filter
 
 
@@ -51,10 +52,10 @@ def getAnnotationSet(transAnns, args):
       # all suffixes
       for i in xrange(1, len(a.labels) + 1):
         if i < len(a.labels):
-          suffix = '*'
+          suffix = '+'
         else:
           suffix = ''
-        labels.add('%s%s' % ('_'.join(a.labels[0:i]), suffix))
+        labels.add('%s%s' % ('_'.join(list(itertools.islice(a.labels, 0, i))), suffix))
     else:
       labels.add(a.labels[0])
   return labels
@@ -82,7 +83,10 @@ def reportTranscripts(transcripts):
   """ Given list of transcripts, print them out
   """
   for t in transcripts:
-    print t.name, ', '.join(map(lambda a: str(a.labels), t.annotations))
+    try:
+      print t.name, ', '.join(map(lambda a: str(list(a.labels)), t.annotations))
+    except IOError:
+      sys.exit(0)
 
 
 def main():
