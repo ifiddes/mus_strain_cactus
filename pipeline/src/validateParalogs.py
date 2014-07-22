@@ -70,9 +70,9 @@ def validateData(names):
   print 'Total number of transcripts: %d' % len(names)
   print 'Number of transcripts after name deduplication: %d' % len(namesCount)
   counts = numpy.array([namesCount[k] for k in namesCount if namesCount[k] > 1])
-  s = ('ave: %.1f  med: %.1f  min: %d  max: %d  stdev: %.2f' %
-       (numpy.mean(counts), numpy.median(counts), numpy.min(counts),
-        numpy.max(counts), numpy.std(counts)))
+  s = ('n: %d  ave: %.1f  med: %.1f  min: %d  max: %d  stdev: %.2f' %
+       (len(counts), numpy.mean(counts), numpy.median(counts),
+        numpy.min(counts), numpy.max(counts), numpy.std(counts)))
   print 'Of duplicated transcripts, statistics of copy counts:'
   print s
 
