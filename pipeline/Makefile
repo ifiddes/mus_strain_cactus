@@ -9,7 +9,7 @@ export SHELLOPTS=pipefail
 export PATH:=${PATH}:${ROOT}/extern/pycbio/bin:/hive/groups/recon/local/bin
 
 genomes_1302 = AKRJ BALBcJ C3HHeJ C57B6NJ CBAJ DBA2J FVBNJ NZOHlLtJ Rattus
-genomes_1405 = AKRJ BALBcJ C3HHeJ C57B6NJ CBAJ DBA2J FVBNJ NZOHlLtJ Rattus 129S1 AJ JASTEiJ LPJ NODSHiLtJ PWKPhJ SPRETEiJ WSBEiJ
+genomes_1405 = 129S1 AJ AKRJ BALBcJ CASTEiJ C3HHeJ C57B6NJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PWKPhJ Rattus SPRETEiJ WSBEiJ
 refGenome = C57B6J
 
 dataDir = /hive/groups/recon/projs/mus_strain_cactus/data
@@ -46,7 +46,7 @@ endif
 clean:
 	rm -rf results*/
 
-results_$(release)/%: check-release
+results_$(release)/%:
 	mkdir -p $(dir $@)
 	${filtersDir}/$(firstword $(subst ., ,$*)) \
 	--refGenome ${refGenome} \
