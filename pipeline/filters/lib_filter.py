@@ -341,7 +341,7 @@ def checkArguments(args, parser):
 def reverseComplement(seq):
   """ Given a sequence, return the reverse complement.
   """
-  pairs = [('a', 't'), ('g', 'c')]
+  pairs = [('a', 't'), ('g', 'c'), ('n', 'n')]
   complement = {}
   for a, b in pairs:
     complement[a], complement[b] = b, a
