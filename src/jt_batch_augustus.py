@@ -139,6 +139,7 @@ class AugustusCall(Target):
       'species': self.args.species,
       'dbaccess': self.args.sqlite_db,
       'speciesfilenames': self.args.speciesfilenames,
+      'softmasking': self.args.softmasking,
       'temperature': self.args.temperature,
       '/MeaPrediction/x0_E': self.args._MeaPrediction_x0_E,
       '/MeaPrediction/x0_I': self.args._MeaPrediction_x0_I,
@@ -167,6 +168,10 @@ class AugustusCall(Target):
     if self.args._CompPred_only_species is not None:
       self.aug_parameters['/CompPred/only_species'] = (
         self.args._CompPred_only_species)
+    if self.args.extrinsicCfgFile is not None:
+      self.aug_parameters['extrinsicCfgFile'] = (
+        self.args.extrinsicCfgFile)
+      self.aug_parameters['dbhints'] = 'true'
 
   def run(self):
     if not os.path.exists(self.out_path):
@@ -289,6 +294,10 @@ def initializeArguments(parser):
                       help='location to store output files.')
   parser.add_argument('--sqlite_db', type=str,
                       help='location of sqlite database.')
+  parser.add_argument(
+    '--softmasking', type=str, choices=['true', 'false'], default='true',
+    help='penalize exons in softmasked regions. default=%(default)s')
+  parser.add_argument('--extrinsicCfgFile', help='extrinsic hint config file.')
   parser.add_argument('--speciesfilenames', type=str,
                       help=('location of the species file (text, one line per '
                             'species and location of .fa.'))
@@ -441,6 +450,14 @@ def checkArguments(args, parser):
                       (os.path.join(args.hal_path, 'bin', 'hal2maf'))]:
     if not os.access(value, os.X_OK):
       parser.error('%s is not executable' % value)
+  if args.extrinsicCfgFile is not None:
+    if not os.path.exists(args.extrinsicCfgFile):
+      parser.error('--extrinsicCfgFile %s does not exist'
+                   % args.extrinsicCfgFile)
+    if not os.path.isfile(args.extrinsicCfgFile):
+      parser.error('--extrinsicCfgFile %s is not a file'
+                   % args.extrinsicCfgFile)
+    args.extrinsicCfgFile = os.path.abspath(args.extrinsicCfgFile)
   args.augustus_path = os.path.abspath(args.augustus_path)
   args.hal_path = os.path.abspath(args.hal_path)
   args.hal_file_path = os.path.abspath(args.hal_file_path)
