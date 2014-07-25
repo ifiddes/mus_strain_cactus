@@ -18,7 +18,7 @@ fi
 if [ "$release" == "1302" ]; then
   genomes="Rattus Anc0 Anc1 Anc2 Anc3 Anc4 Anc5 Anc6 Anc7 Anc8 AKRJ BALBcJ C3HHeJ C57B6J C57B6NJ CBAJ DBA2J FVBNJ NZOHlLtJ"
 else
-  genomes="Rattus Anc00 Anc01 Anc02 Anc03 Anc04 Anc05 Anc06 Anc07 Anc08 Anc09 Anc10 Anc11 Anc12 Anc13 Anc14 Anc15 129S1 AJ AKRJ BALBcJ CASTEiJ C3HHeJ C57B6J C57B6NJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PWKPhJ SPRETEiJ WSBEiJ"
+  genomes="Rattus Anc00 Anc01 Anc02 Anc03 Anc04 Anc05 Anc06 Anc07 Anc08 Anc09 Anc10 Anc11 Anc12 Anc13 Anc14 Anc15 Anc16 129S1 AJ AKRJ BALBcJ CASTEiJ C3HHeJ C57B6J C57B6NJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PWKPhJ SPRETEiJ WSBEiJ"
 fi
 
 # python
@@ -91,11 +91,11 @@ if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene" ];
 fi
 
 if [ ! -f /hive/users/dearl/msca/mouseBrowser_$release/lod.txt ]; then
-  echo '# Generating hal LOD files (this takes several hours)'
+  echo '# Generating hal LOD files (this can take a day or so)'
   pushd /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/
   OLD_PATH=$PATH
   PATH=$PATH:/hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin
-  /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin/halLodInterpolate.py /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal /hive/users/dearl/msca/mouseBrowser_$release/lod.txt.tmp --outHalDir /hive/users/dearl/msca/mouseBrowser_$release/lod --numProc 8
+  /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin/halLodInterpolate.py /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal /hive/users/dearl/msca/mouseBrowser_$release/lod.txt.tmp --outHalDir /hive/users/dearl/msca/mouseBrowser_$release/lod --numProc 12
   mv /hive/users/dearl/msca/mouseBrowser_$release/lod.txt.tmp /hive/users/dearl/msca/mouseBrowser_$release/lod.txt
   PATH=$OLD_PATH
   popd
