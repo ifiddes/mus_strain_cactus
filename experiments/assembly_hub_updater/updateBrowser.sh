@@ -92,13 +92,13 @@ fi
 
 if [ ! -f /hive/users/dearl/msca/mouseBrowser_$release/lod.txt ]; then
   echo '# Generating hal LOD files (this can take a day or so)'
-  pushd /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/
+  pushd /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/ > /dev/null
   OLD_PATH=$PATH
   PATH=$PATH:/hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin
   /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin/halLodInterpolate.py /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal /hive/users/dearl/msca/mouseBrowser_$release/lod.txt.tmp --outHalDir /hive/users/dearl/msca/mouseBrowser_$release/lod --numProc 12
   mv /hive/users/dearl/msca/mouseBrowser_$release/lod.txt.tmp /hive/users/dearl/msca/mouseBrowser_$release/lod.txt
   PATH=$OLD_PATH
-  popd
+  popd > /dev/null
 fi
 
 echo '# Removing old job tree'
@@ -106,18 +106,16 @@ rm -rf jt_assembly_hub
 
 echo '# Launching hal2assemblyHub.py'
 # create an assembly hub
-command="/hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin/hal2assemblyHub.py /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal \
-/hive/users/dearl/msca/myMouseBrowser/browser_$release --hub=mice10way --shortLabel=Mouse10way \
---longLabel=\"Mouse Comparative Assembly Hub release $release\" --email='benedict@soe.ucsc.edu' \
---url='http://hgwdev.sdsc.edu/~benedict/mouseBrowserFast' \
---twobitdir=/hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release  # /hive/users/nknguyen/hubs/mice/2bits \
+/hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin/hal2assemblyHub.py /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal \
+/hive/users/dearl/msca/myMouseBrowser/browser_$release --hub=msca_$release --shortLabel=MouseStrain_$release \
+--longLabel="Mouse Strain Comparative Assembly Hub release $release" --email='benedict@soe.ucsc.edu' \
+--url="http://hgwdev.sdsc.edu/~benedict/mouseBrowser_$release" \
+--twobitdir=/hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release \
 --lod --lodTxtFile=/hive/users/dearl/msca/mouseBrowser_$release/lod.txt \
 --lodDir=/hive/users/dearl/msca/mouseBrowser_$release/lod \
 --finalBigBedDirs=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/knownGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/wgEncodeGencodeCompVM2 \
 --bedDirs=/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter_details,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck_details \
---tabBed --jobTree=./jt_assembly_hub  --batchSystem=singleMachine --stats --maxThreads=16 --logInfo  --noBedLiftover "
-
-$command
+--tabBed --jobTree=./jt_assembly_hub  --batchSystem=singleMachine --stats --maxThreads=16 --logInfo  --noBedLiftover
 
 echo '# Copying genome files.'
 # copy over genome files
@@ -132,6 +130,17 @@ echo '# Copying bed files.'
 for d in metaFilter metaFilter_details input_geneCheck input_geneCheck_details; do
   mkdir -p ../mouseBrowser_$release/liftoverbed/$d;
   cp -r browser_$release/liftoverbed/$d/* ../mouseBrowser_$release/liftoverbed/$d/ &
+done
+wait
+for b in refGene knownGene wgEncodeGencodeCompVM2; do
+  mkdir -p ../mouseBrowser_$release/liftoverbed/$b/C57B6J
+  for f in browser_$release/liftoverbed/$b/C57B6J/*; do
+    cp $f ../mouseBrowser_$release/liftoverbed/$b/C57B6J/ &
+  done
+done
+wait
+for b in refGene knownGene wgEncodeGencodeCompVM2; do
+  cp browser_$release/liftoverbed/$b/C57B6J/C57B6J.as ../mouseBrowser_$release/liftoverbed/$b/C57B6J/ &
 done
 wait
 
