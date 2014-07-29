@@ -66,7 +66,7 @@ if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene" ];
     done
   done
   wait
-  echo "# Sorting beds"
+  echo "# Sorting lift over beds"
   for g in $genomes; do
     for b in refGene knownGene wgEncodeGencodeCompVM2; do
       bedSort liftover_$release/$b.$g.bed_tmp liftover_$release/$b.$g.bed.srt &
@@ -77,17 +77,25 @@ if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene" ];
       mv liftover_$release/$b.$g.bed.srt liftover_$release/$b.$g.bed
     done
   done
-  echo "# Creating big beds"
+  echo "# Creating big beds from liftover"
   for b in refGene knownGene wgEncodeGencodeCompVM2; do
     mkdir -p /hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/$b/C57B6J
     cp asfiles/$b.C57B6J.as /hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/$b/C57B6J/C57B6J.as
   done
   for g in $genomes; do
     for b in refGene knownGene wgEncodeGencodeCompVM2; do
+      # these will lack thick-thin distinction
       bedToBigBed -tab -type=bed12+1 -extraIndex=name,commonName -as=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/$b/C57B6J/C57B6J.as liftover_$release/$b.$g.bed /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/$g.sizes /hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/$b/C57B6J/$g.bb &> _log.bedToBigBed.$b.$g  &
     done
     wait
   done
+  echo "# Placing the original C57B6J beds into the browser"
+  for b in refGene knownGene wgEncodeGencodeCompVM2; do
+    # we do this to get the thick-thin distinction
+    bedSort liftover_$release/$b.bed liftover_$release/$b.bed.srt
+    bedToBigBed -tab -type=bed12+1 -extraIndex=name,commonName -as=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/$b/C57B6J/C57B6J.as liftover_$release/$b.bed.srt /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/C57B6J.sizes /hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/$b/C57B6J/C57B6J.bb &> _log.bedToBigBed.$b.C57B6J  &
+  done
+  wait
 fi
 
 if [ ! -f /hive/users/dearl/msca/mouseBrowser_$release/lod.txt ]; then
@@ -107,15 +115,25 @@ rm -rf jt_assembly_hub
 echo '# Launching hal2assemblyHub.py'
 # create an assembly hub
 /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin/hal2assemblyHub.py /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal \
-/hive/users/dearl/msca/myMouseBrowser/browser_$release --hub=msca_$release --shortLabel=MouseStrain_$release \
+/hive/users/dearl/msca/myMouseBrowser/browser_$release \
+--hub=msca_$release --shortLabel=MouseStrain_$release \
 --longLabel="Mouse Strain Comparative Assembly Hub release $release" --email='benedict@soe.ucsc.edu' \
 --url="http://hgwdev.sdsc.edu/~benedict/mouseBrowser_$release" \
 --twobitdir=/hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release \
 --lod --lodTxtFile=/hive/users/dearl/msca/mouseBrowser_$release/lod.txt \
 --lodDir=/hive/users/dearl/msca/mouseBrowser_$release/lod \
---finalBigBedDirs=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/knownGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/wgEncodeGencodeCompVM2 \
+--finalBigBedDirs=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/knownGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/wgEncodeGencodeCompVM2 \  # dont lift over
 --bedDirs=/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter_details,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck_details \
---tabBed --jobTree=./jt_assembly_hub  --batchSystem=singleMachine --stats --maxThreads=16 --logInfo  --noBedLiftover
+--tabBed \
+--jobTree=./jt_assembly_hub \
+--batchSystem=singleMachine \
+--stats \
+--maxThreads=16 \
+--logInfo \
+--noBedLiftover
+
+echo '# Correcting genomes.txt'
+perl -ple 's/orderKey 4800/orderKey 4800\ndescription rel_1302/' -i browser_$release/genomes.txt
 
 echo '# Copying genome files.'
 # copy over genome files
@@ -124,6 +142,11 @@ for g in $genomes documentation; do
   cp -r browser_$release/$g/* ../mouseBrowser_$release/$g/ &
 done
 wait
+
+if [ ! -f ../mouseBrowser_$release/msca.hal ]; then
+  echo '# Copying main hal file.'
+  cp /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal ../mouseBrowser_$release/msca.hal
+fi
 
 echo '# Copying bed files.'
 # copy over bed files
