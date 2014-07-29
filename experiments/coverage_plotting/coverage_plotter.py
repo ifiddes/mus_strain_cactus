@@ -9,6 +9,12 @@ Copy-pasta heavily from quick_plot (https://github.com/dentearl/quick_plot/)
 example call:
 ./coverage_plotter.py --out output_01a --ratio ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/AKRJ.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/BALBcJ.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/C*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/D*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/F*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/N*.comp.basestats ~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-11/results/R*.comp.basestats
 
+mark_path_1302=~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-16.simpleChain/results/lnb_0001/chained
+./coverage_plotter.py --out rel_1302 --ratio --flip $mark_path_1302/*.chained.basestats
+mark_path_1405=~markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-07-17.simpleChain/results/lnb_0001/chained
+./coverage_plotter.py --out rel_1405 --ratio --flip $mark_path_1405/*chained.basestats
+
+
 """
 ##############################
 # Copyright (C) 2014 by
@@ -460,7 +466,8 @@ def PlotExperiment_1(data_list, ax, args):
     args: an argparse argument object.
   """
   ylabel = 'Number of transcripts'
-  args.title = 'Mapping count of 88,093 transcipts from mm10 mapped to other strains / species'
+  args.title = ('Mapping count of 88,093 transcipts from mm10 (C57B6J) '
+                'mapped to other strains / species')
   width = 0.33
   data_min = 0.0
   data_max = 1.0
@@ -495,7 +502,7 @@ def PlotExperiment_1(data_list, ax, args):
   if args.ratio:
     # normalize the data to 1.0
     ylabel = 'Proportion of transcripts'
-    args.title = ('Fraction of 88,093 transcipts from mm10 mapped to '
+    args.title = ('Fraction of 88,093 transcipts from mm10 (C57B6J) mapped to '
                   'other strains / species')
     for label in categories:
       norm = 0
