@@ -292,7 +292,8 @@ def getExactBranch(root, tag):
       if child.nodeName == t or t == '*':
         newChildren.append(child)
     n.children = newChildren
-    n = n.children[0]
+    if n.children:
+      n = n.children[0]
   if tags[-1] != '*':
     n.children = []  # prune off non-specified children tags
 
@@ -358,7 +359,8 @@ def reportTagStats(stats, tag, lower):
       title = '%s%s' % ('| ' * level, t.nodeName)
       buff = '.' * (40 - len(title))
       print '%s%s%s' % (title, buff, s)
-
+    t.children = sorted(t.children, key=lambda c: c.nodeTranscripts,
+                        reverse=True)
     for c in t.children:
       printTree(level + increment, c, lower)
   printTree(level, stats, lower)
