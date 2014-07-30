@@ -233,11 +233,13 @@ def reportCounts(counts):
 def graphToStatCount(node, tag):
   """ Given a stat graph NODE, return a StatCount of similar structure.
   """
+  if ':' in tag:
+    tag = tag.split(':')[-1]
   s = StatCount(node.tag)
   if node.tag != 'stats':
     s.nodeTranscripts = int(node.attrib['transcripts'])
     s.nodeTranscriptAnnotations = int(node.attrib['transcript_annotations'])
-    if node.tag == tag:
+    if node.tag == tag or tag == '*':
       s.tagTranscripts = s.nodeTranscripts
       s.tagTranscriptAnnotations = s.nodeTranscriptAnnotations
   for child in node:
@@ -277,6 +279,24 @@ def pruneStatCountBranches(node, tag):
     pruneStatCountBranches(child, tag)
 
 
+def getExactBranch(root, tag):
+  """ Path of tags TAG and StatCount ROOT, prune away branches not on path.
+  """
+  tags = tag.split(':')
+  if tags[0] == 'stats':
+    tags = tags[1:]
+  n = root
+  for t in tags:
+    newChildren = []
+    for child in n.children:
+      if child.nodeName == t or t == '*':
+        newChildren.append(child)
+    n.children = newChildren
+    n = n.children[0]
+  if tags[-1] != '*':
+    n.children = []  # prune off non-specified children tags
+
+
 def sendUpStatCountTagCounts(node, tag):
   """ Given label TAG and StatCount NODE, update counts for nodes leaf to root.
   """
@@ -290,6 +310,10 @@ def sendUpStatCountTagCounts(node, tag):
     node.tagTranscriptAnnotations += ta
     node.tagTranscripts += t
     return node.tagTranscripts, node.tagTranscriptAnnotations
+  print tag
+  if ':' in tag:
+    tag = tag.split(':')[-1]
+  print tag
   pushUp(node)
 
 
@@ -298,7 +322,10 @@ def getTagStats(graph, tag):
   """
   r = graph.getroot()
   s = graphToStatCount(r, tag)
-  pruneStatCountBranches(s, tag)
+  if ':' in tag:
+    getExactBranch(s, tag)
+  else:
+    pruneStatCountBranches(s, tag)
   sendUpStatCountTagCounts(s, tag)
   return s
 
@@ -306,9 +333,10 @@ def getTagStats(graph, tag):
 def reportTagStats(stats, tag, lower):
   """ Given some tag statistics STATS, report the data.
   """
+  transcript_level_tags = ['hasOkCopies', 'hasBadCopies', 'ok', 'not_ok']
   level = 0
   increment = 1
-  if tag in ['hasOkCopies', 'hasBadCopies']:
+  if tag in transcript_level_tags:
     header = '%40s %7s  %7s  %15s' % ('tree', 'Tran.s',
                                       'Annot.s', 'Trans. Tags')
   else:
@@ -317,7 +345,7 @@ def reportTagStats(stats, tag, lower):
   print header
   def printTree(level, t, lower):
     if t.tagTranscriptAnnotations > lower:
-      if tag in ['hasOkCopies', 'hasBadCopies']:
+      if tag in transcript_level_tags:
         count = '%6d (%6.2f%%)' % (
           t.tagTranscripts,
           100. * t.tagTranscripts / t.nodeTranscripts)
