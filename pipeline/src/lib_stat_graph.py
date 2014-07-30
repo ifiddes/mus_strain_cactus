@@ -350,6 +350,8 @@ def reportTagStats(stats, tag, lower):
         count = '%6d (%6.2f%%)' % (
           t.tagTranscripts,
           100. * t.tagTranscripts / t.nodeTranscripts)
+      elif tag.endswith('*'):
+        count = '%16d' % (t.tagTranscriptAnnotations)
       else:
         count = '%6d (%6.2f%%)' % (
           t.tagTranscriptAnnotations,
