@@ -123,6 +123,9 @@ def InitArguments(parser):
                       help='Switch from absolute to ratio.')
   parser.add_argument('--flip', default=False, action='store_true',
                       help='Flip the order of column stacks.')
+  parser.add_argument('--total', default='38,329', type=str,
+                      help=('total number to display in title. '
+                            'default=%(default)s'))
   parser.add_argument('--height', dest='height', default=4.0, type=float,
                       help='height of image, in inches. default=%(default)s')
   parser.add_argument('--width', dest='width', default=9.0, type=float,
@@ -493,9 +496,10 @@ def PlotDeltas(data_list, ax, args):
     ax: a matplotlib axis object.
     args: an argparse argument object.
   """
+  # 88,093
   ylabel = 'Delta Number of transcripts'
-  args.title = ('Change in count of 88,093 transcipts from mm10 (C57B6J) '
-                'mapped to other strains / species')
+  args.title = ('Change in count of %s transcipts from mm10 (C57B6J) '
+                'mapped to other strains / species' % args.total)
   width = 0.133  # 0.8 / 6
   data_min = -0.2
   data_max = 1.0
@@ -505,11 +509,12 @@ def PlotDeltas(data_list, ax, args):
   if args.ratio:
     # normalize the data to 1.0
     ylabel = 'Change in Proportion of transcripts'
-    args.title = ('Change in Fraction of 88,093 transcipts from mm10 (C57B6J) '
-                  'mapped to other strains / species')
+    args.title = ('Change in Fraction of %s transcipts from mm10 (C57B6J) '
+                  'mapped to other strains / species' % args.total)
   data_order = []
   # sort data according to 1.0 level of the d2 data, not the delta data
-  data_order = sorted(data_list, key=lambda d: d.d2_categories[1.0], reverse=True)
+  data_order = sorted(data_list, key=lambda d: d.d2_categories[1.0],
+                      reverse=True)
   labels = [d.label.split('.')[0] for d in data_order]
   deltas = {0.0: [], 0.5: [], 0.9: [], 0.95: [], 0.99:[], 1.0:[]}
   for data in data_order:

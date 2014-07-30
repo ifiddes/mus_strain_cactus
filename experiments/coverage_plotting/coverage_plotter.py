@@ -115,6 +115,9 @@ def InitArguments(parser):
                       help=('plotting mode. may be in (line, scatter, '
                             'column, bar, hist, tick, barcode, point, contour, '
                             'density, matrix) default=%(default)s'))
+  parser.add_argument('--total', default='38,329', type=str,
+                      help=('total number to display in title. '
+                            'default=%(default)s'))
   parser.add_argument('--height', dest='height', default=4.0, type=float,
                       help='height of image, in inches. default=%(default)s')
   parser.add_argument('--width', dest='width', default=9.0, type=float,
@@ -466,8 +469,8 @@ def PlotExperiment_1(data_list, ax, args):
     args: an argparse argument object.
   """
   ylabel = 'Number of transcripts'
-  args.title = ('Mapping count of 88,093 transcipts from mm10 (C57B6J) '
-                'mapped to other strains / species')
+  args.title = ('Mapping in count of %s transcipts from mm10 (C57B6J) '
+                'mapped to other strains / species' % args.total)
   width = 0.33
   data_min = 0.0
   data_max = 1.0
@@ -502,8 +505,8 @@ def PlotExperiment_1(data_list, ax, args):
   if args.ratio:
     # normalize the data to 1.0
     ylabel = 'Proportion of transcripts'
-    args.title = ('Fraction of 88,093 transcipts from mm10 (C57B6J) mapped to '
-                  'other strains / species')
+    args.title = ('Fraction of %s transcipts from mm10 (C57B6J) '
+                  'mapped to other strains / species' % args.total)
     for label in categories:
       norm = 0
       for v in [0.0, 0.5, 0.9, 0.95, 0.99, 1.0]:
