@@ -306,6 +306,7 @@ def initializeArguments(parser):
   parser.add_argument('--originalGeneCheckBedDetails', type=FileType)
   parser.add_argument('--alignment', type=FileType)
   parser.add_argument('--sequence', type=FileType)
+  parser.add_argument('--refSequence', type=FileType)
   parser.add_argument('--chromSizes', type=FileType)
   parser.add_argument('--outDir', type=DirType)
 
@@ -318,25 +319,17 @@ def checkArguments(args, parser):
                 ['refGenome', 'genome',
                  'geneCheckBed', 'geneCheckBedDetails',
                  'originalGeneCheckBed', 'originalGeneCheckBedDetails',
-                 'alignment', 'sequence', 'chromSizes',
+                 'alignment', 'sequence', 'refSequence', 'chromSizes',
                  'outDir'])
   for name, value in pairs:
     if value is None:
       parser.error('Specify --%s' % name)
   # record the issuing command
   with open(os.path.join(args.outDir, 'command.log'), 'w') as f:
-    f.write('%s %s %s %s %s %s %s %s %s\n'
-            % (sys.argv[0],
-               args.refGenome,
-               args.genome,
-               args.geneCheckBed,
-               args.geneCheckBedDetails,
-               args.alignment,
-               args.sequence,
-               args.chromSizes,
-               args.outDir,
-               ))
-
+    f.write('%s' % sys.argv[0])
+    for name, value in pairs:
+      f.write(' --%s %s' % (name, value))
+    f.write('\n')
 
 def reverseComplement(seq):
   """ Given a sequence, return the reverse complement.

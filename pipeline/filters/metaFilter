@@ -31,7 +31,7 @@ def getBin(bin):
 
 def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
              originalGeneCheckBed, originalGeneCheckBedDetails,
-             alignment, sequence, chromSizes, outDir):
+             alignment, sequence, refSequence, chromSizes, outDir):
   """ Function to make a call to a filter and handle input / output.
   """
   if not os.path.exists(outDir):
@@ -40,7 +40,7 @@ def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
   cmd = [bin]
   for v in ['refGenome', 'genome', 'geneCheckBed', 'geneCheckBedDetails',
             'originalGeneCheckBed', 'originalGeneCheckBedDetails',
-            'alignment', 'sequence', 'chromSizes', 'outDir']:
+            'alignment', 'sequence', 'refSequence', 'chromSizes', 'outDir']:
     cmd.append('--%s' % v)
     cmd.append(eval(v))
   lib_run.Touch(os.path.join(outDir, 'clocking_in'))
@@ -151,7 +151,8 @@ def main():
     makeCall(f, args.refGenome, args.genome,
              inputs[i][0], inputs[i][1],
              args.originalGeneCheckBed, args.originalGeneCheckBedDetails,
-             args.alignment, args.sequence, args.chromSizes, locations[i])
+             args.alignment, args.sequence, args.refSequence, args.chromSizes,
+             locations[i])
     sanitize(locations[i])
   # copy back last filter to the metaFilter directory for end use
   copyResults(locations[-1], args.outDir)

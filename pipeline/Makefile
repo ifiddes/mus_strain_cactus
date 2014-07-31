@@ -57,6 +57,7 @@ results_$(release)/%:
 	--originalGeneCheckBedDetails ${originalGeneCheckBeds}/wgEncodeGencodeBasicVM2.coding.gene-check-details.bed \
 	--alignment ${alignmentDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).chained.psl \
 	--sequence ${sequenceDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).fa \
+	--refSequence ${sequenceDir}/C57B6J.fa \
 	--chromSizes ${sequenceDir}/$(firstword $(subst /, , $(word 2, $(subst ., ,$*)))).sizes \
 	--outDir $(dir $@) &> $@.${tmpExt}
 	${stats} --geneCheck $(dir $@)out.bed \
