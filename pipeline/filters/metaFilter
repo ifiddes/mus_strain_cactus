@@ -129,10 +129,13 @@ def main():
   args = lib_filter.boilerplateArguments()
   # this is the order that filters will be run.
   filters = ['uniquify']  # uniquify should always be run first
+  # Add new filters somewhere in between the comment blocks:
+  ##############################
   filters.append('nLook')
   filters.append('shortScaffold_noStartStop')
   filters.append('noStopCorrecter')
   filters.append('paralogs')
+  ##############################
   # Do not change the order of filters below this line
   filters.append('gigo')
   filters.append('colorizer')
