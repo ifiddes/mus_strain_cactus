@@ -89,7 +89,7 @@ if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene" ];
     done
     wait
   done
-  echo "# Placing the original C57B6J beds into the browser"
+  echo "# Placing the original C57B6J big beds into the browser"
   for b in refGene knownGene wgEncodeGencodeCompVM2; do
     # we do this to get the thick-thin distinction
     bedSort liftover_$release/$b.bed liftover_$release/$b.bed.srt
