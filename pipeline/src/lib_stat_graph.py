@@ -311,10 +311,8 @@ def sendUpStatCountTagCounts(node, tag):
     node.tagTranscriptAnnotations += ta
     node.tagTranscripts += t
     return node.tagTranscripts, node.tagTranscriptAnnotations
-  print tag
   if ':' in tag:
     tag = tag.split(':')[-1]
-  print tag
   pushUp(node)
 
 
