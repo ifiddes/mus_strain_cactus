@@ -648,8 +648,51 @@ class transcriptIteratorTests(unittest.TestCase):
     mrna = transcripts[1].mRna(seq_rc)
     self.assertEqual(truth, mrna)
 
+
+  def test_exonCoordinateToChromosome(self):
+    """ exonCoordinateToChromosome() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    # exon coordinates
+    #   0       8              9       17
+    #   |       |              |       |
+    # NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn
+    # |    |    |    |    |    |    |    |    | |
+    # 0    5    10        20        30          42
+    # chromosome coordinates
+    for i in xrange(0, 9):
+      self.assertEqual(2 + i, transcripts[0].exonCoordinateToChromosome(i))
+    for i in xrange(9, 18):
+      self.assertEqual(25 - 9 + i, transcripts[0].exonCoordinateToChromosome(i))
+    # negative strand
+    # exon coordinates
+    #   0       8              9       17
+    #   |       |              |       |
+    # NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn
+    # | |    |    |    |    |    |    |    |    |
+    #   40        30        20        10   5    0
+    # chromosome coordinates
+    for i in xrange(0, 9):
+      self.assertEqual(40 - i, transcripts[1].exonCoordinateToChromosome(i))
+    for i in xrange(9, 18):
+      self.assertEqual(17 + 9 - i, transcripts[1].exonCoordinateToChromosome(i))
+
+
+
   def test_codonToAminoAcid(self):
-    """ codonToAminoAcid needs to return correct amino acids for all codons.
+    """ codonToAminoAcid() needs to return correct amino acids for all codons.
     """
     # these pairs were input separately from pairs in lib_filter,
     # (no copy-paste!)

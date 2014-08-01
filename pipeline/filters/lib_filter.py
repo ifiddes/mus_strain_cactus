@@ -252,6 +252,26 @@ class Transcript(object):
                               self.chromosomeInterval.start,
                               self.chromosomeInterval.stop)
 
+  def exonCoordinateToChromosome(self, p):
+    """ Take position P with 0-based exon-relative position and convert it
+    to chromosome-relative position.
+    """
+    assert(p >= 0)
+    assert(p < sum([(e.stop - e.start) for e in self.exons]))
+    assert(len(self.exons))
+    c = 0  # cumulative position through exon space
+    if not self.chromosomeInterval.strand:
+      p = sum([(e.stop - e.start) for e in self.exons]) - 1 - p
+    e_start = self.exons[0].start
+    for e in self.exons:
+      if p < c + e.stop - e.start:
+        # the position is within this exon
+        return p - c + e.start
+      else:
+        # sorry mario, your position is in another exon
+        c += e.stop - e.start
+    assert(False)  # we should never get here
+
   def mRna(self, sequence):
     """ Return the mRNA sequence for the transcript (based on the exons) using
     a SEQUENCE object as the source for dna sequence.
@@ -267,7 +287,6 @@ class Transcript(object):
     if not self.chromosomeInterval.strand:
       s = reverseComplement(s)
     return s
-
 
   def bedString(self):
     """ Write a transcript object to the given file.
