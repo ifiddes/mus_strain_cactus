@@ -674,7 +674,7 @@ class transcriptIteratorTests(unittest.TestCase):
                   ('Tyr', 'TAT,TAC,TAY'),
                   ('Val', 'GTT,GTC,GTA,GTG,GTN'),
                   ('Stop', 'TAA,TGA,TAG,TAR,TRA'),
-                  ('???', 'lol')
+                  ('???', 'LOL,OMG,IDK,WTF')
                   ]
     for aa, codons in knownPairs:
       for c in codons.split(','):
