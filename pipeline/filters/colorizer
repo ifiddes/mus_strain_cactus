@@ -64,7 +64,6 @@ def main():
     args.geneCheckBed, args.geneCheckBedDetails)
   for t in transcripts:
     colorize(t)
-
   lib_filter.writeAllBeds(transcripts, args)
 
 
