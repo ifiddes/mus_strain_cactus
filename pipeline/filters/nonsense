@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+"""
+nonsense
+1 August 2014
+
+dent earl, dearl a soe ucsc edu
+
+a filter for the msca project analysis pipeline.
+Looks for stop codons that are not the last codon in the sequence.
+"""
+import sys
+import lib_filter
+
+
+def main():
+  args = lib_filter.boilerplateArguments()
+  seq_dict = lib_filter.getSequences(args.sequence, upper=True)
+  transcripts = lib_filter.getTranscripts(
+    args.geneCheckBed, args.geneCheckBedDetails)
+  for t in transcripts:
+    codon_seq = t.mRna(seq_dict[t.chromosomeInterval.chromosome])
+    codon_seq = codon_seq[0:-3]  # trim off the last codon
+    aa_seq = [lib_filter.codonToAminoAcid(c) for c
+              in lib_filter.readCodons(codon_seq)]
+    for i, a in enumerate(aa_seq):
+      if a == 'Stop':
+        if t.chromosomeInterval.strand:
+          p = t.exonCoordinateToChromosome(i * 3)
+        else:
+          p = t.exonCoordinateToChromosome(i * 3) - 3
+        a = lib_filter.TranscriptAnnotation(
+          lib_filter.ChromosomeInterval(
+            t.chromosomeInterval.chromosome, p, p + 3),
+          t.name, [])
+        a.addLabel('nonsense')
+        break
+  lib_filter.writeAllBeds(transcripts, args)
+
+
+if __name__ == '__main__':
+  main()
