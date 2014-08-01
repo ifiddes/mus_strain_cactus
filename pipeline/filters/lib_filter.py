@@ -10,11 +10,11 @@ import sys
 class Sequence(object):
   """ Represents a sequence of DNA.
   """
-  __slots__ = ('name', '_sequence')  # conserve memory
+  __slots__ = ('name', '_sequence', '_length')  # conserve memory
   def __init__(self, name, sequence):
     self.name = name  # chromosome or scaffold name
     self._sequence = sequence  # ACGTs
-    self._length = 0
+    self._length = len(sequence)
   def setSequence(self, seq):
     self._sequence = seq
     self._length = len(seq)
@@ -24,15 +24,15 @@ class Sequence(object):
     return self._length
   def setUpper(self):
     self._sequence = self._sequence.upper()
-  def sliceSequence(self, start, stop, strand='+'):
+  def sliceSequence(self, start, stop, relativeStrand='+'):
     """ return the proper slice of the sequence.
     BED format coordinates: 0 based start, stop is exclusive
     [start, stop). E.g. Sequence.sliceSequence(0, 3) returns a string length 3.
     """
     assert(start < stop)
-    if strand == '+':
+    if relativeStrand == '+':
       return self._sequence[start:stop]
-    elif strand == '-':
+    elif relativeStrand == '-':
       # 0 1 2 3 4 5 6 7 8 9  +
       # 9 8 7 6 5 4 3 2 1 0  -
       #                  + strand | - strand
@@ -43,7 +43,8 @@ class Sequence(object):
       b = self._length - stop + (stop - start)
       return reverseComplement(self._sequence[a:b])
     else:
-      raise RuntimeError('Unanticipated strand: %s' % str(strand))
+      raise RuntimeError('Unanticipated relativeStrand: %s'
+                         % str(relativeStrand))
 
 
 class PslRow(object):
@@ -112,6 +113,7 @@ class ChromosomeInterval(object):
     self.chromosome = str(chromosome)
     self.start = int(start)  # 0 based
     self.stop = int(stop)  # exclusive
+    assert(strand in [True, False, None])
     self.strand = strand  # True or False
 
   def __eq__(self, other):
@@ -219,8 +221,8 @@ class Transcript(object):
                score, thickStart, thickEnd, itemRgb):
     self.chromosomeInterval = chromosomeInterval
     self.name = str(name)
-    self.exons = exons # list of chromosome intervals
-    self.annotations = annotations # list of TranscriptAnnotation() objects
+    self.exons = exons  # list of chromosome intervals
+    self.annotations = annotations  # list of TranscriptAnnotation() objects
     # Bed fields
     self.score = score
     self.thickStart = thickStart
@@ -249,6 +251,23 @@ class Transcript(object):
       return '%s_%s_%d_%d' % (self.name, self.chromosomeInterval.chromosome,
                               self.chromosomeInterval.start,
                               self.chromosomeInterval.stop)
+
+  def mRna(self, sequence):
+    """ Return the mRNA sequence for the transcript (based on the exons) using
+    a SEQUENCE object as the source for dna sequence.
+    The returned sequence is in the correct 5'-3' orientation (i.e. it has
+    been reverse complemented if necessary).
+    """
+    assert(self.chromosomeInterval.chromosome == sequence.name)
+    assert(self.chromosomeInterval.stop < sequence.getLength())
+    s = ''
+    for e in self.exons:
+      s += sequence.spliceSequence(e.chromosomeInterval.start,
+                                   e.chromosomeInterval.stop)
+    if not self.chromosomeInterval.strand:
+      s = reverseComplement(s)
+    return s
+
 
   def bedString(self):
     """ Write a transcript object to the given file.
@@ -361,30 +380,44 @@ def reverseComplement(seq):
   return seq
 
 
-codonToAminoAcid = {'ATG': 'Met', 'TAA': 'Stop', 'TAG': 'Stop', 'TGA': 'Stop',
-                    'GCT': 'Ala', 'GCC': 'Ala', 'GCA': 'Ala', 'GCG': 'Ala',
-                    'CGT': 'Arg', 'CGC': 'Arg', 'CGA': 'Arg', 'CGG': 'Arg',
-                    'AGA': 'Arg', 'AGG': 'Arg',
-                    'ATT': 'Asn', 'AAC': 'Asn',
-                    'GAT': 'Asp', 'GAC': 'Asp',
-                    'TGT': 'Cys', 'TGC': 'Cys',
-                    'CAA': 'Gin', 'CAG': 'Gin',
-                    'GAA': 'Glu', 'GAG': 'Glu',
-                    'GGT': 'Gly', 'GGC': 'Gly', 'GGA': 'Gly', 'GGG': 'Gly',
-                    'CAT': 'His', 'CAC': 'His',
-                    'ATT': 'Ile', 'ATC': 'Ile', 'ATA': 'Ile',
-                    'TTA': 'Leu', 'TTG': 'Leu', 'CTT': 'Leu', 'CTC': 'Leu',
-                    'CTA': 'Leu', 'CTG': 'Leu',
-                    'AAA': 'Lys', 'AAG': 'Lys',
-                    'TTT': 'Phe', 'TTC': 'Phe',
-                    'CCT': 'Pro', 'CCC': 'Pro', 'CCA': 'Pro', 'CCG': 'Pro',
-                    'TCT': 'Ser', 'TCC': 'Ser', 'TCA': 'Ser', 'TCG': 'Ser',
-                    'AGT': 'Ser', 'AGC': 'Ser',
-                    'ACT': 'Thr', 'ACC': 'Thr', 'ACA': 'Thr', 'ACG': 'Thr',
-                    'TGG': 'Trp',
-                    'TAT': 'Tyr', 'TAC': 'Tyr',
-                    'GTT': 'Val', 'GTC': 'Val', 'GTA': 'Val', 'GTG': 'Val',
-                    }
+_codonToAminoAcid = {'ATG': 'Met', 'TAA': 'Stop', 'TAG': 'Stop', 'TGA': 'Stop',
+                     'GCT': 'Ala', 'GCC': 'Ala', 'GCA': 'Ala', 'GCG': 'Ala',
+                     'CGT': 'Arg', 'CGC': 'Arg', 'CGA': 'Arg', 'CGG': 'Arg',
+                     'AGA': 'Arg', 'AGG': 'Arg', 'CGN': 'Arg', 'MGR': 'Arg',
+                     'ATT': 'Asn', 'AAC': 'Asn', 'AAY': 'Asn',
+                     'GAT': 'Asp', 'GAC': 'Asp', 'GAY': 'Asp',
+                     'TGT': 'Cys', 'TGC': 'Cys', 'TGY': 'Cys',
+                     'CAA': 'Gin', 'CAG': 'Gin', 'CAR': 'Gin',
+                     'GAA': 'Glu', 'GAG': 'Glu', 'GAR': 'Glu',
+                     'GGT': 'Gly', 'GGC': 'Gly', 'GGA': 'Gly', 'GGG': 'Gly',
+                     'GGN': 'Gly',
+                     'CAT': 'His', 'CAC': 'His', 'CAY': 'His',
+                     'ATT': 'Ile', 'ATC': 'Ile', 'ATA': 'Ile', 'ATH': 'Ile',
+                     'TTA': 'Leu', 'TTG': 'Leu', 'CTT': 'Leu', 'CTC': 'Leu',
+                     'CTA': 'Leu', 'CTG': 'Leu', 'YTR': 'Leu', 'CTN': 'Leu',
+                     'AAA': 'Lys', 'AAG': 'Lys', 'AAR': 'Lys',
+                     'TTT': 'Phe', 'TTC': 'Phe', 'TTY': 'Phe',
+                     'CCT': 'Pro', 'CCC': 'Pro', 'CCA': 'Pro', 'CCG': 'Pro',
+                     'CCN': 'Pro',
+                     'TCT': 'Ser', 'TCC': 'Ser', 'TCA': 'Ser', 'TCG': 'Ser',
+                     'AGT': 'Ser', 'AGC': 'Ser', 'TCN': 'Ser', 'AGY': 'Ser',
+                     'ACT': 'Thr', 'ACC': 'Thr', 'ACA': 'Thr', 'ACG': 'Thr',
+                     'ACN': 'Thr',
+                     'TGG': 'Trp',
+                     'TAT': 'Tyr', 'TAC': 'Tyr', 'TAY': 'Tyr',
+                     'GTT': 'Val', 'GTC': 'Val', 'GTA': 'Val', 'GTG': 'Val',
+                     'GTN': 'Val',
+                     }
+
+
+def codonToAminoAcid(c):
+  """ Given a codon C, return an amino acid or ??? if codon unrecognized.
+  Codons could be unrecognized due to ambiguity IUPAC characters.
+  """
+  c = c.upper()
+  if c in _codonToAminoAcid:
+    return _codonToAminoAcid(c)
+  return '???'
 
 
 def translateSequence(seq):
@@ -392,7 +425,7 @@ def translateSequence(seq):
   """
   aa = ''
   for i in xrange(0, len(seq), 3):
-    aa += codonToAminoAcid[seq[i:i+3]]
+    aa += codonToAminoAcid(seq[i:i+3])
   return aa
 
 

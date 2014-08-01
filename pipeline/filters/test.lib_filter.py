@@ -309,31 +309,50 @@ class transcriptIteratorTests(unittest.TestCase):
     testAnnots = [
       [],
       [lib_filter.TranscriptAnnotation(
-        lib_filter.ChromosomeInterval('1', 2812346, 2812349, None),
+        lib_filter.ChromosomeInterval('1', 2812346, 2812349, True),
         'ENSMUST00000095795.4', ['noStop']),
        lib_filter.TranscriptAnnotation(
-        lib_filter.ChromosomeInterval('1', 3113780, 3113783, None),
+        lib_filter.ChromosomeInterval('1', 3113780, 3113783, True),
         'ENSMUST00000095795.4', ['noStart']),
        ],
       [lib_filter.TranscriptAnnotation(
-        lib_filter.ChromosomeInterval('scaffold-100021', 466, 469, None),
+        lib_filter.ChromosomeInterval('scaffold-100021', 466, 469, False),
         'ENSMUST00000034053.5', ['noStop']),
        lib_filter.TranscriptAnnotation(
-        lib_filter.ChromosomeInterval('scaffold-100021', 4245, 4248, None),
+        lib_filter.ChromosomeInterval('scaffold-100021', 4245, 4248, False),
         'ENSMUST00000034053.5', ['noStart']),
        ],
       [lib_filter.TranscriptAnnotation(
-        lib_filter.ChromosomeInterval('scaffold-138877', 4903, 4906, None),
+        lib_filter.ChromosomeInterval('scaffold-138877', 4903, 4906, False),
         'ENSMUST00000034053.5', ['noStop']),
        ],
       [lib_filter.TranscriptAnnotation(
-        lib_filter.ChromosomeInterval('scaffold-2051', 24863, 24866, None),
+        lib_filter.ChromosomeInterval('scaffold-2051', 24863, 24866, False),
         'ENSMUST00000034053.5', ['noStart']),
        ],
       ]
     self.assertEqual(len(transcripts), len(testAnnots))
     for i in xrange(0, len(transcripts)):
-      self.assertEqual(transcripts[i].annotations, testAnnots[i])
+      try:
+        self.assertEqual(transcripts[i].annotations, testAnnots[i])
+      except AssertionError:
+        for j in xrange(0, len(transcripts[i].annotations)):
+          tra, tea = transcripts[i].annotations[j], testAnnots[i][j]
+          print('  %d  [%s %s %d %d %s %s %s %s]\n  %d  [%s %s %d %d %s %s %s %s]'
+                % (j, tra.name,
+                   tra.chromosomeInterval.chromosome,
+                   tra.chromosomeInterval.start,
+                   tra.chromosomeInterval.stop,
+                   tra.chromosomeInterval.strand,
+                   tra.name, str(tra.labels), tra._itemRgb,
+                   j, tea.name,
+                   tea.chromosomeInterval.chromosome,
+                   tea.chromosomeInterval.start,
+                   tea.chromosomeInterval.stop,
+                   tea.chromosomeInterval.strand,
+                   tea.name, str(tra.labels), tea._itemRgb,
+                   ))
+        raise
     # Check print functions
     self.assertEquals(transcripts[0].bedString().split(), transcriptBedLines[0].split())
     self.assertEquals(transcripts[1].bedString().split(), transcriptBedLines[1].split())
@@ -643,11 +662,12 @@ class transcriptIteratorTests(unittest.TestCase):
     originalGeneCheckBedDetails = os.path.join(tmpDir, 'dummy.txt')
     alignment = os.path.join(tmpDir, 'dummy.txt')
     sequence = os.path.join(tmpDir, 'dummy.txt')
+    referenceSequence = os.path.join(tmpDir, 'dummy.txt')
     chromSizes = os.path.join(tmpDir, 'dummy.txt')
     metaFilter.makeCall(
       'uniquify', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
       originalGeneCheckBed, originalGeneCheckBedDetails,
-      alignment, sequence, chromSizes, tmpDir)
+      alignment, sequence, referenceSequence, chromSizes, tmpDir)
     # read transcripts from file
     writtenTranscripts = lib_filter.getTranscripts(
       os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
