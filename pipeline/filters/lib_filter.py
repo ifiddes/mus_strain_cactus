@@ -14,20 +14,36 @@ class Sequence(object):
   def __init__(self, name, sequence):
     self.name = name  # chromosome or scaffold name
     self._sequence = sequence  # ACGTs
+    self._length = 0
   def setSequence(self, seq):
     self._sequence = seq
+    self._length = len(seq)
   def getSequence(self):
     return self._sequence
   def getLength(self):
-    return len(self._sequence)
+    return self._length
   def setUpper(self):
     self._sequence = self._sequence.upper()
-  def sliceSequence(self, start, stop):
+  def sliceSequence(self, start, stop, strand='+'):
     """ return the proper slice of the sequence.
     BED format coordinates: 0 based start, stop is exclusive
     [start, stop). E.g. Sequence.sliceSequence(0, 3) returns a string length 3.
     """
-    return self._sequence[start:stop]
+    assert(start < stop)
+    if strand == '+':
+      return self._sequence[start:stop]
+    elif strand == '-':
+      # 0 1 2 3 4 5 6 7 8 9  +
+      # 9 8 7 6 5 4 3 2 1 0  -
+      #                  + strand | - strand
+      #   |-----|          (1, 5] = (5, 9]
+      # |---------|        (0, 6] = (4, 10]
+      #       |---------|  (3, 9] = (1, 7]
+      a = self._length - stop
+      b = self._length - stop + (stop - start)
+      return reverseComplement(self._sequence[a:b])
+    else:
+      raise RuntimeError('Unanticipated strand: %s' % str(strand))
 
 
 class PslRow(object):
@@ -345,9 +361,54 @@ def reverseComplement(seq):
   return seq
 
 
+codonToAminoAcid = {'ATG': 'Met', 'TAA': 'Stop', 'TAG': 'Stop', 'TGA': 'Stop',
+                    'GCT': 'Ala', 'GCC': 'Ala', 'GCA': 'Ala', 'GCG': 'Ala',
+                    'CGT': 'Arg', 'CGC': 'Arg', 'CGA': 'Arg', 'CGG': 'Arg',
+                    'AGA': 'Arg', 'AGG': 'Arg',
+                    'ATT': 'Asn', 'AAC': 'Asn',
+                    'GAT': 'Asp', 'GAC': 'Asp',
+                    'TGT': 'Cys', 'TGC': 'Cys',
+                    'CAA': 'Gin', 'CAG': 'Gin',
+                    'GAA': 'Glu', 'GAG': 'Glu',
+                    'GGT': 'Gly', 'GGC': 'Gly', 'GGA': 'Gly', 'GGG': 'Gly',
+                    'CAT': 'His', 'CAC': 'His',
+                    'ATT': 'Ile', 'ATC': 'Ile', 'ATA': 'Ile',
+                    'TTA': 'Leu', 'TTG': 'Leu', 'CTT': 'Leu', 'CTC': 'Leu',
+                    'CTA': 'Leu', 'CTG': 'Leu',
+                    'AAA': 'Lys', 'AAG': 'Lys',
+                    'TTT': 'Phe', 'TTC': 'Phe',
+                    'CCT': 'Pro', 'CCC': 'Pro', 'CCA': 'Pro', 'CCG': 'Pro',
+                    'TCT': 'Ser', 'TCC': 'Ser', 'TCA': 'Ser', 'TCG': 'Ser',
+                    'AGT': 'Ser', 'AGC': 'Ser',
+                    'ACT': 'Thr', 'ACC': 'Thr', 'ACA': 'Thr', 'ACG': 'Thr',
+                    'TGG': 'Trp',
+                    'TAT': 'Tyr', 'TAC': 'Tyr',
+                    'GTT': 'Val', 'GTC': 'Val', 'GTA': 'Val', 'GTG': 'Val',
+                    }
+
+
+def translateSequence(seq):
+  """ Convert an entire DNA sequence to an amino acid sequence.
+  """
+  aa = ''
+  for i in xrange(0, len(seq), 3):
+    aa += codonToAminoAcid[seq[i:i+3]]
+  return aa
+
+
+def readCodons(seq):
+  """ Provide an iterator that reads through a sequence one codon at a time.
+  """
+  i = 0
+  while i < len(seq):
+    t = s[i:i+3]
+    i += 3
+    yield t
+
+
 def getSequences(infile, upper=False):
   """ Given a path to a fasta file, return a dictionary of Sequence objects
-  keyed on the sequence name
+  keyed on the sequence name.
   """
   seqDict = {}
   seq = None
