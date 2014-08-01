@@ -674,20 +674,21 @@ class transcriptIteratorTests(unittest.TestCase):
                   ('Tyr', 'TAT,TAC,TAY'),
                   ('Val', 'GTT,GTC,GTA,GTG,GTN'),
                   ('Stop', 'TAA,TGA,TAG,TAR,TRA'),
-                  ('???', 'LOL,OMG,IDK,WTF')
+                  ('???', 'LOL,OMG,IDK,WTF,,too long')
                   ]
     for aa, codons in knownPairs:
       for c in codons.split(','):
         self.assertEqual(aa, lib_filter.codonToAminoAcid(c))
         self.assertEqual(aa, lib_filter.codonToAminoAcid(c.lower()))
-        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0].lower() + c[1:]))
-        self.assertEqual(aa, lib_filter.codonToAminoAcid(
-            c[0] + c[1].lower() + c[2]))
-        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0:2] + c[2].lower()))
-        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0:2].lower() + c[2]))
-        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0] + c[1:3].lower()))
-        self.assertEqual(aa, lib_filter.codonToAminoAcid(
-            c[0].lower() + c[1] + c[2].lower()))
+        if len(c) > 2:
+          self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0].lower() + c[1:]))
+          self.assertEqual(aa, lib_filter.codonToAminoAcid(
+              c[0] + c[1].lower() + c[2]))
+          self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0:2] + c[2].lower()))
+          self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0:2].lower() + c[2]))
+          self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0] + c[1:3].lower()))
+          self.assertEqual(aa, lib_filter.codonToAminoAcid(
+              c[0].lower() + c[1] + c[2].lower()))
 
   def test_uniquify_0(self):
     """ Uniquify should make unique names for transcripts with identical names
