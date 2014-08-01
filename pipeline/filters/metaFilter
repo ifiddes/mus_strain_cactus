@@ -135,6 +135,7 @@ def main():
   filters.append('shortScaffold_noStartStop')
   filters.append('noStopCorrecter')
   filters.append('paralogs')
+  filters.append('nonsense')
   ##############################
   # Do not change the order of filters below this line
   filters.append('gigo')
