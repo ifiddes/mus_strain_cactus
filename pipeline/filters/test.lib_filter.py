@@ -648,6 +648,44 @@ class transcriptIteratorTests(unittest.TestCase):
     mrna = transcripts[1].mRna(seq_rc)
     self.assertEqual(truth, mrna)
 
+  def test_codonToAminoAcid(self):
+    """ codonToAminoAcid needs to return correct amino acids for all codons.
+    """
+    # these pairs were input separately from pairs in lib_filter,
+    # (no copy-paste!)
+    knownPairs = [('Ala', 'GCT,GCC,GCA,GCG,GCN'),
+                  ('Arg', 'CGT,CGC,CGA,CGG,AGA,AGG,CGN,MGR'),
+                  ('Asn', 'AAT,AAC,AAY'),
+                  ('Asp', 'GAT,GAC,GAY'),
+                  ('Cys', 'TGT,TGC,TGY'),
+                  ('Gin', 'CAA,CAG,CAR'),
+                  ('Glu', 'GAA,GAG,GAR'),
+                  ('Gly', 'GGT,GGC,GGA,GGG,GGN'),
+                  ('His', 'CAT,CAC,CAY'),
+                  ('Ile', 'ATT,ATC,ATA,ATH'),
+                  ('Leu', 'TTA,TTG,CTT,CTC,CTA,CTG,YTR,CTN'),
+                  ('Lys', 'AAA,AAG,AAR'),
+                  ('Met', 'ATG'),
+                  ('Phe', 'TTT,TTC,TTY'),
+                  ('Pro', 'CCT,CCC,CCA,CCG,CCN'),
+                  ('Ser', 'TCT,TCC,TCA,TCG,AGT,AGC,TCN,AGY'),
+                  ('Thr', 'ACT,ACC,ACA,ACG,ACN'),
+                  ('Trp', 'TGG'),
+                  ('Tyr', 'TAT,TAC,TAY'),
+                  ('Val', 'GTT,GTC,GTA,GTG,GTN'),
+                  ('Stop', 'TAA,TGA,TAG,TAR,TRA'),
+                  ('???', 'lol')
+                  ]
+    for aa, codons in knownPairs:
+      for c in codons.split(','):
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(c))
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(c.lower()))
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0].lower() + c[1:]))
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(
+            c[0] + c[1].lower() + c[2]))
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0:2] + c[2].lower()))
+
+
   def test_uniquify_0(self):
     """ Uniquify should make unique names for transcripts with identical names
     """

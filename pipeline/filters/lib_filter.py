@@ -380,11 +380,14 @@ def reverseComplement(seq):
   return seq
 
 
-_codonToAminoAcid = {'ATG': 'Met', 'TAA': 'Stop', 'TAG': 'Stop', 'TGA': 'Stop',
+_codonToAminoAcid = {'ATG': 'Met',
+                     'TAA': 'Stop', 'TAG': 'Stop', 'TGA': 'Stop',
+                     'TAR': 'Stop', 'TRA': 'Stop',
                      'GCT': 'Ala', 'GCC': 'Ala', 'GCA': 'Ala', 'GCG': 'Ala',
+                     'GCN': 'Ala',
                      'CGT': 'Arg', 'CGC': 'Arg', 'CGA': 'Arg', 'CGG': 'Arg',
                      'AGA': 'Arg', 'AGG': 'Arg', 'CGN': 'Arg', 'MGR': 'Arg',
-                     'ATT': 'Asn', 'AAC': 'Asn', 'AAY': 'Asn',
+                     'AAT': 'Asn', 'AAC': 'Asn', 'AAY': 'Asn',
                      'GAT': 'Asp', 'GAC': 'Asp', 'GAY': 'Asp',
                      'TGT': 'Cys', 'TGC': 'Cys', 'TGY': 'Cys',
                      'CAA': 'Gin', 'CAG': 'Gin', 'CAR': 'Gin',
@@ -416,7 +419,7 @@ def codonToAminoAcid(c):
   """
   c = c.upper()
   if c in _codonToAminoAcid:
-    return _codonToAminoAcid(c)
+    return _codonToAminoAcid[c]
   return '???'
 
 
