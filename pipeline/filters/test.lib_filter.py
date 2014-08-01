@@ -684,7 +684,10 @@ class transcriptIteratorTests(unittest.TestCase):
         self.assertEqual(aa, lib_filter.codonToAminoAcid(
             c[0] + c[1].lower() + c[2]))
         self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0:2] + c[2].lower()))
-
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0:2].lower() + c[2]))
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(c[0] + c[1:3].lower()))
+        self.assertEqual(aa, lib_filter.codonToAminoAcid(
+            c[0].lower() + c[1] + c[2].lower()))
 
   def test_uniquify_0(self):
     """ Uniquify should make unique names for transcripts with identical names
