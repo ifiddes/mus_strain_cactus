@@ -262,8 +262,8 @@ class Transcript(object):
     assert(self.chromosomeInterval.stop < sequence.getLength())
     s = ''
     for e in self.exons:
-      s += sequence.spliceSequence(e.chromosomeInterval.start,
-                                   e.chromosomeInterval.stop)
+      s += sequence.sliceSequence(e.start,
+                                  e.stop)
     if not self.chromosomeInterval.strand:
       s = reverseComplement(s)
     return s

@@ -620,6 +620,34 @@ class transcriptIteratorTests(unittest.TestCase):
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
+  def test_transcript_mrna_0(self):
+    """ Transcript.mRna() should return correct information.
+    """
+    seq = lib_filter.Sequence(
+      'test_a', 'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn')
+    seq_rc = lib_filter.Sequence(
+      'test_rc',
+      lib_filter.reverseComplement(
+        'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn'))
+    truth = 'ATGtttCtCGcGGAGTAG'
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    mrna = transcripts[0].mRna(seq)
+    self.assertEqual(truth, mrna)
+    mrna = transcripts[1].mRna(seq_rc)
+    self.assertEqual(truth, mrna)
+
   def test_uniquify_0(self):
     """ Uniquify should make unique names for transcripts with identical names
     """
