@@ -279,7 +279,7 @@ class Transcript(object):
     been reverse complemented if necessary).
     """
     assert(self.chromosomeInterval.chromosome == sequence.name)
-    assert(self.chromosomeInterval.stop < sequence.getLength())
+    assert(self.chromosomeInterval.stop <= sequence.getLength())
     s = ''
     for e in self.exons:
       s += sequence.sliceSequence(e.start,
@@ -451,7 +451,7 @@ def readCodons(seq):
   """
   i = 0
   while i < len(seq):
-    t = s[i:i+3]
+    t = seq[i:i+3]
     i += 3
     yield t
 

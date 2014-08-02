@@ -19,7 +19,7 @@ def main():
     args.geneCheckBed, args.geneCheckBedDetails)
   for t in transcripts:
     codon_seq = t.mRna(seq_dict[t.chromosomeInterval.chromosome])
-    codon_seq = codon_seq[0:-3]  # trim off the last codon
+    codon_seq = codon_seq[0:-3]  # trim off the stop codon
     aa_seq = [lib_filter.codonToAminoAcid(c) for c
               in lib_filter.readCodons(codon_seq)]
     for i, a in enumerate(aa_seq):
@@ -30,7 +30,8 @@ def main():
           p = t.exonCoordinateToChromosome(i * 3) - 3
         a = lib_filter.TranscriptAnnotation(
           lib_filter.ChromosomeInterval(
-            t.chromosomeInterval.chromosome, p, p + 3),
+            t.chromosomeInterval.chromosome, p, p + 3,
+            t.chromosomeInterval.strand),
           t.name, [])
         a.addLabel('nonsense')
         break
