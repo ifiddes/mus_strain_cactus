@@ -303,9 +303,15 @@ class Transcript(object):
             p += e.stop -  self.thickEnd
     return p
 
+  def mRnaCoordinateToChromosome(self, p):
+    """ Take position P with 0-based mRNA-relative position and convert it
+    to 0-based chromosome-relative position.
+    """
+    return self.exonCoordinateToChromosome(self.mRnaCoordinateToExon(p))
+
   def exonCoordinateToChromosome(self, p):
     """ Take position P with 0-based exon-relative position and convert it
-    to chromosome-relative position.
+    to 0-based chromosome-relative position.
     """
     assert(p >= 0)
     assert(p < sum([(e.stop - e.start) for e in self.exons]))

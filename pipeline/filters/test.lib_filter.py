@@ -724,7 +724,7 @@ class codonGeneSpaceTests(unittest.TestCase):
     self.assertEqual(truth, mrna)
 
   def test_mRnaCoordinateToExon(self):
-    """ exonCoordinateToChromosome() must return correct values.
+    """ mRnaCoordinateToExon() must return correct values.
     """
     transcriptBedLines = []
     transcriptBedLines.append(bedLine(
@@ -766,6 +766,52 @@ class codonGeneSpaceTests(unittest.TestCase):
     for i in xrange(0, 6):
       self.assertEqual(2 + i, transcripts[1].mRnaCoordinateToExon(i))
 
+  def test_mRnaCoordinateToChromosome(self):
+    """ mRnaCoordinateToChromosome() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 1, 11, 'gene', 0, '+', 3, 10,
+        '128,0,0', 2, '4,5',
+        '0,5'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
+        '128,0,0', 2, '5,4',
+        '0,6'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    # positive strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #            |    |    |
+    #            0    5    10
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    for i in xrange(0, 2):
+      self.assertEqual(3 + i, transcripts[0].mRnaCoordinateToChromosome(i))
+    for i in xrange(2, 6):
+      self.assertEqual(4 + i, transcripts[0].mRnaCoordinateToChromosome(i))
+    # negative strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #              |    |    |
+    #              10   5    0
+    for i in xrange(0, 2):
+      self.assertEqual(9 - i, transcripts[1].mRnaCoordinateToChromosome(i))
+    for i in xrange(2, 6):
+      self.assertEqual(6 + 2 - i, transcripts[1].mRnaCoordinateToChromosome(i))
 
   def test_exonCoordinateToChromosome(self):
     """ exonCoordinateToChromosome() must return correct values.
