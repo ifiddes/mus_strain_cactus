@@ -27,14 +27,14 @@ def main():
         if t.chromosomeInterval.strand:
           p = t.exonCoordinateToChromosome(i * 3)
         else:
-          p = t.exonCoordinateToChromosome(i * 3) - 3
+          p = t.exonCoordinateToChromosome(i * 3) - 2
         a = lib_filter.TranscriptAnnotation(
           lib_filter.ChromosomeInterval(
             t.chromosomeInterval.chromosome, p, p + 3,
             t.chromosomeInterval.strand),
           t.name, [])
         a.addLabel('nonsense')
-        break
+        t.annotations.append(a)
   lib_filter.writeAllBeds(transcripts, args)
 
 
