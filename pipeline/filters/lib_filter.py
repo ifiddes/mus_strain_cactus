@@ -482,6 +482,8 @@ def readSequence(infile):
         header = ''
         while not header.startswith('>'):
           header = infile.readline().strip()
+          if header == '':
+            return
       else:
         header = buff
       assert(header.startswith('>'))
