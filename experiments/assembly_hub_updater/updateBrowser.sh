@@ -110,7 +110,7 @@ if [ ! -f /hive/users/dearl/msca/mouseBrowser_$release/lod.txt ]; then
 fi
 
 echo '# Removing old job tree'
-rm -rf jt_assembly_hub
+rm -rf jt_assembly_hub_$release
 
 echo '# Launching hal2assemblyHub.py'
 # create an assembly hub
