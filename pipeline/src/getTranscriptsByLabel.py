@@ -83,9 +83,18 @@ def reportTranscripts(transcripts):
   """ Given list of transcripts, print them out
   """
   for t in transcripts:
+    if t.chromosomeInterval.strand:
+      strand = '+'
+    else:
+      strand = '-'
     try:
-      print t.name, ', '.join(map(lambda a: str(list(a.labels)), t.annotations))
+      print('%s %s %d %d %s %s' %
+            (t.name, t.chromosomeInterval.chromosome,
+             t.chromosomeInterval.start, t.chromosomeInterval.stop,
+             strand,
+             ', '.join(map(lambda a: str(list(a.labels)), t.annotations))))
     except IOError:
+      # allow breaks for linux tools like head
       sys.exit(0)
 
 
