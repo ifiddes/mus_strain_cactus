@@ -179,6 +179,15 @@ def numberOfUniqueTranscripts(transcripts):
   return len(names)
 
 
+def transcriptIsNonsense(t):
+  """ check to see if the annotations contain a nonsense label
+  """
+  for a in t.annotations:
+    if 'nonsense' in a.labels:
+      return True
+  return False
+
+
 class sequenceGetterTests(unittest.TestCase):
   def test_getSequences(self):
     """ getSequences must read a fasta and return a dict of Sequence objects.
@@ -620,6 +629,8 @@ class transcriptIteratorTests(unittest.TestCase):
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
+
+class codonGeneSpaceTests(unittest.TestCase):
   def test_transcript_mrna_0(self):
     """ Transcript.mRna() should return correct information.
     """
@@ -647,7 +658,6 @@ class transcriptIteratorTests(unittest.TestCase):
     self.assertEqual(truth, mrna)
     mrna = transcripts[1].mRna(seq_rc)
     self.assertEqual(truth, mrna)
-
 
   def test_exonCoordinateToChromosome(self):
     """ exonCoordinateToChromosome() must return correct values.
@@ -688,8 +698,6 @@ class transcriptIteratorTests(unittest.TestCase):
       self.assertEqual(40 - i, transcripts[1].exonCoordinateToChromosome(i))
     for i in xrange(9, 18):
       self.assertEqual(17 + 9 - i, transcripts[1].exonCoordinateToChromosome(i))
-
-
 
   def test_codonToAminoAcid(self):
     """ codonToAminoAcid() needs to return correct amino acids for all codons.
@@ -733,8 +741,10 @@ class transcriptIteratorTests(unittest.TestCase):
           self.assertEqual(aa, lib_filter.codonToAminoAcid(
               c[0].lower() + c[1] + c[2].lower()))
 
+
+class filterTests(unittest.TestCase):
   def test_uniquify_0(self):
-    """ Uniquify should make unique names for transcripts with identical names
+    """ uniquify should make unique names for transcripts with identical names
     """
     transcriptBedLines = []
     transcriptBedLines.append(bedLine(
@@ -786,6 +796,76 @@ class transcriptIteratorTests(unittest.TestCase):
       os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
     # test equality.
     self.assertEquals(numberOfUniqueTranscripts(writtenTranscripts), 3)
+    # cleanup
+    self.addCleanup(removeDir, tmpDir)
+
+  def test_nonsense_0(self):
+    """ nonsense should detect nonsense codons.
+    """
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('nonsense'))
+    sequences = {'test_a':
+                   'NNATGtttCtCGTnnnnnnnnnnAGtaaGAGTAGNNNNNNnnn\n',
+                 'test_rc':
+                   'nnnNNNNNNCTACTCttaCTnnnnnnnnnnACGaGaaaCATNN\n',
+                 'test_ok':
+                   'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn\n',
+                 'test_ok_rc':
+                   lib_filter.reverseComplement(
+        'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn') + '\n',
+                  }
+    seqFile = createSequenceFile(sequences, tmpDir)
+    seqDict = lib_filter.getSequences(seqFile)
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_ok', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_ok_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # run nonsense
+    with open(os.path.join(tmpDir, 'dummy.txt'), 'w') as f:
+      f.write('dummy\n')
+    originalGeneCheckBed = os.path.join(tmpDir, 'dummy.txt')
+    originalGeneCheckBedDetails = os.path.join(tmpDir, 'dummy.txt')
+    alignment = os.path.join(tmpDir, 'dummy.txt')
+    sequence = os.path.join(tmpDir, 'seq.fa')
+    referenceSequence = os.path.join(tmpDir, 'dummy.txt')
+    chromSizes = os.path.join(tmpDir, 'dummy.txt')
+    metaFilter.makeCall(
+      'nonsense', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
+      originalGeneCheckBed, originalGeneCheckBedDetails,
+      alignment, sequence, referenceSequence, chromSizes, tmpDir)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(
+      os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
+    # test equality.
+    self.assertTrue(transcriptIsNonsense(writtenTranscripts[0]))
+    self.assertFalse(transcriptIsNonsense(writtenTranscripts[1]))
+    self.assertFalse(transcriptIsNonsense(writtenTranscripts[2]))
+    self.assertTrue(transcriptIsNonsense(writtenTranscripts[3]))
+
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
