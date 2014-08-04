@@ -225,8 +225,8 @@ class Transcript(object):
     self.annotations = annotations  # list of TranscriptAnnotation() objects
     # Bed fields
     self.score = score
-    self.thickStart = thickStart
-    self.thickEnd = thickEnd
+    self.thickStart = thickStart  # int
+    self.thickEnd = thickEnd  # int
     self.itemRgb = itemRgb
 
   def __eq__(self, other):
@@ -252,6 +252,58 @@ class Transcript(object):
                               self.chromosomeInterval.start,
                               self.chromosomeInterval.stop)
 
+  def mrnaCoordinateToCodon(self, p):
+    """ Take position P with 0-based mRNA-relative position and convert it
+    to 0-based codon position. Here as a convenience method to make code
+    more self documenting.
+    """
+    # (strand irrelevant)
+    #       0    5    10
+    #       |    |    |
+    # mrna  +++++++++++
+    # codon +++++++++++
+    #       |  |  |  |
+    #       01201201201
+    return p % 3
+
+  def mRnaCoordinateToExon(self, p):
+    """ Take position P with 0-based mRNA-relative position and convert it
+    to 0-based exon-relative position.
+    """
+    assert(p >= 0)
+    assert(p < sum([(e.stop - e.start) for e in self.exons]))
+    assert(len(self.exons))
+    # positive strand
+    # chromosome +++++++++++
+    #            |    |    |
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    # mrna          ++ ++++
+    #               |     |
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    if self.chromosomeInterval.strand:
+      # positive strand, offset is first exon start to thickStart
+      for e in self.exons:
+        if e.start < self.thickStart:
+          if e.stop < self.thickStart:
+            # add the whole exon to the offset
+            p += e.stop - e.start
+          else:
+            # only add the thin part of this exon
+            p += self.thickStart - self.exons[0].start
+    else:
+      for e in reversed(self.exons):
+        if e.stop > self.thickEnd:
+          if e.start > self.thickEnd:
+            # add the whole exon to the offset
+            p += e.stop - e.start
+          else:
+            # only add the thin part of this exon
+            p += e.stop -  self.thickEnd
+    return p
+
+
   def exonCoordinateToChromosome(self, p):
     """ Take position P with 0-based exon-relative position and convert it
     to chromosome-relative position.
@@ -272,7 +324,7 @@ class Transcript(object):
         c += e.stop - e.start
     assert(False)  # we should never get here
 
-  def mRna(self, sequence):
+  def getMRna(self, sequence):
     """ Return the mRNA sequence for the transcript (based on the exons) using
     a SEQUENCE object as the source for dna sequence.
     The returned sequence is in the correct 5'-3' orientation (i.e. it has
@@ -281,9 +333,20 @@ class Transcript(object):
     assert(self.chromosomeInterval.chromosome == sequence.name)
     assert(self.chromosomeInterval.stop <= sequence.getLength())
     s = ''
+    # chromosome    ttttTTTTTTTTTTTtttt  t: thin T: THICK
+    # exon            eeeeee eeee eee
+    # mrna              mmmm mmmm m
     for e in self.exons:
-      s += sequence.sliceSequence(e.start,
-                                  e.stop)
+      if self.thickStart < e.start and e.stop < self.thickEnd:
+        s += sequence.sliceSequence(e.start, e.stop)
+      elif (e.start <= self.thickStart and e.stop < self.thickEnd
+            and self.thickStart < e.stop):
+        s += sequence.sliceSequence(self.thickStart, e.stop)
+      elif e.start <= self.thickStart and self.thickEnd <= e.stop:
+        s += sequence.sliceSequence(self.thickStart, self.thickEnd)
+      elif (self.thickStart < e.start and self.thickEnd <= e.stop
+            and e.start < self.thickEnd):
+        s += sequence.sliceSequence(e.start, self.thickEnd)
     if not self.chromosomeInterval.strand:
       s = reverseComplement(s)
     return s

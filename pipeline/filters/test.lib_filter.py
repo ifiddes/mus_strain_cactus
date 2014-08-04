@@ -632,14 +632,48 @@ class transcriptIteratorTests(unittest.TestCase):
 
 class codonGeneSpaceTests(unittest.TestCase):
   def test_transcript_mrna_0(self):
-    """ Transcript.mRna() should return correct information.
+    """ Transcript.getMRna() should return correct information.
     """
     seq = lib_filter.Sequence(
+    #             0        9          20        30        40
       'test_a', 'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn')
+    #              *********              *********
+    #              0        9          20        30
     seq_rc = lib_filter.Sequence(
-      'test_rc',
-      lib_filter.reverseComplement(
-        'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn'))
+    #             0        9          20        30        40
+      'test_rc', 'nnnNNNNNNCTACTCCgCCTnnnnnnnnnnACGaGaaaCATNN')
+    #                      *********              *********
+    #                      0        9          20 23
+    #                      GATGAGGcGGAnnnnnnnnnnTGCtCtttGTA
+    seq_thickThin = lib_filter.Sequence(
+      'test_thickThin',
+    #  0        9          20        30        40        50        60        70
+      'nnnACGTACGTACGTACGTAACTACGTACGttATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn\n')
+    #     -----------------------------*********              *********
+    #     tttttttttttttttttttttttttttttTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+    #     0        9          20        30        40        50        60        70
+    seq_thickThin_splitExon_0 = lib_filter.Sequence(
+      'test_thickThin_splitExon_0',
+    #  0        9          20        30        40        50        60        70
+      'nnnACGTACGTACGTACGTAACTACGTACGttATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn\n')
+    #     -----                        *********              *********
+    #     ttttttttttttttttttttttttTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+    #     0        9          20        30        40        50        60        70
+    seq_thickThin_splitExon_1 = lib_filter.Sequence(
+      'test_thickThin_splitExon_1',
+    #  0        9          20        30        40        50        60        70
+      'nnnACGTACGTACGTACGTAACTACGTACGttATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn\n')
+    #     -----                   -----*********              *********-----
+    #     tttttttttttttttttttttttttttttTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTttttt
+    #     0        9          20        30        40        50        60        70
+    seq_thickThin_splitExon_2 = lib_filter.Sequence(
+      'test_thickThin_splitExon_2',
+    #  0        9          20        30        40        50        60        70
+      'nnnNNNNNNCTACTCCgCCTnnnnnnnnnnACGaGaaaCATaaCGTACGTAGTTACGTACGTACGTACGTnnn\n')
+    #      -----*********              *********-----                   -----
+    #      tttttTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTttttttttttttttttttttttttttttt
+    #      0        9          20        30        40        50        60        70
+
     truth = 'ATGtttCtCGcGGAGTAG'
     transcriptBedLines = []
     transcriptBedLines.append(bedLine(
@@ -647,17 +681,91 @@ class codonGeneSpaceTests(unittest.TestCase):
         '128,0,0', 2, '9,9',
         '0,23'))
     transcriptBedLines.append(bedLine(
-        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        'test_rc', 9, 40, 'gene', 0, '-', 9, 41,
         '128,0,0', 2, '9,9',
         '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_thickThin', 3, 64, 'gene', 0, '+', 32, 64,
+        '128,0,0', 2, '38,9',
+        '0,52'))
+    transcriptBedLines.append(bedLine(
+        'test_thickThin_splitExon_0', 3, 64, 'gene', 0, '+', 32, 64,
+        '128,0,0', 3, '5,9,9',
+        '0,29,52'))
+    transcriptBedLines.append(bedLine(
+        'test_thickThin_splitExon_1', 3, 69, 'gene', 0, '+', 32, 64,
+        '128,0,0', 3, '5,14,14',
+        '0,24,52'))
+    transcriptBedLines.append(bedLine(
+        'test_thickThin_splitExon_2', 4, 70, 'gene', 0, '-', 9, 41,
+        '128,0,0', 3, '14,14,5',
+        '0,28,61'))
     transcriptDetailsBedLines = []
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
-    mrna = transcripts[0].mRna(seq)
+    mrna = transcripts[0].getMRna(seq)
+    self.assertEqual(len(truth), len(mrna))
     self.assertEqual(truth, mrna)
-    mrna = transcripts[1].mRna(seq_rc)
+    mrna = transcripts[1].getMRna(seq_rc)
+    self.assertEqual(len(truth), len(mrna))
     self.assertEqual(truth, mrna)
+    mrna = transcripts[2].getMRna(seq_thickThin)
+    self.assertEqual(len(truth), len(mrna))
+    self.assertEqual(truth, mrna)
+    mrna = transcripts[3].getMRna(seq_thickThin_splitExon_0)
+    self.assertEqual(len(truth), len(mrna))
+    self.assertEqual(truth, mrna)
+    mrna = transcripts[4].getMRna(seq_thickThin_splitExon_1)
+    self.assertEqual(len(truth), len(mrna))
+    self.assertEqual(truth, mrna)
+    mrna = transcripts[5].getMRna(seq_thickThin_splitExon_2)
+    self.assertEqual(len(truth), len(mrna))
+    self.assertEqual(truth, mrna)
+
+  def test_mRnaCoordinateToExon(self):
+    """ exonCoordinateToChromosome() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 1, 11, 'gene', 0, '+', 3, 10,
+        '128,0,0', 2, '4,5',
+        '0,5'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
+        '128,0,0', 2, '5,4',
+        '0,6'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    # positive strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #            |    |    |
+    #            0    5    10
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    for i in xrange(0, 6):
+      self.assertEqual(2 + i, transcripts[0].mRnaCoordinateToExon(i))
+    # negative strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #              |    |    |
+    #              10   5    0
+    for i in xrange(0, 6):
+      self.assertEqual(2 + i, transcripts[1].mRnaCoordinateToExon(i))
+
 
   def test_exonCoordinateToChromosome(self):
     """ exonCoordinateToChromosome() must return correct values.
@@ -799,7 +907,7 @@ class filterTests(unittest.TestCase):
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
-  def test_nonsense_0(self):
+  def dtest_nonsense_0(self):
     """ nonsense should detect nonsense codons.
     """
     makeTempDirParent()
@@ -810,9 +918,17 @@ class filterTests(unittest.TestCase):
                    'nnnNNNNNNCTACTCttaCTnnnnnnnnnnACGaGaaaCATNN\n',
                  'test_ok':
                    'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn\n',
+                 'test_ok_thickThin':
+                   ('nnnACGTACG'
+                    'TACGTACGTA'
+                    'ACTACGTACG'
+                    'ttATGtttCt'
+                    'CGTnnnnnnn'
+                    'nnnAGGcGGA'
+                    'GTAGNNNNNN'
+                    'nnn\n'),
                  'test_ok_rc':
-                   lib_filter.reverseComplement(
-        'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn') + '\n',
+                   'nnnNNNNNNCTACTCttaCTnnnnnnnnnnACGaGaaaCATNN\n',
                   }
     seqFile = createSequenceFile(sequences, tmpDir)
     seqDict = lib_filter.getSequences(seqFile)
@@ -829,6 +945,10 @@ class filterTests(unittest.TestCase):
         'test_ok', 2, 34, 'gene', 0, '+', 2, 34,
         '128,0,0', 2, '9,9',
         '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_ok_thickThin', 3, 64, 'gene', 0, '+', 32, 64,
+        '128,0,0', 2, '40,9',
+        '0,53'))
     transcriptBedLines.append(bedLine(
         'test_ok_rc', 9, 40, 'gene', 0, '-', 9, 40,
         '128,0,0', 2, '9,9',
@@ -864,7 +984,8 @@ class filterTests(unittest.TestCase):
     self.assertTrue(transcriptIsNonsense(writtenTranscripts[0]))
     self.assertFalse(transcriptIsNonsense(writtenTranscripts[1]))
     self.assertFalse(transcriptIsNonsense(writtenTranscripts[2]))
-    self.assertTrue(transcriptIsNonsense(writtenTranscripts[3]))
+    self.assertFalse(transcriptIsNonsense(writtenTranscripts[3]))
+    self.assertTrue(transcriptIsNonsense(writtenTranscripts[4]))
 
     # cleanup
     self.addCleanup(removeDir, tmpDir)
