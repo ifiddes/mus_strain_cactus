@@ -22,6 +22,8 @@ def main():
     codon_seq = codon_seq[0:-3]  # trim off the stop codon
     aa_seq = [lib_filter.codonToAminoAcid(c) for c
               in lib_filter.readCodons(codon_seq)]
+    if aa_seq == []:
+      continue
     if aa_seq[0] != 'Met':
       # skip amino acid sequences that don't start with an ATG
       continue
