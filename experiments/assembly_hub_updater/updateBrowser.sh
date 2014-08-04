@@ -122,10 +122,10 @@ echo '# Launching hal2assemblyHub.py'
 --twobitdir=/hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release \
 --lod --lodTxtFile=/hive/users/dearl/msca/mouseBrowser_$release/lod.txt \
 --lodDir=/hive/users/dearl/msca/mouseBrowser_$release/lod \
---finalBigBedDirs=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/knownGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/wgEncodeGencodeCompVM2 \  # dont lift over
+--finalBigBedDirs=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/knownGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/wgEncodeGencodeCompVM2 \
 --bedDirs=/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter_details,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck_details \
 --tabBed \
---jobTree=./jt_assembly_hub \
+--jobTree=./jt_assembly_hub_$release \
 --batchSystem=singleMachine \
 --stats \
 --maxThreads=16 \
@@ -133,7 +133,7 @@ echo '# Launching hal2assemblyHub.py'
 --noBedLiftover
 
 echo '# Correcting genomes.txt'
-perl -ple 's/orderKey 4800/orderKey 4800\ndescription rel_1302/' -i browser_$release/genomes.txt
+perl -ple "s/orderKey 4800/orderKey 4800\ndescription rel_$release/" -i browser_$release/genomes.txt
 
 echo '# Copying genome files.'
 # copy over genome files
