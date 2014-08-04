@@ -18,7 +18,7 @@ def main():
   transcripts = lib_filter.getTranscripts(
     args.geneCheckBed, args.geneCheckBedDetails)
   for t in transcripts:
-    codon_seq = t.mRna(seq_dict[t.chromosomeInterval.chromosome])
+    codon_seq = t.getMRna(seq_dict[t.chromosomeInterval.chromosome])
     codon_seq = codon_seq[0:-3]  # trim off the stop codon
     aa_seq = [lib_filter.codonToAminoAcid(c) for c
               in lib_filter.readCodons(codon_seq)]
