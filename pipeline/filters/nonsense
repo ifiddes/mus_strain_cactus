@@ -22,12 +22,15 @@ def main():
     codon_seq = codon_seq[0:-3]  # trim off the stop codon
     aa_seq = [lib_filter.codonToAminoAcid(c) for c
               in lib_filter.readCodons(codon_seq)]
+    if aa_seq[0] != 'Met':
+      # skip amino acid sequences that don't start with an ATG
+      continue
     for i, a in enumerate(aa_seq):
       if a == 'Stop':
         if t.chromosomeInterval.strand:
-          p = t.exonCoordinateToChromosome(i * 3)
+          p = t.mRnaCoordinateToChromosome(i * 3)
         else:
-          p = t.exonCoordinateToChromosome(i * 3) - 2
+          p = t.mRnaCoordinateToChromosome(i * 3) - 2
         a = lib_filter.TranscriptAnnotation(
           lib_filter.ChromosomeInterval(
             t.chromosomeInterval.chromosome, p, p + 3,

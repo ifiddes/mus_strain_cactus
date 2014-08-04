@@ -303,7 +303,6 @@ class Transcript(object):
             p += e.stop -  self.thickEnd
     return p
 
-
   def exonCoordinateToChromosome(self, p):
     """ Take position P with 0-based exon-relative position and convert it
     to chromosome-relative position.
