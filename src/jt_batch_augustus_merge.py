@@ -88,23 +88,29 @@ class MergeCall(Target):
         comp_gffs.append(os.path.join(d, '%s.gff' % self.seq))
       if os.path.exists(os.path.join(d, '%s.base.gff' % self.seq)):
         base_gffs.append(os.path.join(d, '%s.base.gff' % self.seq))
+    if len(comp_gffs) == 1 and len(base_gffs) == 1:
+      raise RuntimeError('Unable to find any input files!\n')
     comp_cmds = [comp_gffs]
     base_cmds = [base_gffs]
-    time_start = lib_run.TimeStamp(self.args.out_dir,
-                                   name='jt_issued_commands.%s.log' % self.seq)
-    lib_run.LogCommand(self.args.out_dir, comp_cmds,
-                           name='jt_issued_commands.%s.log' % self.seq)
-    lib_run.RunCommandsSerial(comp_cmds, self.getLocalTempDir(),
-                              out_pipes=comp_outs, err_pipes=comp_errs)
-    lib_run.TimeStamp(self.args.out_dir, time_start,
-                      name='jt_issued_commands.%s.log' % self.seq)
-    time_start = lib_run.TimeStamp(self.args.out_dir)
-    lib_run.LogCommand(self.args.out_dir, base_cmds,
-                           name='jt_issued_commands.%s.log' % self.seq)
-    lib_run.RunCommandsSerial(base_cmds, self.getLocalTempDir(),
-                              out_pipes=base_outs, err_pipes=base_errs)
-    lib_run.TimeStamp(self.args.out_dir, time_start,
-                      name='jt_issued_commands.%s.log' % self.seq)
+    if len(comp_cmds) > 1:
+      # comparative prediction mode
+      time_start = lib_run.TimeStamp(self.args.out_dir,
+                                     name='jt_issued_commands.%s.log' % self.seq)
+      lib_run.LogCommand(self.args.out_dir, comp_cmds,
+                         name='jt_issued_commands.%s.log' % self.seq)
+      lib_run.RunCommandsSerial(comp_cmds, self.getLocalTempDir(),
+                                out_pipes=comp_outs, err_pipes=comp_errs)
+      lib_run.TimeStamp(self.args.out_dir, time_start,
+                        name='jt_issued_commands.%s.log' % self.seq)
+    if len(base_cmds) > 1:
+      # single prediction mode
+      time_start = lib_run.TimeStamp(self.args.out_dir)
+      lib_run.LogCommand(self.args.out_dir, base_cmds,
+                         name='jt_issued_commands.%s.log' % self.seq)
+      lib_run.RunCommandsSerial(base_cmds, self.getLocalTempDir(),
+                                out_pipes=base_outs, err_pipes=base_errs)
+      lib_run.TimeStamp(self.args.out_dir, time_start,
+                        name='jt_issued_commands.%s.log' % self.seq)
 
 
 def CreateSummaryReport(out_dir, now, count, command):

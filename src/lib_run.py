@@ -324,6 +324,7 @@ def TimeStamp(out_path, time_start=None, name=None, tag=''):
   """
   import time
   now = time.time()
+  tag_s = ''
   if tag != '':
     tag_s = '  # %s' % tag
   if name is None:
