@@ -266,13 +266,13 @@ class Transcript(object):
     #       01201201201
     return p % 3
 
-  def mRnaCoordinateToExon(self, p):
+  def mRnaCoordinateToExon(self, p, debug=False):
     """ Take position P with 0-based mRNA-relative position and convert it
     to 0-based exon-relative position.
     """
     assert(p >= 0)
-    assert(p < sum([(e.stop - e.start) for e in self.exons]))
     assert(len(self.exons))
+    assert(p < sum([(e.stop - e.start) for e in self.exons]))
     # positive strand
     # chromosome +++++++++++
     #            |    |    |
@@ -282,40 +282,58 @@ class Transcript(object):
     #               |     |
     # so to go from mrna to exon, we must add on the difference
     # between the thick start and thin start from the "start".
+    if debug:
+      print 'mRnaCoordinateToExon(%d)' % p
     if self.chromosomeInterval.strand:
       # positive strand, offset is first exon start to thickStart
       for e in self.exons:
-        if e.start < self.thickStart:
-          if e.stop < self.thickStart:
-            # add the whole exon to the offset
-            p += e.stop - e.start
-          else:
-            # only add the thin part of this exon
-            p += self.thickStart - self.exons[0].start
+        if e.start < self.thickStart and e.stop <= self.thickStart:
+          # add the whole exon to the offset
+          if debug:
+            print 'add whole exon: %d, p=%d' % (e.stop-e.start, p + e.stop-e.start)
+          p += e.stop - e.start
+        elif e.start < self.thickStart and self.thickStart <= e.stop:
+          # only add the thin part of this exon
+          if debug:
+            print 'add partial exon: %d, p=%d' % (self.thickStart-e.start, p + self.thickStart-e.start)
+          p += self.thickStart - e.start
+          break
     else:
       for e in reversed(self.exons):
-        if e.stop > self.thickEnd:
-          if e.start > self.thickEnd:
-            # add the whole exon to the offset
-            p += e.stop - e.start
-          else:
-            # only add the thin part of this exon
-            p += e.stop -  self.thickEnd
+        if self.thickEnd < e.start and self.thickEnd < e.stop:
+          # add the whole exon to the offset
+          p += e.stop - e.start
+        elif e.start < self.thickEnd and self.thickEnd < e.stop:
+          # only add the thin part of this exon
+          p += e.stop -  self.thickEnd
+          break
     return p
 
   def mRnaCoordinateToChromosome(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
     to 0-based chromosome-relative position.
     """
-    return self.exonCoordinateToChromosome(self.mRnaCoordinateToExon(p))
+    assert(p >= 0)
+    assert(len(self.exons))
+    limit = sum([(e.stop - e.start) for e in self.exons])
+    assert(p < limit)
+    # print ''
+    # print 'makeRnaCoordinateToChromosome()'
+    # print '  mRnaCoordinateToExon(%d) = %d' % (p, self.mRnaCoordinateToExon(p))
+    # print '  exonCoordinateToChromosome(%d) = %d' % (self.mRnaCoordinateToExon(p), self.exonCoordinateToChromosome(self.mRnaCoordinateToExon(p)))
+    p = self.mRnaCoordinateToExon(p)
+    if p >= limit:
+      print p, limit, self.name, self.chromosomeInterval.chromosome
+    assert(p < limit)
+    return self.exonCoordinateToChromosome(p)
 
   def exonCoordinateToChromosome(self, p):
     """ Take position P with 0-based exon-relative position and convert it
     to 0-based chromosome-relative position.
     """
     assert(p >= 0)
-    assert(p < sum([(e.stop - e.start) for e in self.exons]))
     assert(len(self.exons))
+    assert(p < sum([(e.stop - e.start) for e in self.exons]))
     c = 0  # cumulative position through exon space
     if not self.chromosomeInterval.strand:
       p = sum([(e.stop - e.start) for e in self.exons]) - 1 - p

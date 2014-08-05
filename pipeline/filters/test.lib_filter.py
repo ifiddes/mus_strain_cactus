@@ -631,7 +631,7 @@ class transcriptIteratorTests(unittest.TestCase):
 
 
 class codonGeneSpaceTests(unittest.TestCase):
-  def test_transcript_mrna_0(self):
+  def test_transcript_getMRna_0(self):
     """ Transcript.getMRna() should return correct information.
     """
     seq = lib_filter.Sequence(
@@ -681,7 +681,7 @@ class codonGeneSpaceTests(unittest.TestCase):
         '128,0,0', 2, '9,9',
         '0,23'))
     transcriptBedLines.append(bedLine(
-        'test_rc', 9, 40, 'gene', 0, '-', 9, 41,
+        'test_rc', 9, 41, 'gene', 0, '-', 9, 41,
         '128,0,0', 2, '9,9',
         '0,23'))
     transcriptBedLines.append(bedLine(
@@ -735,10 +735,14 @@ class codonGeneSpaceTests(unittest.TestCase):
         'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
         '128,0,0', 2, '5,4',
         '0,6'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
     transcriptDetailsBedLines = []
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
+    ##############################
     # positive strand
     #               0     5
     #               |     |
@@ -753,6 +757,7 @@ class codonGeneSpaceTests(unittest.TestCase):
     # between the thick start and thin start from the "start".
     for i in xrange(0, 6):
       self.assertEqual(2 + i, transcripts[0].mRnaCoordinateToExon(i))
+    ##############################
     # negative strand
     #               0     5
     #               |     |
@@ -765,6 +770,18 @@ class codonGeneSpaceTests(unittest.TestCase):
     #              10   5    0
     for i in xrange(0, 6):
       self.assertEqual(2 + i, transcripts[1].mRnaCoordinateToExon(i))
+    ##############################
+    # real data, ENSMUST00000179734.1-0
+    # C382543 0 2237 ENSMUST00000179734.1-0 0 + 618 2074 128,0,0 6 381,20,826,288,74,97 0,392,472,1317,2047,2140
+    for i in xrange(0, 680):
+      # 547 = 381 + 20 + 146
+      self.assertEqual(547 + i, transcripts[2].mRnaCoordinateToExon(i))
+    for i in xrange(0, 288):
+      # 1227 = 381 + 20 + 146 + 680
+      self.assertEqual(1227 + i, transcripts[2].mRnaCoordinateToExon(680 + i))
+    for i in xrange(0, 27):
+      # 1505 = 381 + 20 + 146 + 680 + 288
+      self.assertEqual(1515 + i, transcripts[2].mRnaCoordinateToExon(680 + 288 + i))
 
   def test_mRnaCoordinateToChromosome(self):
     """ mRnaCoordinateToChromosome() must return correct values.
@@ -778,10 +795,14 @@ class codonGeneSpaceTests(unittest.TestCase):
         'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
         '128,0,0', 2, '5,4',
         '0,6'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
     transcriptDetailsBedLines = []
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
+    ##############################
     # positive strand
     #               0     5
     #               |     |
@@ -798,6 +819,7 @@ class codonGeneSpaceTests(unittest.TestCase):
       self.assertEqual(3 + i, transcripts[0].mRnaCoordinateToChromosome(i))
     for i in xrange(2, 6):
       self.assertEqual(4 + i, transcripts[0].mRnaCoordinateToChromosome(i))
+    ##############################
     # negative strand
     #               0     5
     #               |     |
@@ -812,6 +834,18 @@ class codonGeneSpaceTests(unittest.TestCase):
       self.assertEqual(9 - i, transcripts[1].mRnaCoordinateToChromosome(i))
     for i in xrange(2, 6):
       self.assertEqual(6 + 2 - i, transcripts[1].mRnaCoordinateToChromosome(i))
+    ##############################
+    # real data, ENSMUST00000179734.1-0
+    # C382543 0 2237 ENSMUST00000179734.1-0 0 + 618 2074 128,0,0 6 381,20,826,288,74,97 0,392,472,1317,2047,2140
+    for i in xrange(0, 680):
+      # 618 is the max of thick start and exon 3
+      self.assertEqual(618 + i, transcripts[2].mRnaCoordinateToChromosome(i))
+    for i in xrange(0, 288):
+      # 1317 = start of exon 4
+      self.assertEqual(1317 + i, transcripts[2].mRnaCoordinateToChromosome(680 + i))
+    for i in xrange(0, 27):
+      # 2047 is start of exon 5
+      self.assertEqual(2047 + i, transcripts[2].mRnaCoordinateToChromosome(680 + 288 + i))
 
   def test_exonCoordinateToChromosome(self):
     """ exonCoordinateToChromosome() must return correct values.
@@ -825,10 +859,14 @@ class codonGeneSpaceTests(unittest.TestCase):
         'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
         '128,0,0', 2, '9,9',
         '0,23'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
     transcriptDetailsBedLines = []
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
+    ##############################
     # exon coordinates
     #   0       8              9       17
     #   |       |              |       |
@@ -840,6 +878,7 @@ class codonGeneSpaceTests(unittest.TestCase):
       self.assertEqual(2 + i, transcripts[0].exonCoordinateToChromosome(i))
     for i in xrange(9, 18):
       self.assertEqual(25 - 9 + i, transcripts[0].exonCoordinateToChromosome(i))
+    ##############################
     # negative strand
     # exon coordinates
     #   0       8              9       17
@@ -852,6 +891,26 @@ class codonGeneSpaceTests(unittest.TestCase):
       self.assertEqual(40 - i, transcripts[1].exonCoordinateToChromosome(i))
     for i in xrange(9, 18):
       self.assertEqual(17 + 9 - i, transcripts[1].exonCoordinateToChromosome(i))
+    ##############################
+    # real data, ENSMUST00000179734.1-0
+    # C382543 0 2237 ENSMUST00000179734.1-0 0 + 618 2074 128,0,0 6 381,20,826,288,74,97 0,392,472,1317,2047,2140
+    for i in xrange(0, 381):
+      self.assertEqual(i, transcripts[2].exonCoordinateToChromosome(i))
+    for i in xrange(0, 20):
+      # 392 is start of exon 2
+      self.assertEqual(392 + i, transcripts[2].exonCoordinateToChromosome(381 + i))
+    for i in xrange(0, 826):
+      # 472 is start of exon 2
+      self.assertEqual(472 + i, transcripts[2].exonCoordinateToChromosome(381 + 20 + i))
+    for i in xrange(0, 288):
+      # 1317 is start of exon 3
+      self.assertEqual(1317 + i, transcripts[2].exonCoordinateToChromosome(381 + 20 + 826 + i))
+    for i in xrange(0, 74):
+      # 2047 is start of exon 4
+      self.assertEqual(2047 + i, transcripts[2].exonCoordinateToChromosome(381 + 20 + 826 + 288 + i))
+    for i in xrange(0, 97):
+      # 2140 is start of exon 4
+      self.assertEqual(2140 + i, transcripts[2].exonCoordinateToChromosome(381 + 20 + 826 + 288 + 74 + i))
 
   def test_codonToAminoAcid(self):
     """ codonToAminoAcid() needs to return correct amino acids for all codons.
@@ -953,18 +1012,18 @@ class filterTests(unittest.TestCase):
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
-  def dtest_nonsense_0(self):
+  def test_nonsense_0(self):
     """ nonsense should detect nonsense codons.
     """
     makeTempDirParent()
     tmpDir = os.path.abspath(makeTempDir('nonsense'))
-    sequences = {'test_a':
+    sequences = {'test_a':  # has nonsense
                    'NNATGtttCtCGTnnnnnnnnnnAGtaaGAGTAGNNNNNNnnn\n',
-                 'test_rc':
-                   'nnnNNNNNNCTACTCttaCTnnnnnnnnnnACGaGaaaCATNN\n',
-                 'test_ok':
+                 'test_ok':  # is ok
                    'NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn\n',
-                 'test_ok_thickThin':
+                 'test_ok_rc':  # is ok
+                   'nnnNNNNNNCTACTCcccCTnnnnnnnnnnACGaGaaaCATNN\n',
+                 'test_ok_thickThin':  # is ok
                    ('nnnACGTACG'
                     'TACGTACGTA'
                     'ACTACGTACG'
@@ -973,8 +1032,8 @@ class filterTests(unittest.TestCase):
                     'nnnAGGcGGA'
                     'GTAGNNNNNN'
                     'nnn\n'),
-                 'test_ok_rc':
-                   'nnnNNNNNNCTACTCttaCTnnnnnnnnnnACGaGaaaCATNN\n',
+                 'test_rc':  # has nonsense
+                   'nnnNNNNNNCTACTCctaCTnnnnnnnnnnACGaGaaaCATNN\n',
                   }
     seqFile = createSequenceFile(sequences, tmpDir)
     seqDict = lib_filter.getSequences(seqFile)
@@ -984,19 +1043,19 @@ class filterTests(unittest.TestCase):
         '128,0,0', 2, '9,9',
         '0,23'))
     transcriptBedLines.append(bedLine(
-        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
-        '128,0,0', 2, '9,9',
-        '0,23'))
-    transcriptBedLines.append(bedLine(
         'test_ok', 2, 34, 'gene', 0, '+', 2, 34,
         '128,0,0', 2, '9,9',
         '0,23'))
     transcriptBedLines.append(bedLine(
+        'test_ok_rc', 9, 41, 'gene', 0, '-', 9, 41,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
         'test_ok_thickThin', 3, 64, 'gene', 0, '+', 32, 64,
-        '128,0,0', 2, '40,9',
+        '128,0,0', 2, '39,9',
         '0,53'))
     transcriptBedLines.append(bedLine(
-        'test_ok_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        'test_rc', 9, 41, 'gene', 0, '-', 9, 41,
         '128,0,0', 2, '9,9',
         '0,23'))
     transcriptDetailsBedLines = []
@@ -1032,7 +1091,6 @@ class filterTests(unittest.TestCase):
     self.assertFalse(transcriptIsNonsense(writtenTranscripts[2]))
     self.assertFalse(transcriptIsNonsense(writtenTranscripts[3]))
     self.assertTrue(transcriptIsNonsense(writtenTranscripts[4]))
-
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
