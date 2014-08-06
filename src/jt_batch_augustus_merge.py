@@ -56,9 +56,8 @@ class BatchJob(Target):
     for g in gffs:
       seq = os.path.basename(g).split('.')[0]
       seqs.add(seq)
-    for s in seqs:
-      count += 1
-      self.addChildTarget(MergeCall(windows, s, self.args))
+    count = len(seqs)
+    [self.addChildTarget(MergeCall(windows, s, self.args)) for s in seqs]
     logger.debug('There will be %d MergeCall children' % count)
     self.args.batch_start_time = CreateSummaryReport(
       self.args.out_dir, self.args.batch_start_time, count,
@@ -75,40 +74,45 @@ class MergeCall(Target):
     self.seq = seq
     self.args = args
   def run(self):
-    comp_gffs = [self.args.merger]
-    base_gffs = [self.args.merger]
-    comp_outs = [os.path.join(self.args.out_dir, 'merged.%s.gff' % self.seq)]
-    base_outs = [os.path.join(
+    comparative_cmds = [self.args.merger]
+    single_cmds = [self.args.merger]
+    comparative_gffs = []
+    single_gffs = []
+    comparative_outs = [os.path.join(self.args.out_dir,
+                                     'merged.%s.gff' % self.seq)]
+    single_outs = [os.path.join(
         self.args.out_dir, 'merged.%s.base.gff' % self.seq)]
-    comp_errs = [os.path.join(self.args.out_dir, 'merged.%s.stderr' % self.seq)]
-    base_errs = [os.path.join(
+    comparative_errs = [os.path.join(self.args.out_dir,
+                                     'merged.%s.stderr' % self.seq)]
+    single_errs = [os.path.join(
       self.args.out_dir, 'merged.%s.base.stderr' % self.seq)]
     for d in self.dirs:
-      if os.path.exists(os.path.join(d, '%s.gff' % self.seq)):
-        comp_gffs.append(os.path.join(d, '%s.gff' % self.seq))
-      if os.path.exists(os.path.join(d, '%s.base.gff' % self.seq)):
-        base_gffs.append(os.path.join(d, '%s.base.gff' % self.seq))
-    if len(comp_gffs) == 1 and len(base_gffs) == 1:
+      if os.path.exists(os.path.join(d, '%s.cgp.gff' % self.seq)):
+        comparative_gffs.append(os.path.join(d, '%s.cgp.gff' % self.seq))
+      if os.path.exists(os.path.join(d, '%s.mea.gff' % self.seq)):
+        single_gffs.append(os.path.join(d, '%s.mea.gff' % self.seq))
+    if comparative_gffs == [] and single_gffs == []:
       raise RuntimeError('Unable to find any input files!\n')
-    comp_cmds = [comp_gffs]
-    base_cmds = [base_gffs]
-    if len(comp_cmds) > 1:
+    comparative_cmds += comparative_gffs
+    single_cmds += single_gffs
+    if len(comparative_cmds) > 1:
       # comparative prediction mode
-      time_start = lib_run.TimeStamp(self.args.out_dir,
-                                     name='jt_issued_commands.%s.log' % self.seq)
-      lib_run.LogCommand(self.args.out_dir, comp_cmds,
+      time_start = lib_run.TimeStamp(
+        self.args.out_dir, name='jt_issued_commands.%s.log' % self.seq)
+      lib_run.LogCommand(self.args.out_dir, comparative_cmds,
                          name='jt_issued_commands.%s.log' % self.seq)
-      lib_run.RunCommandsSerial(comp_cmds, self.getLocalTempDir(),
-                                out_pipes=comp_outs, err_pipes=comp_errs)
+      lib_run.RunCommandsSerial([comparative_cmds], self.getLocalTempDir(),
+                                out_pipes=comparative_outs,
+                                err_pipes=comparative_errs)
       lib_run.TimeStamp(self.args.out_dir, time_start,
                         name='jt_issued_commands.%s.log' % self.seq)
-    if len(base_cmds) > 1:
+    if len(single_cmds) > 1:
       # single prediction mode
       time_start = lib_run.TimeStamp(self.args.out_dir)
-      lib_run.LogCommand(self.args.out_dir, base_cmds,
+      lib_run.LogCommand(self.args.out_dir, single_cmds,
                          name='jt_issued_commands.%s.log' % self.seq)
-      lib_run.RunCommandsSerial(base_cmds, self.getLocalTempDir(),
-                                out_pipes=base_outs, err_pipes=base_errs)
+      lib_run.RunCommandsSerial([single_cmds], self.getLocalTempDir(),
+                                out_pipes=single_outs, err_pipes=single_errs)
       lib_run.TimeStamp(self.args.out_dir, time_start,
                         name='jt_issued_commands.%s.log' % self.seq)
 
