@@ -252,7 +252,7 @@ class Transcript(object):
                               self.chromosomeInterval.start,
                               self.chromosomeInterval.stop)
 
-  def mrnaCoordinateToCodon(self, p):
+  def mRnaCoordinateToCodon(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
     to 0-based codon position. Here as a convenience method to make code
     more self documenting.
@@ -266,7 +266,7 @@ class Transcript(object):
     #       01201201201
     return p % 3
 
-  def mRnaCoordinateToExon(self, p, debug=False):
+  def mRnaCoordinateToExon(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
     to 0-based exon-relative position.
     """
@@ -282,20 +282,14 @@ class Transcript(object):
     #               |     |
     # so to go from mrna to exon, we must add on the difference
     # between the thick start and thin start from the "start".
-    if debug:
-      print 'mRnaCoordinateToExon(%d)' % p
     if self.chromosomeInterval.strand:
       # positive strand, offset is first exon start to thickStart
       for e in self.exons:
         if e.start < self.thickStart and e.stop <= self.thickStart:
           # add the whole exon to the offset
-          if debug:
-            print 'add whole exon: %d, p=%d' % (e.stop-e.start, p + e.stop-e.start)
           p += e.stop - e.start
         elif e.start < self.thickStart and self.thickStart <= e.stop:
           # only add the thin part of this exon
-          if debug:
-            print 'add partial exon: %d, p=%d' % (self.thickStart-e.start, p + self.thickStart-e.start)
           p += self.thickStart - e.start
           break
     else:
@@ -317,10 +311,6 @@ class Transcript(object):
     assert(len(self.exons))
     limit = sum([(e.stop - e.start) for e in self.exons])
     assert(p < limit)
-    # print ''
-    # print 'makeRnaCoordinateToChromosome()'
-    # print '  mRnaCoordinateToExon(%d) = %d' % (p, self.mRnaCoordinateToExon(p))
-    # print '  exonCoordinateToChromosome(%d) = %d' % (self.mRnaCoordinateToExon(p), self.exonCoordinateToChromosome(self.mRnaCoordinateToExon(p)))
     p = self.mRnaCoordinateToExon(p)
     if p >= limit:
       print p, limit, self.name, self.chromosomeInterval.chromosome
