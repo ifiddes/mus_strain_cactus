@@ -260,7 +260,7 @@ class Transcript(object):
     # (strand irrelevant)
     #       0    5    10
     #       |    |    |
-    # mrna  +++++++++++
+    # mRNA  +++++++++++
     # codon +++++++++++
     #       |  |  |  |
     #       01201201201
@@ -312,8 +312,6 @@ class Transcript(object):
     limit = sum([(e.stop - e.start) for e in self.exons])
     assert(p < limit)
     p = self.mRnaCoordinateToExon(p)
-    if p >= limit:
-      print p, limit, self.name, self.chromosomeInterval.chromosome
     assert(p < limit)
     return self.exonCoordinateToChromosome(p)
 
@@ -336,6 +334,37 @@ class Transcript(object):
         # sorry mario, your position is in another exon
         c += e.stop - e.start
     assert(False)  # we should never get here
+
+  def exonCoordinateToMrna(self, p):
+    """ Take position P with 0-based exon-relative position and convert it
+    to 0-based mRNA-relative position. If position does not exist in mRNA,
+    return None.
+    """
+    if p is None:
+      return None
+    pass
+
+  def chromosomeCoordinateToExon(self, p):
+    """ Take position P with 0-based chromosome-relative position and convert it
+    to 0-based exon-relative position. If position does not exist in
+    exon, return None.
+    """
+    if p is None:
+      return None
+    pass
+
+  def chromosomeCoordinateToMRna(self, p):
+    """ Take position P with 0-based chromosome-relative position and convert it
+    to 0-based mRNA-relative position. If position does not exist in mRNA,
+    return None.
+    """
+    assert(p >= 0)
+    assert(p < self.chromosomeInterval.stop)
+    q = self.chromosomeCoordinateToExon(p)
+    assert(q >=0)
+    assert(q < sum([(e.stop - e.start) for e in self.exons]))
+    return self.exonCoordinateToMRna(q)
+
 
   def getMRna(self, sequence):
     """ Return the mRNA sequence for the transcript (based on the exons) using

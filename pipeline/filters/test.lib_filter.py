@@ -723,7 +723,7 @@ class codonGeneSpaceTests(unittest.TestCase):
     self.assertEqual(len(truth), len(mrna))
     self.assertEqual(truth, mrna)
 
-  def test_mRnaCoordinateToExon(self):
+  def test_transcript_mRnaCoordinateToExon(self):
     """ mRnaCoordinateToExon() must return correct values.
     """
     transcriptBedLines = []
@@ -783,7 +783,7 @@ class codonGeneSpaceTests(unittest.TestCase):
       # 1505 = 381 + 20 + 146 + 680 + 288
       self.assertEqual(1515 + i, transcripts[2].mRnaCoordinateToExon(680 + 288 + i))
 
-  def test_mRnaCoordinateToChromosome(self):
+  def test_transcript_mRnaCoordinateToChromosome(self):
     """ mRnaCoordinateToChromosome() must return correct values.
     """
     transcriptBedLines = []
@@ -847,7 +847,7 @@ class codonGeneSpaceTests(unittest.TestCase):
       # 2047 is start of exon 5
       self.assertEqual(2047 + i, transcripts[2].mRnaCoordinateToChromosome(680 + 288 + i))
 
-  def test_exonCoordinateToChromosome(self):
+  def test_transcript_exonCoordinateToChromosome(self):
     """ exonCoordinateToChromosome() must return correct values.
     """
     transcriptBedLines = []
@@ -912,6 +912,70 @@ class codonGeneSpaceTests(unittest.TestCase):
       # 2140 is start of exon 4
       self.assertEqual(2140 + i, transcripts[2].exonCoordinateToChromosome(381 + 20 + 826 + 288 + 74 + i))
 
+  def test_transcript_exonCoordinateToMRna(self):
+    """ exonCoordinateToMRna() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    self.assertTrue(False)
+
+  def test_transcript_chromosomeCoordinateToExon(self):
+    """ chromosomeCoordinateToExon() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    self.assertTrue(False)
+
+  def test_transcript_chromosomeCoordinateToMRna(self):
+    """ chromosomeCoordinateToMRna() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    self.assertTrue(False)
+
+class codonAminoAcidTests(unittest.TestCase):
   def test_codonToAminoAcid(self):
     """ codonToAminoAcid() needs to return correct amino acids for all codons.
     """
