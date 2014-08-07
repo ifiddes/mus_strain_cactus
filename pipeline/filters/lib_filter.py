@@ -254,8 +254,7 @@ class Transcript(object):
 
   def mRnaCoordinateToCodon(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
-    to 0-based codon position. Here as a convenience method to make code
-    more self documenting.
+    to 0-based (codon, codon position) tuple.
     """
     # (strand irrelevant)
     #       0    5    10
@@ -263,8 +262,24 @@ class Transcript(object):
     # mRNA  +++++++++++
     # codon +++++++++++
     #       |  |  |  |
-    #       01201201201
-    return p % 3
+    #       0,0   2,0
+    assert(p >= 0)
+    assert(p < sum([(e.stop - e.start) for e in self.exons]))  # could be a tighter bound
+    return (int(p / 3), p % 3)
+  def codonCoordinateToMRna(self, p):
+    """ Take (codon, codon position) tuple P and convert it
+    to 0-based mRNA-relative position.
+    """
+    # (strand irrelevant)
+    #       0    5    10
+    #       |    |    |
+    # mRNA  +++++++++++
+    # codon +++++++++++
+    #       |  |  |  |
+    #       0,0   2,0
+    assert(p[0] >= 0)
+    assert(p[1] >= 0)
+    return p[0] * 3 + p[1]
 
   def mRnaCoordinateToExon(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
@@ -303,6 +318,57 @@ class Transcript(object):
           break
     return p
 
+  def exonCoordinateToMRna(self, p):
+    """ Take position P with 0-based exon-relative position and convert it
+    to 0-based mRNA-relative position. If position does not exist in mRNA,
+    return None.
+    """
+    print ''
+    if p is None:
+      return None
+    x = 0  # exon coordinate
+    m = 0  # culumative mrna position
+    for i, e in enumerate(self.exons):
+      length = e.stop - e.start
+      if self.thickEnd < e.stop:
+        length = self.thickEnd - e.start
+      print 'exon %d) p=%d x=%d m=%d length=%d' % (i, p, x, m, length)
+      if e.stop <= self.thickStart:
+        # advance exon until thickStart
+        print 'advance exon until thickStart'
+        x += length
+        continue
+      if e.start < self.thickStart:
+        # exon contains thickStart
+        print 'exon contains thickStart'
+        x_ts = self.thickStart - e.start  # delta to exon position
+        if p < x + length:
+          # exon contains position
+          print 'exon contains position'
+          if p - x - x_ts < 0:
+            # position is before thickStart
+            print 'c) return None'
+            return None
+          print 'd) p=%d x=%d x_ts=%d return %d' % (p, x, x_ts, p - x - x_ts)
+          return p - x - x_ts
+        m += e.stop - self.thickStart
+        x += length
+        continue
+      if p < x + length:
+        # exon contains position
+        print 'b) m=%d p=%d x=%d return %d' % (m, p, x, m + p - x)
+        return m + p - x
+      elif p == x + length:
+        print 'e) None'
+        return None
+      m += length
+      x += length
+      if p > x:
+        return None
+    if p > x:
+      return None
+    assert(False)  # we should never get here
+
   def mRnaCoordinateToChromosome(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
     to 0-based chromosome-relative position.
@@ -319,9 +385,13 @@ class Transcript(object):
     """ Take position P with 0-based exon-relative position and convert it
     to 0-based chromosome-relative position.
     """
-    assert(p >= 0)
+    if p is None:
+      return None
+    if p < 0:
+      return None
+    if p >= sum([(e.stop - e.start) for e in self.exons]):
+      return None
     assert(len(self.exons))
-    assert(p < sum([(e.stop - e.start) for e in self.exons]))
     c = 0  # cumulative position through exon space
     if not self.chromosomeInterval.strand:
       p = sum([(e.stop - e.start) for e in self.exons]) - 1 - p
@@ -335,15 +405,6 @@ class Transcript(object):
         c += e.stop - e.start
     assert(False)  # we should never get here
 
-  def exonCoordinateToMrna(self, p):
-    """ Take position P with 0-based exon-relative position and convert it
-    to 0-based mRNA-relative position. If position does not exist in mRNA,
-    return None.
-    """
-    if p is None:
-      return None
-    pass
-
   def chromosomeCoordinateToExon(self, p):
     """ Take position P with 0-based chromosome-relative position and convert it
     to 0-based exon-relative position. If position does not exist in
@@ -351,7 +412,24 @@ class Transcript(object):
     """
     if p is None:
       return None
-    pass
+    if self.chromosomeInterval.strand:
+      def _stranded(v): return v
+    else:
+      def _stranded(v):
+        return sum([(e.stop - e.start) for e in self.exons]) - 1 - v
+    c = 0  # cumulative position through exon space
+    e_start = self.exons[0].start
+    for e in self.exons:
+      if p < e.start:
+        # p is not in an exon
+        return None
+      if p < e.stop:
+        # the position is within this exon
+        return _stranded(c + p - e.start)
+      else:
+        # sorry mario, your position is in another exon
+        c += e.stop - e.start
+    return None
 
   def chromosomeCoordinateToMRna(self, p):
     """ Take position P with 0-based chromosome-relative position and convert it

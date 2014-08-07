@@ -847,6 +847,152 @@ class codonGeneSpaceTests(unittest.TestCase):
       # 2047 is start of exon 5
       self.assertEqual(2047 + i, transcripts[2].mRnaCoordinateToChromosome(680 + 288 + i))
 
+
+
+  def test_transcript_mRnaCoordinateToCodon(self):
+    """ mRnaCoordinateToCodon() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    values = [(0, (0, 0)),
+              (1, (0, 1)),
+              (2, (0, 2)),
+              (3, (1, 0)),
+              (4, (1, 1)),
+              (5, (1, 2)),
+              (6, (2, 0)),
+              (12, (4, 0)),
+              (13, (4, 1)),
+              (14, (4, 2)),
+              ]
+    t = transcripts[0]
+    for grain, flour in values:
+      self.assertEqual(flour, t.mRnaCoordinateToCodon(grain))
+
+  def test_transcript_codonCoordinateToMRna(self):
+    """ codonCoordinateToMRna() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    values = [(0, (0, 0)),
+              (1, (0, 1)),
+              (2, (0, 2)),
+              (3, (1, 0)),
+              (4, (1, 1)),
+              (5, (1, 2)),
+              (6, (2, 0)),
+              (12, (4, 0)),
+              (13, (4, 1)),
+              (14, (4, 2)),
+              ]
+    t = transcripts[0]
+    for flour, grain in values:
+      self.assertEqual(flour, t.codonCoordinateToMRna(grain))
+
+  def test_transcript_roundTripCodonMRna(self):
+    """ mRnaCordinateToCodon and codonCoordinateToMRna should play nice.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
+        '128,0,0', 2, '9,9',
+        '0,23'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    values = [(0, (0, 0)),
+              (1, (0, 1)),
+              (2, (0, 2)),
+              (3, (1, 0)),
+              (4, (1, 1)),
+              (5, (1, 2)),
+              (6, (2, 0)),
+              (12, (4, 0)),
+              (13, (4, 1)),
+              (14, (4, 2)),
+              ]
+    t = transcripts[0]
+    for flour, grain in values:
+      self.assertEqual(flour, t.codonCoordinateToMRna(grain))
+      self.assertEqual(grain, t.mRnaCoordinateToCodon(flour))
+      self.assertEqual(grain,
+                       t.mRnaCoordinateToCodon(t.codonCoordinateToMRna(grain)))
+      self.assertEqual(flour,
+                       t.codonCoordinateToMRna(t.mRnaCoordinateToCodon(flour)))
+
+  def test_transcript_exonCoordinateToMRna(self):
+    """ exonCoordinateToMRna() must return correct values.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 1, 11, 'gene', 0, '+', 3, 10,
+        '128,0,0', 2, '4,5',
+        '0,5'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
+        '128,0,0', 2, '5,4',
+        '0,6'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    ##############################
+    # positive strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #            |    |    |
+    #            0    5    10
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    t = transcripts[0]
+    print ''
+    for i in xrange(0, 2):
+      self.assertEqual(None, t.exonCoordinateToMRna(i))
+    for i in xrange(2, 8):
+      self.assertEqual(i - 2, t.exonCoordinateToMRna(i))
+    self.assertEqual(None, t.exonCoordinateToMRna(8))
+    ##############################
+    # negative strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #              |    |    |
+    #              10   5    0
+    t = transcripts[1]
+    for i in xrange(0, 2):
+      self.assertEqual(None, t.exonCoordinateToMRna(i))
+    for i in xrange(2, 8):
+      self.assertEqual(i - 2, t.exonCoordinateToMRna(i))
+    self.assertEqual(None, t.exonCoordinateToMRna(8))
+    self.assertEqual(None, t.exonCoordinateToMRna(None))
+
   def test_transcript_exonCoordinateToChromosome(self):
     """ exonCoordinateToChromosome() must return correct values.
     """
@@ -912,32 +1058,165 @@ class codonGeneSpaceTests(unittest.TestCase):
       # 2140 is start of exon 4
       self.assertEqual(2140 + i, transcripts[2].exonCoordinateToChromosome(381 + 20 + 826 + 288 + 74 + i))
 
-  def test_transcript_exonCoordinateToMRna(self):
-    """ exonCoordinateToMRna() must return correct values.
-    """
-    transcriptBedLines = []
-    transcriptBedLines.append(bedLine(
-        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
-        '128,0,0', 2, '9,9',
-        '0,23'))
-    transcriptBedLines.append(bedLine(
-        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
-        '128,0,0', 2, '9,9',
-        '0,23'))
-    transcriptBedLines.append(bedLine(
-        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
-        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
-    transcriptDetailsBedLines = []
-    transcripts = [
-      transcript for transcript in lib_filter.transcriptIterator(
-        transcriptBedLines, transcriptDetailsBedLines)]
-    self.assertTrue(False)
-
   def test_transcript_chromosomeCoordinateToExon(self):
     """ chromosomeCoordinateToExon() must return correct values.
     """
     transcriptBedLines = []
     transcriptBedLines.append(bedLine(
+        'test_a', 1, 11, 'gene', 0, '+', 3, 10,
+        '128,0,0', 2, '4,5',
+        '0,5'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
+        '128,0,0', 2, '5,4',
+        '0,6'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    ##############################
+    # positive strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #            |    |    |
+    #            0    5    10
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    t = transcripts[0]
+    print ''
+    self.assertEqual(None, t.chromosomeCoordinateToExon(0))
+    for i in xrange(1, 5):
+      self.assertEqual(i - 1, t.chromosomeCoordinateToExon(i))
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+    self.assertEqual(None, t.chromosomeCoordinateToExon(5))
+    for i in xrange(6, 11):
+      self.assertEqual(i - 2, t.chromosomeCoordinateToExon(i))
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+    self.assertEqual(None, t.chromosomeCoordinateToExon(11))
+    self.assertEqual(None, t.chromosomeCoordinateToExon(12))
+    ##############################
+    # negative strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #              |    |    |
+    #              10   5    0
+    t = transcripts[1]
+    print ''
+    for i in xrange(0, 2):
+      self.assertEqual(None, t.chromosomeCoordinateToExon(i))
+    for i in xrange(2, 7):
+      self.assertEqual(8 + 2 - i, t.chromosomeCoordinateToExon(i))
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+    self.assertEqual(None, t.chromosomeCoordinateToExon(7))
+    for i in xrange(8, 12):
+      self.assertEqual(8 + 3 - i, t.chromosomeCoordinateToExon(i))
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+    self.assertEqual(None, t.chromosomeCoordinateToExon(12))
+  def test_transcript_roundtripChromosomeExon(self):
+    """ chromosomeCoordinateToExon() and exonCoordinateToChromosome() should play nice.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 1, 11, 'gene', 0, '+', 3, 10,
+        '128,0,0', 2, '4,5',
+        '0,5'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
+        '128,0,0', 2, '5,4',
+        '0,6'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    ##############################
+    # positive strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #            |    |    |
+    #            0    5    10
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    t = transcripts[0]
+    print ''
+    self.assertEqual(None, t.chromosomeCoordinateToExon(0))
+    for i in xrange(1, 5):
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+      self.assertEqual(i,
+                       t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i))
+                       )
+    self.assertEqual(None, t.chromosomeCoordinateToExon(5))
+    for i in xrange(6, 9):
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+      self.assertEqual(t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i)),
+                       t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i))
+                       )
+    for i in xrange(9, 11):
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+    ##############################
+    # negative strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #              |    |    |
+    #              10   5    0
+    t = transcripts[1]
+    print ''
+    for i in xrange(0, 2):
+      self.assertEqual(None, t.chromosomeCoordinateToExon(i))
+    for i in xrange(2, 7):
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+      self.assertEqual(i,
+                       t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i))
+                       )
+    self.assertEqual(None, t.chromosomeCoordinateToExon(7))
+    for i in xrange(8, 12):
+      self.assertEqual(i,
+                       t.exonCoordinateToChromosome(t.chromosomeCoordinateToExon(i))
+                       )
+    self.assertEqual(None, t.chromosomeCoordinateToExon(12))
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
         'test_a', 2, 34, 'gene', 0, '+', 2, 34,
         '128,0,0', 2, '9,9',
         '0,23'))
@@ -952,7 +1231,54 @@ class codonGeneSpaceTests(unittest.TestCase):
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
-    self.assertTrue(False)
+    ##############################
+    # exon coordinates
+    #   0       8              9       17
+    #   |       |              |       |
+    # NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn
+    # |    |    |    |    |    |    |    |    | |
+    # 0    5    10        20        30          42
+    # chromosome coordinates
+    t = transcripts[0]
+    for i in xrange(0, 9):
+      self.assertEqual(i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i)))
+    for i in xrange(9, 18):
+      self.assertEqual(i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i)))
+    ##############################
+    # negative strand
+    # exon coordinates
+    #   0       8              9       17
+    #   |       |              |       |
+    # NNATGtttCtCGTnnnnnnnnnnAGGcGGAGTAGNNNNNNnnn
+    # | |    |    |    |    |    |    |    |    |
+    #   40        30        20        10   5    0
+    # chromosome coordinates
+    t = transcripts[1]
+    for i in xrange(0, 9):
+      self.assertEqual(i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i)))
+    for i in xrange(9, 18):
+      self.assertEqual(i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i)))
+    ##############################
+    # real data, ENSMUST00000179734.1-0
+    # C382543 0 2237 ENSMUST00000179734.1-0 0 + 618 2074 128,0,0 6 381,20,826,288,74,97 0,392,472,1317,2047,2140
+    t = transcripts[2]
+    for i in xrange(0, 381):
+      self.assertEqual(i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(i)))
+    for i in xrange(0, 20):
+      # 392 is start of exon 2
+      self.assertEqual(381 + i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(381 + i)))
+    for i in xrange(0, 826):
+      # 472 is start of exon 2
+      self.assertEqual(381 + 20 + i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(381 + 20 + i)))
+    for i in xrange(0, 288):
+      # 1317 is start of exon 3
+      self.assertEqual(381 + 20 + 826 + i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(381 + 20 + 826 + i)))
+    for i in xrange(0, 74):
+      # 2047 is start of exon 4
+      self.assertEqual(381 + 20 + 826 + 288 + i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(381 + 20 + 826 + 288 + i)))
+    for i in xrange(0, 97):
+      # 2140 is start of exon 4
+      self.assertEqual(381 + 20 + 826 + 288 + 74 + i, t.chromosomeCoordinateToExon(t.exonCoordinateToChromosome(381 + 20 + 826 + 288 + 74 + i)))
 
   def test_transcript_chromosomeCoordinateToMRna(self):
     """ chromosomeCoordinateToMRna() must return correct values.
