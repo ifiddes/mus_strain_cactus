@@ -968,7 +968,6 @@ class codonGeneSpaceTests(unittest.TestCase):
     # so to go from mrna to exon, we must add on the difference
     # between the thick start and thin start from the "start".
     t = transcripts[0]
-    print ''
     for i in xrange(0, 2):
       self.assertEqual(None, t.exonCoordinateToMRna(i))
     for i in xrange(2, 8):
@@ -992,6 +991,62 @@ class codonGeneSpaceTests(unittest.TestCase):
       self.assertEqual(i - 2, t.exonCoordinateToMRna(i))
     self.assertEqual(None, t.exonCoordinateToMRna(8))
     self.assertEqual(None, t.exonCoordinateToMRna(None))
+  def test_transcript_roundtripExonMRna(self):
+    """ exonCoordinateToMRna() and mRnaCoordinateToExon() should play nice.
+    """
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_a', 1, 11, 'gene', 0, '+', 3, 10,
+        '128,0,0', 2, '4,5',
+        '0,5'))
+    transcriptBedLines.append(bedLine(
+        'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
+        '128,0,0', 2, '5,4',
+        '0,6'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    ##############################
+    # positive strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #            |    |    |
+    #            0    5    10
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    t = transcripts[0]
+    for i in xrange(0, 2):
+      self.assertEqual(None, t.mRnaCoordinateToExon(t.exonCoordinateToMRna(i)))
+    for i in xrange(2, 8):
+      self.assertEqual(i, t.mRnaCoordinateToExon(t.exonCoordinateToMRna(i)))
+    self.assertEqual(None, t.mRnaCoordinateToExon(t.exonCoordinateToMRna(8)))
+    ##############################
+    # negative strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #              |    |    |
+    #              10   5    0
+    t = transcripts[1]
+    for i in xrange(0, 2):
+      self.assertEqual(None, t.mRnaCoordinateToExon(t.exonCoordinateToMRna(i)))
+    for i in xrange(2, 8):
+      self.assertEqual(i, t.mRnaCoordinateToExon(t.exonCoordinateToMRna(i)))
+    self.assertEqual(None, t.mRnaCoordinateToExon(t.exonCoordinateToMRna(8)))
+    self.assertEqual(None, t.mRnaCoordinateToExon(t.exonCoordinateToMRna(None)))
 
   def test_transcript_exonCoordinateToChromosome(self):
     """ exonCoordinateToChromosome() must return correct values.
@@ -1091,7 +1146,6 @@ class codonGeneSpaceTests(unittest.TestCase):
     # so to go from mrna to exon, we must add on the difference
     # between the thick start and thin start from the "start".
     t = transcripts[0]
-    print ''
     self.assertEqual(None, t.chromosomeCoordinateToExon(0))
     for i in xrange(1, 5):
       self.assertEqual(i - 1, t.chromosomeCoordinateToExon(i))
@@ -1118,7 +1172,6 @@ class codonGeneSpaceTests(unittest.TestCase):
     #              |    |    |
     #              10   5    0
     t = transcripts[1]
-    print ''
     for i in xrange(0, 2):
       self.assertEqual(None, t.chromosomeCoordinateToExon(i))
     for i in xrange(2, 7):
@@ -1166,7 +1219,6 @@ class codonGeneSpaceTests(unittest.TestCase):
     # so to go from mrna to exon, we must add on the difference
     # between the thick start and thin start from the "start".
     t = transcripts[0]
-    print ''
     self.assertEqual(None, t.chromosomeCoordinateToExon(0))
     for i in xrange(1, 5):
       self.assertEqual(i,
@@ -1199,7 +1251,6 @@ class codonGeneSpaceTests(unittest.TestCase):
     #              |    |    |
     #              10   5    0
     t = transcripts[1]
-    print ''
     for i in xrange(0, 2):
       self.assertEqual(None, t.chromosomeCoordinateToExon(i))
     for i in xrange(2, 7):
@@ -1285,13 +1336,13 @@ class codonGeneSpaceTests(unittest.TestCase):
     """
     transcriptBedLines = []
     transcriptBedLines.append(bedLine(
-        'test_a', 2, 34, 'gene', 0, '+', 2, 34,
-        '128,0,0', 2, '9,9',
-        '0,23'))
+        'test_a', 1, 11, 'gene', 0, '+', 3, 10,
+        '128,0,0', 2, '4,5',
+        '0,5'))
     transcriptBedLines.append(bedLine(
-        'test_rc', 9, 40, 'gene', 0, '-', 9, 40,
-        '128,0,0', 2, '9,9',
-        '0,23'))
+        'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
+        '128,0,0', 2, '5,4',
+        '0,6'))
     transcriptBedLines.append(bedLine(
         'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
         '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
@@ -1299,7 +1350,44 @@ class codonGeneSpaceTests(unittest.TestCase):
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
-    self.assertTrue(False)
+    ##############################
+    # positive strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #            |    |    |
+    #            0    5    10
+    # so to go from mrna to exon, we must add on the difference
+    # between the thick start and thin start from the "start".
+    t = transcripts[0]
+    for i in [0, 1, 2, 5, 10, 11, 12]:
+      self.assertEqual(None, t.chromosomeCoordinateToMRna(i))
+    for i in xrange(3, 5):
+      self.assertEqual(i - 3, t.chromosomeCoordinateToMRna(i))
+    for i in xrange(6, 10):
+      self.assertEqual(i - 4, t.chromosomeCoordinateToMRna(i))
+    ##############################
+    # negative strand
+    #               0     5
+    #               |     |
+    # mrna          ++ ++++
+    # exon        ..++ ++++.  two exons (thick and thin parts)
+    #             |     |  |
+    #             0     5  8
+    # chromosome nnnnnnnnnnnnn
+    #              |    |    |
+    #              10   5    0
+    t = transcripts[1]
+    for i in [0, 1, 2, 7, 10, 11, 12]:
+      self.assertEqual(None, t.chromosomeCoordinateToMRna(i))
+    for i in xrange(3, 7):
+      self.assertEqual(5 + 3 - i, t.chromosomeCoordinateToMRna(i))
+    for i in xrange(8, 10):
+      self.assertEqual(8 + 1 - i, t.chromosomeCoordinateToMRna(i))
 
 class codonAminoAcidTests(unittest.TestCase):
   def test_codonToAminoAcid(self):

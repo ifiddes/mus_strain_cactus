@@ -285,9 +285,9 @@ class Transcript(object):
     """ Take position P with 0-based mRNA-relative position and convert it
     to 0-based exon-relative position.
     """
-    assert(p >= 0)
     assert(len(self.exons))
-    assert(p < sum([(e.stop - e.start) for e in self.exons]))
+    if p < 0: return None
+    if p >= sum([(e.stop - e.start) for e in self.exons]): return None
     # positive strand
     # chromosome +++++++++++
     #            |    |    |
@@ -323,62 +323,45 @@ class Transcript(object):
     to 0-based mRNA-relative position. If position does not exist in mRNA,
     return None.
     """
-    print ''
-    if p is None:
-      return None
+    if p is None: return None
+    # find the thickStart, thickEnd offsets in exon coordinates
+    thickStart, thickEnd = None, None
     x = 0  # exon coordinate
-    m = 0  # culumative mrna position
-    for i, e in enumerate(self.exons):
+    for e in self.exons:
       length = e.stop - e.start
-      if self.thickEnd < e.stop:
-        length = self.thickEnd - e.start
-      print 'exon %d) p=%d x=%d m=%d length=%d' % (i, p, x, m, length)
-      if e.stop <= self.thickStart:
-        # advance exon until thickStart
-        print 'advance exon until thickStart'
-        x += length
-        continue
-      if e.start < self.thickStart:
+      if thickStart is None and e.start >= self.thickStart:
+        # thickStart fell between exons
+        thickStart = x
+      if thickStart is None and e.stop > self.thickStart:
         # exon contains thickStart
-        print 'exon contains thickStart'
-        x_ts = self.thickStart - e.start  # delta to exon position
-        if p < x + length:
-          # exon contains position
-          print 'exon contains position'
-          if p - x - x_ts < 0:
-            # position is before thickStart
-            print 'c) return None'
-            return None
-          print 'd) p=%d x=%d x_ts=%d return %d' % (p, x, x_ts, p - x - x_ts)
-          return p - x - x_ts
-        m += e.stop - self.thickStart
-        x += length
-        continue
-      if p < x + length:
-        # exon contains position
-        print 'b) m=%d p=%d x=%d return %d' % (m, p, x, m + p - x)
-        return m + p - x
-      elif p == x + length:
-        print 'e) None'
-        return None
-      m += length
+        thickStart = x + self.thickStart - e.start
+      if thickEnd is None and e.start >= self.thickEnd:
+        # thickEnd fell between exons
+        thickEnd = x
+      if thickEnd is None and e.stop > self.thickEnd:
+        # exon contains thickEnd
+        thickEnd = x + self.thickEnd - e.start
       x += length
-      if p > x:
-        return None
-    if p > x:
+    if not self.chromosomeInterval.strand:
+      thickStart, thickEnd = thickEnd, thickStart
+      thickStart = x - thickStart
+      thickEnd = x - thickEnd
+    if p < thickStart:
       return None
-    assert(False)  # we should never get here
+    if p >= thickEnd:
+      return None
+    return p - thickStart
 
   def mRnaCoordinateToChromosome(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
     to 0-based chromosome-relative position.
     """
-    assert(p >= 0)
     assert(len(self.exons))
+    if p < 0: return None
     limit = sum([(e.stop - e.start) for e in self.exons])
-    assert(p < limit)
+    if p >= limit: return None
     p = self.mRnaCoordinateToExon(p)
-    assert(p < limit)
+    if p >= limit: return None
     return self.exonCoordinateToChromosome(p)
 
   def exonCoordinateToChromosome(self, p):
@@ -436,13 +419,18 @@ class Transcript(object):
     to 0-based mRNA-relative position. If position does not exist in mRNA,
     return None.
     """
-    assert(p >= 0)
-    assert(p < self.chromosomeInterval.stop)
+    if p < 0:
+      return None
+    if p >= self.chromosomeInterval.stop:
+      return None
     q = self.chromosomeCoordinateToExon(p)
-    assert(q >=0)
-    assert(q < sum([(e.stop - e.start) for e in self.exons]))
+    if q is None:
+      return None
+    if q < 0:
+      return None
+    if q >= sum([(e.stop - e.start) for e in self.exons]):
+      return None
     return self.exonCoordinateToMRna(q)
-
 
   def getMRna(self, sequence):
     """ Return the mRNA sequence for the transcript (based on the exons) using
