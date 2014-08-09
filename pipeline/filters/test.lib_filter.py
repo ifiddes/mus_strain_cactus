@@ -169,6 +169,20 @@ def bedLine(chrom, chromStart, chromEnd, name, score=None, strand=None,
   return s
 
 
+def simplePsl(strand, qSize, qStart, qEnd, tSize, tStart, tEnd,
+              blockSizes, qStarts, tStarts):
+  """ Given a few of the fields, create a PslRow object.
+  """
+  line = ('%d %d %d %d %d %d %d %d %s %s %d %d %d %s %d %d %d %d %s %s %s'
+          % (1, 0, 0, 0, 0, 0, 0, 0, strand, 'query', qSize, qStart, qEnd,
+             'target', tSize, tStart, tEnd, len(blockSizes),
+             ','.join([str(b) for b in blockSizes]),
+             ','.join([str(b) for b in qStarts]),
+             ','.join([str(b) for b in tStarts]),
+             ))
+  return lib_filter.PslRow(line)
+
+
 def numberOfUniqueTranscripts(transcripts):
   """ Given a list of transcripts, return the number of unique names.
   """
@@ -628,6 +642,228 @@ class transcriptIteratorTests(unittest.TestCase):
                       newTranscriptAnnotationCount)
     # cleanup
     self.addCleanup(removeDir, tmpDir)
+
+
+class pslCoordinateSpaceTests(unittest.TestCase):
+  def test_psl_targetCoordinateToQuery(self):
+    """ PSLRow.targetCoordinateToQuery() should return correct information.
+    """
+    psls = []
+    psls.append(simplePsl('+', 10, 0, 10, 10, 0, 10, [10], [0], [0]))
+    psls.append(simplePsl('+', 10, 3, 10, 10, 3, 10, [7], [3], [3]))
+    psls.append(simplePsl('+', 10, 3, 8, 10, 3, 8, [5], [3], [3]))
+    psls.append(simplePsl('+', 10, 3, 8, 10, 1, 6, [5], [3], [1]))
+    psls.append(simplePsl('+', 20, 3, 17, 30, 1, 22,
+                          [5, 3, 2], [3, 8, 15], [1, 10, 20]))
+    psls.append(simplePsl('-', 24, 3, 17, 30, 1, 22,
+                          [5, 3, 2], [3, 8, 15], [1, 10, 20]))
+    ####################
+    #   0        9
+    # q ++++++++++
+    # t ++++++++++
+    #   0        9
+    psl = psls[0]
+    for i in xrange(0, 10):
+      self.assertEqual(i, psl.targetCoordinateToQuery(i))
+    for i in xrange(10, 15):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    ####################
+    #      3     9
+    # q    +++++++
+    # t    +++++++
+    #      3     9
+    psl = psls[1]
+    for i in xrange(0, 3):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(3, 10):
+      self.assertEqual(i, psl.targetCoordinateToQuery(i))
+    for i in xrange(10, 15):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    ####################
+    #      3   7
+    # q    +++++
+    # t    +++++
+    #      3   7
+    psl = psls[2]
+    for i in xrange(0, 3):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(3, 8):
+      self.assertEqual(i, psl.targetCoordinateToQuery(i))
+    for i in xrange(8, 10):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    ####################
+    #      3   7
+    # q    +++++
+    # t    +++++
+    #      1   5
+    psl = psls[3]
+    for i in xrange(0, 1):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(1, 6):
+      self.assertEqual(i + 2, psl.targetCoordinateToQuery(i))
+    for i in xrange(6, 10):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    ####################
+    #      3   7  8 10 15
+    # q    +++++  +++  ++
+    # t    +++++  +++  ++
+    #      1   5  10   20
+    psl = psls[4]
+    for i in xrange(0, 1):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(1, 6):
+      self.assertEqual(i + 2, psl.targetCoordinateToQuery(i))
+    for i in xrange(6, 10):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(10, 13):
+      self.assertEqual(i - 2, psl.targetCoordinateToQuery(i))
+    for i in xrange(13, 20):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(20, 22):
+      self.assertEqual(i - 5, psl.targetCoordinateToQuery(i))
+    for i in xrange(22, 25):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    ####################
+    #   +  21     16   9   5    0
+    #   -  3   7  8 10 15       24
+    # q    -----  ---  -- (24 long)
+    # t    +++++  +++  ++
+    #      1   5  10   20
+    psl = psls[5]
+    for i in xrange(0, 1):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(1, 6):
+      self.assertEqual(22 - i, psl.targetCoordinateToQuery(i))
+    for i in xrange(6, 10):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(10, 13):
+      self.assertEqual(26 - i, psl.targetCoordinateToQuery(i))
+    for i in xrange(13, 20):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(20, 22):
+      self.assertEqual(29 - i, psl.targetCoordinateToQuery(i))
+    for i in xrange(22, 35):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+  def test_psl_queryCoordinateToTarget(self):
+    """ PSLRow.queryCoordinateToTarget() should return correct information.
+    """
+    psls = []
+    psls.append(simplePsl('+', 10, 0, 10, 10, 0, 10, [10], [0], [0]))
+    psls.append(simplePsl('+', 10, 3, 10, 10, 3, 10, [7], [3], [3]))
+    psls.append(simplePsl('+', 10, 3, 8, 10, 3, 8, [5], [3], [3]))
+    psls.append(simplePsl('+', 10, 3, 8, 10, 1, 6, [5], [3], [1]))
+    psls.append(simplePsl('+', 20, 3, 17, 30, 1, 22,
+                          [5, 3, 2], [3, 8, 15], [1, 10, 20]))
+    psls.append(simplePsl('-', 24, 3, 17, 30, 1, 22,
+                          [5, 3, 2], [3, 8, 15], [1, 10, 20]))
+    ####################
+    #   0        9
+    # q ++++++++++
+    # t ++++++++++
+    #   0        9
+    psl = psls[0]
+    for i in xrange(0, 10):
+      self.assertEqual(i, psl.queryCoordinateToTarget(i))
+    for i in xrange(10, 15):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    ####################
+    #      3     9
+    # q    +++++++
+    # t    +++++++
+    #      3     9
+    psl = psls[1]
+    for i in xrange(0, 3):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for i in xrange(3, 10):
+      self.assertEqual(i, psl.queryCoordinateToTarget(i))
+    for i in xrange(10, 15):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    ####################
+    #      3   7
+    # q    +++++
+    # t    +++++
+    #      3   7
+    psl = psls[2]
+    for i in xrange(0, 3):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for i in xrange(3, 8):
+      self.assertEqual(i, psl.queryCoordinateToTarget(i))
+    for i in xrange(8, 10):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    ####################
+    #      3   7
+    # q    +++++
+    # t    +++++
+    #      1   5
+    psl = psls[3]
+    for i in xrange(0, 3):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for i in xrange(3, 8):
+      self.assertEqual(i - 2, psl.queryCoordinateToTarget(i))
+    for i in xrange(8, 10):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    ####################
+    #      3   7  8 10 15
+    # q    +++++  +++  ++
+    # t    +++++  +++  ++
+    #      1   5  10   20
+    psl = psls[4]
+    for i in xrange(0, 3):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for i in xrange(3, 8):
+      self.assertEqual(i - 2, psl.queryCoordinateToTarget(i))
+    for i in xrange(8, 11):
+      self.assertEqual(i + 2, psl.queryCoordinateToTarget(i))
+    for i in xrange(11, 15):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for i in xrange(15, 17):
+      self.assertEqual(i + 5, psl.queryCoordinateToTarget(i))
+    for i in xrange(17, 20):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    ####################
+    #   +  21     16   9   5    0
+    #   -  3   7  8 10 15       24
+    # q    -----  ---  -- (24 long)
+    # t    +++++  +++  ++
+    #      1   5  10   20
+    psl = psls[5]
+    for i in xrange(0, 8):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for i in xrange(8, 10):
+      self.assertEqual(29 - i, psl.queryCoordinateToTarget(i))
+    for i in xrange(10, 14):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for i in xrange(14, 17):
+      self.assertEqual(26 - i, psl.queryCoordinateToTarget(i))
+    for i in xrange(17, 22):
+      self.assertEqual(22 - i, psl.queryCoordinateToTarget(i))
+    for i in xrange(22, 30):
+      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+  def test_psl_roundtrip_queryTarget(self):
+    """ PSLRow.queryCoordinateToTarget() and PSLRow.targetCoordinateToQuery() should play nice.
+    """
+    psls = []
+    psls.append(simplePsl('-', 24, 3, 17, 30, 1, 22,
+                          [5, 3, 2], [3, 8, 15], [1, 10, 20]))
+    ####################
+    #   +  21     16   9   5    0
+    #   -  3   7  8 10 15       24
+    # q    -----  ---  -- (24 long)
+    # t    +++++  +++  ++
+    #      1   5  10   20
+    psl = psls[0]
+    for i in xrange(8, 10):
+      self.assertEqual(i, psl.targetCoordinateToQuery(psl.queryCoordinateToTarget(i)))
+    for i in xrange(14, 17):
+      self.assertEqual(i, psl.targetCoordinateToQuery(psl.queryCoordinateToTarget(i)))
+    for i in xrange(17, 22):
+      self.assertEqual(i, psl.targetCoordinateToQuery(psl.queryCoordinateToTarget(i)))
+    for i in xrange(1, 6):
+      self.assertEqual(i, psl.queryCoordinateToTarget(psl.targetCoordinateToQuery(i)))
+    for i in xrange(10, 13):
+      self.assertEqual(i, psl.queryCoordinateToTarget(psl.targetCoordinateToQuery(i)))
+    for i in xrange(20, 22):
+      self.assertEqual(i, psl.queryCoordinateToTarget(psl.targetCoordinateToQuery(i)))
 
 
 class codonGeneSpaceTests(unittest.TestCase):

@@ -78,13 +78,57 @@ class PslRow(object):
     self.tEnd = int(data[16])
     self.blockCount = int(data[17])
     # lists of ints
-    self.blockSizes = map(int, [x for x in data[18].split(',') if x])
-    self.qStarts = map(int, [x for x in data[19].split(',') if x])
-    self.tStarts = map(int, [x for x in data[20].split(',') if x])
+    self.blockSizes = [int(x) for x in data[18].split(',') if x]
+    self.qStarts = [int(x) for x in data[19].split(',') if x]
+    self.tStarts = [int(x) for x in data[20].split(',') if x]
   def hashkey(self):
     """ return a string to use as dict key.
     """
     return '%s_%s_%d_%d' % (self.qName, self.tName, self.tStart, self.tEnd)
+  def targetCoordinateToQuery(self, p):
+    """ Take position P in target coordinates (positive) and convert it
+    to query coordinates (positive). If P is not in target coordinates throw
+    assert, if P is not in query coordinates return None.
+    """
+    if p < self.tStart: return None
+    if p >= self.tEnd: return None
+    if self.strand not in ['+', '-']:
+      raise RuntimeError('Unanticipated strand: %s' % self.strand)
+    for i, q in enumerate(self.tStarts):
+      if p < q:
+        continue
+      if p >= q + self.blockSizes[i]:
+        continue
+      # p must be in block
+      offset = p - q
+      if self.strand == '+':
+        return self.qStarts[i] + offset
+      else:
+        return self.qSize - (self.qStarts[i] + offset)
+    return None
+  def queryCoordinateToTarget(self, p):
+    """ Take position P in query coordinates (positive) and convert it
+    to target coordinates (positive). If P is not in query coordinates throw
+    assert, if P is not in target coordinates return None.
+    """
+    # this is the easier one to write
+    if self.strand == '+':
+      pass
+    elif self.strand == '-':
+      p = self.qSize - p
+    else:
+      raise RuntimeError('Unanticipated strand: %s' % self.strand)
+    if p < self.qStart: return None
+    if p >= self.qEnd: return None
+    for i, q in enumerate(self.qStarts):
+      if p < q:
+        continue
+      if p >= q + self.blockSizes[i]:
+        continue
+      # p must be in block
+      offset = p - q
+      return self.tStarts[i] + offset
+    return None
 
 
 """The following data types are used for iterating over gene-check-detail and
