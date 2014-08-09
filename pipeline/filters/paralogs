@@ -6,7 +6,7 @@ paralogs
 dent earl, dearl a soe ucsc edu
 
 a filter for the msca project analysis pipeline.
-scans Trascripts and PSLs for transcript alignments located in multiple
+scans Trascripts for transcript alignments located in multiple
 locations and labels them as paralogous.
 """
 import sys
