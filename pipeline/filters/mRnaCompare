@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+"""
+mRnaCompare
+7 August 2014
+
+dent earl, dearl a soe ucsc edu
+
+a filter for the msca project analysis pipeline.
+Compares the mRNA sequences between the genome in question
+and the original species to look for synonymous and
+nonsynonymous mutations.
+"""
+import sys
+import lib_filter
+
+
+def alignmentCoversGene(psl, t, mRNALength):
+  """ Given a PSLRow object and a TRANSCRIPT object, determine
+  if the PSL target range fits with where the MRNA is in the transcript.
+  """
+  if psl.tStart > t.mRnaCoordinateToChromosome(0):
+    return False
+  if psl.tEnd < t.mRnaCoordinateToChromosome(mRNALength - 1):
+    return False
+  return True  # at the moment this isn't so much "True" as "Possibly"
+
+
+def main():
+  args = lib_filter.boilerplateArguments()
+  original_seq_dict = lib_filter.getSequences(args.refSequence, upper=True)
+  seq_dict = lib_filter.getSequences(args.sequence, upper=True)
+  transcripts = lib_filter.getTranscripts(
+    args.geneCheckBed, args.geneCheckBedDetails)
+  original_transcripts = lib_filter.getTranscripts(
+    args.originalGeneCheckBed, args.originalGeneCheckBedDetails)
+  original_transcripts_dict = lib_filter.transcriptListToDict(
+    original_transcripts, noDuplicates=True)
+  alignments = lib_filter.getAlignments(args.alignment)
+  alignments_dict = {}
+  for a in alignments:
+    key = '%s_%s' % (a.qName, a.tName)
+    alignments_dict.setdefault(key, [])
+    alignments_dict[key].append(a)
+  for t in transcripts:
+    ot = original_transcripts_dict[t.name]
+    codon_seq = t.getMRna(seq_dict[t.chromosomeInterval.chromosome])
+    original_codon_seq = ot.getMRna(
+      original_seq_dict[ot.chromosomeInterval.chromosome])
+    if codon_seq == original_codon_seq:
+      continue
+    aa_seq = [lib_filter.codonToAminoAcid(c) for c
+              in lib_filter.readCodons(codon_seq)]
+    if aa_seq == []:
+      continue
+    if aa_seq[0] != 'Met':
+      continue
+    if len(t.exons) == 1:
+      continue
+    if aa_seq[-1] != 'Stop':
+      continue
+    o_aa_seq = [lib_filter.codonToAminoAcid(c) for c
+              in lib_filter.readCodons(original_codon_seq)]
+    key = '%s_%s' % (t.name, t.chromosomeInterval.chromosome)
+    alignments = alignments_dict[key]
+    if len(aa_seq) < 0.1 * len(o_aa_seq):
+      continue
+    if len(alignments) > 1:
+      for a in alignments:
+        if alignmentCoversGene(a, t, len(codon_seq)):
+          print 'yay', a.qName, a.qStart, a.qEnd, a.tName, t.name, a.tStart, a.tEnd, t.chromosomeInterval.chromosome, t.chromosomeInterval.start, t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0), t.mRnaCoordinateToChromosome(len(codon_seq) - 1), len(codon_seq), t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0)
+        else:
+          print 'meh', a.qName, a.qStart, a.qEnd, a.tName, t.name, a.tStart, a.tEnd, t.chromosomeInterval.chromosome, t.chromosomeInterval.start, t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0), t.mRnaCoordinateToChromosome(len(codon_seq) - 1), len(codon_seq), t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0)
+      print '-'.join(aa_seq)
+      print '-'.join(o_aa_seq)
+      sys.exit(1)
+    if len(codon_seq) != len(original_codon_seq):
+      # check for indels
+      for i in xrange(0, len(codon_seq)):
+        pass
+        # a = lib_filter.TranscriptAnnotation(
+        #   lib_filter.ChromosomeInterval(
+        #     t.chromosomeInterval.chromosome, p, p + 3,
+        #     t.chromosomeInterval.strand),
+        #   t.name, [])
+        # a.addLabel('nonsense')
+        # t.annotations.append(a)
+  lib_filter.writeAllBeds(transcripts, args)
+
+
+if __name__ == '__main__':
+  main()
