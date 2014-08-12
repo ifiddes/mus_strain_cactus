@@ -338,6 +338,7 @@ class Transcript(object):
     # codon +++++++++++
     #       |  |  |  |
     #       0,0   2,0
+    if p is None: return None
     assert(p >= 0)
     assert(p < sum([(e.stop - e.start) for e in self.exons]))  # could be a tighter bound
     return (int(p / 3), p % 3)
@@ -353,6 +354,7 @@ class Transcript(object):
     # codon +++++++++++
     #       |  |  |  |
     #       0,0   2,0
+    if p is None: return None
     assert(p[0] >= 0)
     assert(p[1] >= 0)
     return p[0] * 3 + p[1]
@@ -376,6 +378,7 @@ class Transcript(object):
     to 0-based exon-relative position.
     """
     assert(len(self.exons))
+    if p is None: return None
     if p < 0: return None
     if p >= sum([(e.stop - e.start) for e in self.exons]): return None
     # positive strand
@@ -447,6 +450,7 @@ class Transcript(object):
     to 0-based chromosome-relative position.
     """
     assert(len(self.exons))
+    if p is None: return None
     if p < 0: return None
     limit = sum([(e.stop - e.start) for e in self.exons])
     if p >= limit: return None
@@ -458,8 +462,7 @@ class Transcript(object):
     """ Take position P with 0-based exon-relative position and convert it
     to 0-based chromosome-relative position.
     """
-    if p is None:
-      return None
+    if p is None: return None
     if p < 0:
       return None
     if p >= sum([(e.stop - e.start) for e in self.exons]):
@@ -483,8 +486,7 @@ class Transcript(object):
     to 0-based exon-relative position. If position does not exist in
     exon, return None.
     """
-    if p is None:
-      return None
+    if p is None: return None
     if self.chromosomeInterval.strand:
       def _stranded(v): return v
     else:
@@ -509,6 +511,7 @@ class Transcript(object):
     to 0-based mRNA-relative position. If position does not exist in mRNA,
     return None.
     """
+    if p is None: return None
     if p < 0:
       return None
     if p >= self.chromosomeInterval.stop:
