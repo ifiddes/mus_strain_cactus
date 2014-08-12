@@ -42,10 +42,13 @@ def main():
     alignments_dict.setdefault(key, [])
     alignments_dict[key].append(a)
   for t in transcripts:
+    if t.chromosomeInterval.chromosome not in seq_dict: continue
     ot = original_transcripts_dict[t.name]
-    codon_seq = t.getMRna(seq_dict[t.chromosomeInterval.chromosome])
-    original_codon_seq = ot.getMRna(
-      original_seq_dict[ot.chromosomeInterval.chromosome])
+    if ot.chromosomeInterval.chromosome not in original_seq_dict: continue
+    t_seq = seq_dict[t.chromosomeInterval.chromosome]
+    ot_seq = original_seq_dict[ot.chromosomeInterval.chromosome]
+    codon_seq = t.getMRna(t_seq)
+    original_codon_seq = ot.getMRna(ot_seq)
     if codon_seq == original_codon_seq:
       continue
     aa_seq = [lib_filter.codonToAminoAcid(c) for c
@@ -67,11 +70,40 @@ def main():
     if len(alignments) > 1:
       for a in alignments:
         if alignmentCoversGene(a, t, len(codon_seq)):
-          print 'yay', a.qName, a.qStart, a.qEnd, a.tName, t.name, a.tStart, a.tEnd, t.chromosomeInterval.chromosome, t.chromosomeInterval.start, t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0), t.mRnaCoordinateToChromosome(len(codon_seq) - 1), len(codon_seq), t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0)
+          print('yay', ot.chromosomeInterval.chromosome,
+                t.chromosomeInterval.chromosome,
+                 '[', a.strand, a.qName, a.qStart, a.qEnd, ']',
+                '[', a.tName, t.name, a.tStart, a.tEnd, ']',
+                t.chromosomeInterval.chromosome, t.chromosomeInterval.start,
+                t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0),
+                t.mRnaCoordinateToChromosome(len(codon_seq) - 1),
+                len(codon_seq),
+                t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0))
+          for i in xrange(0, len(codon_seq)):
+            p = t.mRnaCoordinateToChromosome(i)
+            q = a.targetCoordinateToQuery(p)
+            p_ot = ot.exonCoordinateToChromosome(q)
+            if p is None or q is None or p_ot is None:
+              continue
+            if t_seq.getNucleotide(p) == ot_seq.getNucleotide(p_ot):
+              continue
+            else:
+              print('Differing nucleotides! t=[%d,%d,%s:%s]%s ot=[%d,%d,%s:%s]%s' %
+                    (p, i, str(t.mRnaCoordinateToCodon(i)),
+                     lib_filter.codonToAminoAcid(codon_seq[t.mRnaCoordinateToCodon(i)[0] * 3:
+                                                             t.mRnaCoordinateToCodon(i)[0] * 3 + 3]),
+                     t_seq.getNucleotide(p),
+                     p_ot, q, str(ot.mRnaCoordinateToCodon(i)),
+                     lib_filter.codonToAminoAcid(original_codon_seq[ot.mRnaCoordinateToCodon(i)[0] * 3:
+                                                                      ot.mRnaCoordinateToCodon(i)[0] * 3 + 3]),
+                     ot_seq.getNucleotide(p_ot),
+                     ))
         else:
-          print 'meh', a.qName, a.qStart, a.qEnd, a.tName, t.name, a.tStart, a.tEnd, t.chromosomeInterval.chromosome, t.chromosomeInterval.start, t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0), t.mRnaCoordinateToChromosome(len(codon_seq) - 1), len(codon_seq), t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0)
-      print '-'.join(aa_seq)
-      print '-'.join(o_aa_seq)
+          print 'meh', ot.chromosomeInterval.chromosome, t.chromosomeInterval.chromosome, a.strand, a.qName, a.qStart, a.qEnd, a.tName, t.name, a.tStart, a.tEnd, t.chromosomeInterval.chromosome, t.chromosomeInterval.start, t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0), t.mRnaCoordinateToChromosome(len(codon_seq) - 1), len(codon_seq), t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0)
+      print '-'.join(aa_seq), len(aa_seq)
+      print '-'.join(o_aa_seq), len(o_aa_seq)
+      print codon_seq, len(codon_seq)
+      print original_codon_seq, len(original_codon_seq)
       sys.exit(1)
     if len(codon_seq) != len(original_codon_seq):
       # check for indels

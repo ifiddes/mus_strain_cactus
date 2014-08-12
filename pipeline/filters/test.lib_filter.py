@@ -760,7 +760,9 @@ class pslCoordinateSpaceTests(unittest.TestCase):
       self.assertEqual(None, psl.targetCoordinateToQuery(i))
     for q, t in [(0, 758), (108, 866), (None, 867),
                  (None, 2562), (109, 2563), (198, 2652), (None, 2653),
-                 (None, 4469), (199, 4470), (682, 4953), (None, 4954)]:
+                 (None, 4469), (199, 4470), (682, 4953), (None, 4954),
+                 (130, 2584)
+                 ]:
       self.assertEqual(q, psl.targetCoordinateToQuery(t))
 
   def test_psl_queryCoordinateToTarget(self):

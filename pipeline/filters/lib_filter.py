@@ -24,6 +24,10 @@ class Sequence(object):
     return self._length
   def setUpper(self):
     self._sequence = self._sequence.upper()
+  def getNucleotide(self, pos):
+    """ return the single nucleotide that resides at 0-based position POS.
+    """
+    return self.sliceSequence(pos, pos + 1)
   def sliceSequence(self, start, stop, relativeStrand='+'):
     """ return the proper slice of the sequence.
     BED format coordinates: 0 based start, stop is exclusive
@@ -88,19 +92,19 @@ class PslRow(object):
   def targetCoordinateToQuery(self, p):
     """ Take position P in target coordinates (positive) and convert it
     to query coordinates (positive). If P is not in target coordinates throw
-    assert, if P is not in query coordinates return None.
+    assert, if P does not map to query coordinates return None.
     """
     if p < self.tStart: return None
     if p >= self.tEnd: return None
     if self.strand not in ['+', '-']:
       raise RuntimeError('Unanticipated strand: %s' % self.strand)
-    for i, q in enumerate(self.tStarts):
-      if p < q:
+    for i, t in enumerate(self.tStarts):
+      if p < t:
         continue
-      if p >= q + self.blockSizes[i]:
+      if p >= t + self.blockSizes[i]:
         continue
       # p must be in block
-      offset = p - q
+      offset = p - t
       if self.strand == '+':
         return self.qStarts[i] + offset
       else:
@@ -109,7 +113,7 @@ class PslRow(object):
   def queryCoordinateToTarget(self, p):
     """ Take position P in query coordinates (positive) and convert it
     to target coordinates (positive). If P is not in query coordinates throw
-    assert, if P is not in target coordinates return None.
+    assert, if P does not map to target coordinates return None.
     """
     # this is the easier one to write
     if self.strand == '+':
@@ -129,6 +133,33 @@ class PslRow(object):
       offset = p - q
       return self.tStarts[i] + offset
     return None
+  def pslLine(self):
+    """ Print out SELF as a psl formatted line.
+    """
+    s = ('%d %d %d %d %d %d %d %d %s %s %d %d %d %s %d %d %d %d %s %s %s' %
+         (self.matches,
+          self.misMatches,
+          self.repMatches,
+          self.nCount,
+          self.qNumInsert,
+          self.qBaseInsert,
+          self.tNumInsert,
+          self.tBaseInsert,
+          self.strand,
+          self.qName,
+          self.qSize,
+          self.qStart,
+          self.qEnd,
+          self.tName,
+          self.tSize,
+          self.tStart,
+          self.tEnd,
+          self.blockCount,
+          # lists of ints
+          ','.join([str(b) for b in self.blockSizes]),
+          ','.join([str(b) for b in self.qStarts]),
+          ','.join([str(b) for b in self.tStarts])))
+    print s
 
 
 """The following data types are used for iterating over gene-check-detail and
@@ -502,6 +533,12 @@ class Transcript(object):
     if not self.chromosomeInterval.strand:
       s = reverseComplement(s)
     return s
+
+  def getMRnaCodon(i, sequence):
+    """ Given a nonnegative number I, and a SEQUENCE object,
+    return the three nucleotide codon from the mRNA.
+    """
+    return self.getMRna(sequence)[i * 3:i * 3 + 3]
 
   def bedString(self):
     """ Write a transcript object to the given file.
