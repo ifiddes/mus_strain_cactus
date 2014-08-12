@@ -341,6 +341,7 @@ class Transcript(object):
     assert(p >= 0)
     assert(p < sum([(e.stop - e.start) for e in self.exons]))  # could be a tighter bound
     return (int(p / 3), p % 3)
+
   def codonCoordinateToMRna(self, p):
     """ Take (codon, codon position) tuple P and convert it
     to 0-based mRNA-relative position.
@@ -355,6 +356,20 @@ class Transcript(object):
     assert(p[0] >= 0)
     assert(p[1] >= 0)
     return p[0] * 3 + p[1]
+
+  def codonCoordinateToChromosome(self, p):
+    """ Take (codon, codon position) tuple P and convert it
+    to 0-based chromosome-relative position.
+    """
+    m = self.codonCoordinateToMRna(p)
+    return self.mRnaCoordinateToChromosome(m)
+
+  def chromosomeCoordinateToCodon(self, p):
+    """ Take 0-based chromosome-relative P and convert it
+    to (codon, codon position) tuple position.
+    """
+    m = self.chromosomeCoordinateToMRna(p)
+    return self.mRnaCoordinateToCodon(m)
 
   def mRnaCoordinateToExon(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
