@@ -25,6 +25,36 @@ def alignmentCoversGene(psl, t, mRNALength):
   return True  # at the moment this isn't so much "True" as "Possibly"
 
 
+def getCodon(transcript, codon_seq, codon_tup):
+  """ Given a TRANSCRIPT, CODON_SEQ string, and CODON_TUP a tuple containing
+  (codonNumber, withinCodonIndex), return the 3 nucleotide sequence
+  corresponding to the CODON_TUP
+  """
+
+  return codon_seq[codon_tup[0] * 3:codon_tup[0] * 3 + 3]
+
+
+def recordOutOfFrame(t, p, outOfFrameStart, codon_seq, codon_tu,
+                     numOOF, numIndels):
+  """ Having discovered the end of an outOfFrame
+  """
+  start = min(outOfFrameStart, p)
+  stop = max(outOfFrameStart, p) + 1
+  annot = lib_filter.TranscriptAnnotation(
+    lib_filter.ChromosomeInterval(
+      t.chromosomeInterval.chromosome,
+      start,
+      stop,
+      t.chromosomeInterval.strand),
+    t.name, [])
+  annot.addLabel('outOfFrame')
+  # number of out of frame codons wrt transcript T
+  numOOF = 1 + t.chromosomeCoordinateToCodon(stop - 1)[0] - t.chromosomeCoordinateToCodon(start)[0]
+  annot.addLabel('outOfFrameCodons_%d' % numOOF)
+  # number of frame shifting indels in OT
+  annot.addLabel('frameShiftingIndels_%d' % numIndels)
+
+
 def main():
   args = lib_filter.boilerplateArguments()
   original_seq_dict = lib_filter.getSequences(args.refSequence, upper=True)
@@ -67,55 +97,76 @@ def main():
     alignments = alignments_dict[key]
     if len(aa_seq) < 0.1 * len(o_aa_seq):
       continue
-    if len(alignments) > 1:
-      for a in alignments:
-        if alignmentCoversGene(a, t, len(codon_seq)):
-          print('yay', ot.chromosomeInterval.chromosome,
-                t.chromosomeInterval.chromosome,
-                 '[', a.strand, a.qName, a.qStart, a.qEnd, ']',
-                '[', a.tName, t.name, a.tStart, a.tEnd, ']',
-                t.chromosomeInterval.chromosome, t.chromosomeInterval.start,
-                t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0),
-                t.mRnaCoordinateToChromosome(len(codon_seq) - 1),
-                len(codon_seq),
-                t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0))
-          for i in xrange(0, len(codon_seq)):
-            p = t.mRnaCoordinateToChromosome(i)
-            q = a.targetCoordinateToQuery(p)
-            p_ot = ot.exonCoordinateToChromosome(q)
-            if p is None or q is None or p_ot is None:
-              continue
-            if t_seq.getNucleotide(p) == ot_seq.getNucleotide(p_ot):
-              continue
-            else:
-              print('Differing nucleotides! t=[%d,%d,%s:%s]%s ot=[%d,%d,%s:%s]%s' %
-                    (p, i, str(t.mRnaCoordinateToCodon(i)),
-                     lib_filter.codonToAminoAcid(codon_seq[t.mRnaCoordinateToCodon(i)[0] * 3:
-                                                             t.mRnaCoordinateToCodon(i)[0] * 3 + 3]),
-                     t_seq.getNucleotide(p),
-                     p_ot, q, str(ot.mRnaCoordinateToCodon(i)),
-                     lib_filter.codonToAminoAcid(original_codon_seq[ot.mRnaCoordinateToCodon(i)[0] * 3:
-                                                                      ot.mRnaCoordinateToCodon(i)[0] * 3 + 3]),
-                     ot_seq.getNucleotide(p_ot),
-                     ))
-        else:
-          print 'meh', ot.chromosomeInterval.chromosome, t.chromosomeInterval.chromosome, a.strand, a.qName, a.qStart, a.qEnd, a.tName, t.name, a.tStart, a.tEnd, t.chromosomeInterval.chromosome, t.chromosomeInterval.start, t.chromosomeInterval.stop, t.mRnaCoordinateToChromosome(0), t.mRnaCoordinateToChromosome(len(codon_seq) - 1), len(codon_seq), t.mRnaCoordinateToChromosome(len(codon_seq) - 1) - t.mRnaCoordinateToChromosome(0)
-      print '-'.join(aa_seq), len(aa_seq)
-      print '-'.join(o_aa_seq), len(o_aa_seq)
-      print codon_seq, len(codon_seq)
-      print original_codon_seq, len(original_codon_seq)
-      sys.exit(1)
-    if len(codon_seq) != len(original_codon_seq):
-      # check for indels
+    mutated_codons = set()
+    for a in alignments:
+      if not alignmentCoversGene(a, t, len(codon_seq)):
+        # if the psl does not cover the gene in question skip it
+        continue
+      outOfFrame = False  # keep track of when we go out and come into frame.
+      outOfFrameStart = None
+      outOfFrameCount = 0
+      prevPositionWasNone = False  # keep track of the number of indels
+      numIndels = 0
       for i in xrange(0, len(codon_seq)):
-        pass
-        # a = lib_filter.TranscriptAnnotation(
-        #   lib_filter.ChromosomeInterval(
-        #     t.chromosomeInterval.chromosome, p, p + 3,
-        #     t.chromosomeInterval.strand),
-        #   t.name, [])
-        # a.addLabel('nonsense')
-        # t.annotations.append(a)
+        p = t.mRnaCoordinateToChromosome(i)
+        q = a.targetCoordinateToQuery(p)
+        p_ot = ot.exonCoordinateToChromosome(q)
+        if p is None or q is None or p_ot is None:
+          # if any of the positions dont map, skip this position
+          if p_ot is None and not prevPositionWasNone:
+            prevPositionWasNone = True
+            numIndels += 1
+          continue
+        prevPositionWasNone = False
+        if t_seq.getNucleotide(p) == ot_seq.getNucleotide(p_ot):
+          # if the nucleotides are the same, skip this position
+          continue
+        else:
+          # these nucleotides are different, analyze and report
+          codon_tup = t.mRnaCoordinateToCodon(i)  # codon tuple
+          o_codon_tup = ot.chromosomeCoordinateToCodon(p_ot)
+          if codon_tup[1] != o_codon_tup[1] and not outOfFrame:
+            # we just went out of frame
+            outOfFrame = True
+            outOfFrameStart = p
+            outOfFrameCount += 1
+          elif codon_tup[1] == o_codon_tup[1] and outOfFrame:
+            # we just came back into frame
+            outOfFrame = False
+            recordOutOfFrame(t, p, outOfFrameStart, codon_seq, codon_tu, numOOF, numIndels)
+            numIndels = 0
+          if outOfFrame:
+            continue
+          codon = getCodon(t, codon_seq, codon_tup)
+          o_codon = getCodon(ot, original_codon_seq, o_codon_tup)
+          aa = lib_filter.codonToAminoAcid(codon)  # amino acid
+          o_aa = lib_filter.codonToAminoAcid(o_codon)  # original amino acid
+          if codon_tup in mutated_codons:
+            continue
+          mutated_codons.add(codon_tup)
+          annot = lib_filter.TranscriptAnnotation(
+            lib_filter.ChromosomeInterval(
+              t.chromosomeInterval.chromosome,
+              t.codonCoordinateToChromosome(codon_tup),
+              t.codonCoordinateToChromosome(codon_tup) + 3,
+              t.chromosomeInterval.strand),
+            t.name, [])
+          if aa != o_aa:
+            annot.addLabel('nonsynon')
+            # me first <-> then you
+            annot.addLabel('%s.%s<->%s.%s' %
+                           (codon, aa, o_codon, o_aa))
+          else:
+            annot.addLabel('synon')
+            # me first <-> then you
+            annot.addLabel('%s<->%s' % (codon, o_codon))
+          t.annotations.append(annot)
+      if outOfFrame:
+        # was still out of frame at the end of the mRna
+        outOfFrame = False
+        recordOutOfFrame(
+          t, p, outOfFrameStart, codon_seq, codon_tup, numOOF, numIndels)
+        numIndels = 0
   lib_filter.writeAllBeds(transcripts, args)
 
 
