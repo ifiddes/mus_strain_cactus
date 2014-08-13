@@ -131,10 +131,10 @@ def handleReturnCode(retcode, cmd):
                          '%s retcode:%d' %(' '.join(cmd), retcode))
 
 
-def createSequenceFile(sequences, tmpDir):
+def createSequenceFile(sequences, tmpDir, filename='seq.fa'):
   """ given a dict (key is name, value is sequence) return path to temp file.
   """
-  seqfile = os.path.join(tmpDir, 'seq.fa')
+  seqfile = os.path.join(tmpDir, filename)
   with open(seqfile, 'w') as f:
     for name in sequences:
       f.write('>%s\n%s' % (name, sequences[name]))
@@ -147,8 +147,21 @@ def createAlignmentFile(alignments, tmpDir):
   alnfile = os.path.join(tmpDir, 'aln.psl')
   with open(alnfile, 'w') as f:
     for a in alignments:
-      f.write('%s\n' % a)
+      if isinstance(a, str):
+        f.write('%s\n' % a)
+      elif isinstance(a, lib_filter.PslRow):
+        f.write('%s\n' % a.pslString())
   return alnfile
+
+
+def createBedFile(bedLines, name, tmpDir):
+  """ given a list of string bed lines, return path to a temp file.
+  """
+  bedFile = os.path.join(tmpDir, name)
+  with open(bedFile, 'w') as f:
+    for b in bedLines:
+        f.write('%s\n' % b)
+  return bedFile
 
 
 def bedLine(chrom, chromStart, chromEnd, name, score=None, strand=None,
@@ -170,18 +183,17 @@ def bedLine(chrom, chromStart, chromEnd, name, score=None, strand=None,
 
 
 def simplePsl(strand, qSize, qStart, qEnd, tSize, tStart, tEnd,
-              blockSizes, qStarts, tStarts):
+              blockSizes, qStarts, tStarts, qName='query', tName='target'):
   """ Given a few of the fields, create a PslRow object.
   """
   line = ('%d %d %d %d %d %d %d %d %s %s %d %d %d %s %d %d %d %d %s %s %s'
-          % (1, 0, 0, 0, 0, 0, 0, 0, strand, 'query', qSize, qStart, qEnd,
-             'target', tSize, tStart, tEnd, len(blockSizes),
+          % (1, 0, 0, 0, 0, 0, 0, 0, strand, qName, qSize, qStart, qEnd,
+             tName, tSize, tStart, tEnd, len(blockSizes),
              ','.join([str(b) for b in blockSizes]),
              ','.join([str(b) for b in qStarts]),
              ','.join([str(b) for b in tStarts]),
              ))
   return lib_filter.PslRow(line)
-
 
 def numberOfUniqueTranscripts(transcripts):
   """ Given a list of transcripts, return the number of unique names.
@@ -200,6 +212,101 @@ def transcriptIsNonsense(t):
     if 'nonsense' in a.labels:
       return True
   return False
+
+
+def transcriptHasOutOfFrame(t):
+  """ check to see if the annotations contain an outOfFrame label
+  """
+  for a in t.annotations:
+    if 'outOfFrame' in a.labels:
+      return True
+  return False
+
+
+def outOfFrameCodonsThis(t):
+  """ report the number of outOfFrameCodonsThis
+  """
+  for a in t.annotations:
+    if 'outOfFrame' in a.labels:
+      for l in a.labels:
+        if l.startswith('outOfFrameCodonsThis'):
+          return int(l.split('_')[1])
+  return 0
+
+
+def outOfFrameCodonsThem(t):
+  """ report the number of outOfFrameCodonsThem
+  """
+  for a in t.annotations:
+    if 'outOfFrame' in a.labels:
+      for l in a.labels:
+        if l.startswith('outOfFrameCodonsThem'):
+          return int(l.split('_')[1])
+  return 0
+
+
+def frameShiftingIndels(t):
+  """ report the number of frameShiftingIndels
+  """
+  for a in t.annotations:
+    if 'outOfFrame' in a.labels:
+      for l in a.labels:
+        if l.startswith('frameShiftingIndels'):
+          return int(l.split('_')[1])
+  return 0
+
+
+def transcriptHasMutations(t):
+  """ check to see if the annotations contain mutation labels
+  """
+  for a in t.annotations:
+    if 'nonsynon' in a.labels:
+      return True
+    if 'synon' in a.labels:
+      return True
+  return False
+
+
+def nonSynonCount(t):
+  """ count the number of nonsynon labels in the transcript annotations.
+  """
+  count = 0
+  for a in t.annotations:
+    for l in a.labels:
+      if l == 'nonsynon':
+        count += 1
+  return count
+
+
+def synonCount(t):
+  """ count the number of synon labels in the transcript annotations.
+  """
+  count = 0
+  for a in t.annotations:
+    for l in a.labels:
+      if l == 'synon':
+        count += 1
+  return count
+
+
+def firstNonSynon(t):
+  """ return the of the first nonsynon label encountered
+  """
+  for a in t.annotations:
+    for i, l in enumerate(a.labels):
+      if l == 'nonsynon':
+        return a.labels[i + 1]
+  return ''
+
+
+def firstSynon(t):
+  """ return the of the first synon label encountered
+  """
+  for a in t.annotations:
+    for i, l in enumerate(a.labels):
+      if l == 'synon':
+        return a.labels[i + 1]
+  return ''
 
 
 class sequenceGetterTests(unittest.TestCase):
@@ -1677,7 +1784,7 @@ class codonAminoAcidTests(unittest.TestCase):
                   ('Asn', 'AAT,AAC,AAY'),
                   ('Asp', 'GAT,GAC,GAY'),
                   ('Cys', 'TGT,TGC,TGY'),
-                  ('Gin', 'CAA,CAG,CAR'),
+                  ('Gln', 'CAA,CAG,CAR'),
                   ('Glu', 'GAA,GAG,GAR'),
                   ('Gly', 'GGT,GGC,GGA,GGG,GGN'),
                   ('His', 'CAT,CAC,CAY'),
@@ -1846,6 +1953,159 @@ class filterTests(unittest.TestCase):
     self.assertFalse(transcriptIsNonsense(writtenTranscripts[2]))
     self.assertFalse(transcriptIsNonsense(writtenTranscripts[3]))
     self.assertTrue(transcriptIsNonsense(writtenTranscripts[4]))
+    # cleanup
+    self.addCleanup(removeDir, tmpDir)
+
+  def test_mRnaCompare_0(self):
+    """ mRnaCompare should detect outOfFrame mRNAs.
+    """
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('mRnaCompare_0'))
+    sequences = {'test_0_nr':  # non-ref
+                   'ATGATCCAATGA\n',  # 12
+                 }
+    refSequences = {'test_0_r':  # ref
+                    'ATGACCTCCAAATGA\n'  # 15
+                    }
+    seqFile = createSequenceFile(sequences, tmpDir)
+    seqDict = lib_filter.getSequences(seqFile)
+    refSeqFile = createSequenceFile(refSequences, tmpDir, filename='refSeq.fa')
+    refSeqDict = lib_filter.getSequences(refSeqFile)
+    ##########
+    #            0  3  6 8 10  14
+    # ref        ATGACCTCCAAATGA  query
+    #            |||         |||  in-frame codon alignments
+    # non ref    ATGA--TCC-AATGA  target
+    #            0  3  4 6 7   11
+    #               =========     out of frame
+    # number of out of frame codons wrt target: 2
+    # number of out of frame codons wrt query: 3
+    # number of frame shifting indels: 2
+    pslLines = [simplePsl('+', 15, 0, 15, 12, 0, 12,
+                          [4, 3, 5], [0, 6, 10], [0, 4, 7],
+                          qName='ensmust0', tName='test_0_nr')
+                ]
+    pslFile = createAlignmentFile(pslLines, tmpDir)
+    refTranscriptBedLines = []
+    refTranscriptBedLines.append(bedLine(
+        'test_0_r', 0, 15, 'ensmust0', 0, '+', 0, 15,
+        '128,0,0', 1, '15', '0'))
+    createBedFile(refTranscriptBedLines, 'ref.bed', tmpDir)
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_0_nr', 0, 12, 'ensmust0', 0, '+', 0, 12,
+        '128,0,0', 1, '12', '0'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # run mRnaCompare
+    with open(os.path.join(tmpDir, 'dummy.txt'), 'w') as f:
+      f.write('dummy\n')
+    with open(os.path.join(tmpDir, 'empty.txt'), 'w') as f:
+      f.write('')
+    originalGeneCheckBed = os.path.join(tmpDir, 'ref.bed')
+    originalGeneCheckBedDetails = os.path.join(tmpDir, 'empty.txt')
+    alignment = os.path.join(tmpDir, 'aln.psl')
+    sequence = os.path.join(tmpDir, 'seq.fa')
+    referenceSequence = os.path.join(tmpDir, 'refSeq.fa')
+    chromSizes = os.path.join(tmpDir, 'dummy.txt')
+    metaFilter.makeCall(
+      'mRnaCompare', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
+      originalGeneCheckBed, originalGeneCheckBedDetails,
+      alignment, sequence, referenceSequence, chromSizes, tmpDir)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(
+      os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
+    # test equality.
+    self.assertTrue(transcriptHasOutOfFrame(writtenTranscripts[0]))
+    self.assertEqual(2, outOfFrameCodonsThis(writtenTranscripts[0]))
+    self.assertEqual(3, outOfFrameCodonsThem(writtenTranscripts[0]))
+    self.assertEqual(2, frameShiftingIndels(writtenTranscripts[0]))
+    # cleanup
+    self.addCleanup(removeDir, tmpDir)
+
+  def d____test_mRnaCompare_1(self):
+    """ mRnaCompare should detect outOfFrame mRNAs.
+    """
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('mRnaCompare_1'))
+    sequences = {'test_0_nr':  # non-ref / target
+                   'ATGATTAAATGA\n',  # 12
+                 }
+    refSequences = {'test_0_r':  # ref / query
+                    'ATGATCCAATGA\n'  # 12
+                    }
+    seqFile = createSequenceFile(sequences, tmpDir)
+    seqDict = lib_filter.getSequences(seqFile)
+    refSeqFile = createSequenceFile(refSequences, tmpDir, filename='refSeq.fa')
+    refSeqDict = lib_filter.getSequences(refSeqFile)
+    ##########
+    #            0          11
+    # ref        ATGATCCAATGA  query
+    #            |||||**|||||  in-frame codon alignments
+    # non ref    ATGATTAAATGA  target
+    #            0          11
+    #                  ***    nonsynon AAA.Lys<->CAA.Gln
+    #               ===       synon    ATT.Ile<->ATC.Ile
+    # number of out of frame codons wrt target: 0
+    # number of frame shifting indels: 0
+    pslLines = [simplePsl('+', 12, 0, 12, 12, 0, 12,
+                          [12], [0], [0],
+                          qName='ensmust0', tName='test_0_nr')
+                ]
+    pslFile = createAlignmentFile(pslLines, tmpDir)
+    refTranscriptBedLines = []
+    refTranscriptBedLines.append(bedLine(
+        'test_0_r', 0, 12, 'ensmust0', 0, '+', 0, 12,
+        '128,0,0', 1, '12', '0'))
+    createBedFile(refTranscriptBedLines, 'ref.bed', tmpDir)
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_0_nr', 0, 12, 'ensmust0', 0, '+', 0, 12,
+        '128,0,0', 1, '12', '0'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # run mRnaCompare
+    with open(os.path.join(tmpDir, 'dummy.txt'), 'w') as f:
+      f.write('dummy\n')
+    with open(os.path.join(tmpDir, 'empty.txt'), 'w') as f:
+      f.write('')
+    originalGeneCheckBed = os.path.join(tmpDir, 'ref.bed')
+    originalGeneCheckBedDetails = os.path.join(tmpDir, 'empty.txt')
+    alignment = os.path.join(tmpDir, 'aln.psl')
+    sequence = os.path.join(tmpDir, 'seq.fa')
+    referenceSequence = os.path.join(tmpDir, 'refSeq.fa')
+    chromSizes = os.path.join(tmpDir, 'dummy.txt')
+    metaFilter.makeCall(
+      'mRnaCompare', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
+      originalGeneCheckBed, originalGeneCheckBedDetails,
+      alignment, sequence, referenceSequence, chromSizes, tmpDir)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(
+      os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
+    # test equality.
+    self.assertTrue(transcriptHasMutations(writtenTranscripts[0]))
+    self.assertEqual(1, nonSynonCount(writtenTranscripts[0]))
+    self.assertEqual(1, synonCount(writtenTranscripts[0]))
+    self.assertEqual('AAA.Lys<->CAA.Gln', firstNonSynon(writtenTranscripts[0]))
+    self.assertEqual('ATT.Ile<->ATC.Ile', firstSynon(writtenTranscripts[0]))
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
