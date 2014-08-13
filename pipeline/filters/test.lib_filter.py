@@ -1207,6 +1207,12 @@ class codonGeneSpaceTests(unittest.TestCase):
     transcriptBedLines.append(bedLine(
         'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
         '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptBedLines.append(bedLine(
+        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
+        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
+    transcriptBedLines.append(bedLine(
+        '4', 42458750, 42459176, 'ENSMUST00000098118.1', 0, '-', 42458750,
+        42459176, '0,128,0', 1, '426', '0'))
     transcriptDetailsBedLines = []
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
@@ -1248,6 +1254,23 @@ class codonGeneSpaceTests(unittest.TestCase):
       self.assertEqual(i - 2, t.exonCoordinateToMRna(i))
     self.assertEqual(None, t.exonCoordinateToMRna(8))
     self.assertEqual(None, t.exonCoordinateToMRna(None))
+    ##############################
+    # 4 42458750  42459176  ENSMUST00000098118.1  0 - 42458750  42459176  0,128,0 1 426 0
+    # negative strand
+    #              [0     426)
+    #               |     |
+    # mrna          +++++++
+    # exon          +++++++
+    #               |     |
+    #              [0     426)
+    # chromosome nnnnnnnnnnnnn
+    #               |     |
+    #       (42459176     42458750]
+    t = transcripts[4]
+    for i in xrange(0, 426):
+      self.assertEqual(i, t.exonCoordinateToMRna(i))
+    for i in xrange(426, 430):
+      self.assertEqual(None, t.exonCoordinateToMRna(i))
   def test_transcript_roundtripExonMRna(self):
     """ exonCoordinateToMRna() and mRnaCoordinateToExon() should play nice.
     """
@@ -1260,9 +1283,6 @@ class codonGeneSpaceTests(unittest.TestCase):
         'test_rc', 2, 12, 'gene', 0, '-', 3, 10,
         '128,0,0', 2, '5,4',
         '0,6'))
-    transcriptBedLines.append(bedLine(
-        'C382543', 0, 2237, 'ENSMUST00000179734.1-0', 0, '+', 618, 2074,
-        '128,0,0', 6, '381,20,826,288,74,97', '0,392,472,1317,2047,2140'))
     transcriptDetailsBedLines = []
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(

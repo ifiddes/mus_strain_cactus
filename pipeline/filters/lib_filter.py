@@ -418,32 +418,32 @@ class Transcript(object):
     """
     if p is None: return None
     # find the thickStart, thickEnd offsets in exon coordinates
-    thickStart, thickEnd = None, None
+    exonThickStart, exonThickEnd = None, None
     x = 0  # exon coordinate
     for e in self.exons:
       length = e.stop - e.start
-      if thickStart is None and e.start >= self.thickStart:
+      if exonThickStart is None and e.start >= self.thickStart:
         # thickStart fell between exons
-        thickStart = x
-      if thickStart is None and e.stop > self.thickStart:
+        exonThickStart = x
+      if exonThickStart is None and e.stop > self.thickStart:
         # exon contains thickStart
-        thickStart = x + self.thickStart - e.start
-      if thickEnd is None and e.start >= self.thickEnd:
+        exonThickStart = x + self.thickStart - e.start
+      if exonThickEnd is None and e.start >= self.thickEnd:
         # thickEnd fell between exons
-        thickEnd = x
-      if thickEnd is None and e.stop > self.thickEnd:
+        exonThickEnd = x
+      if exonThickEnd is None and e.stop >= self.thickEnd:
         # exon contains thickEnd
-        thickEnd = x + self.thickEnd - e.start
+        exonThickEnd = x + self.thickEnd - e.start
       x += length
     if not self.chromosomeInterval.strand:
-      thickStart, thickEnd = thickEnd, thickStart
-      thickStart = x - thickStart
-      thickEnd = x - thickEnd
-    if p < thickStart:
+      exonThickStart, exonThickEnd = exonThickEnd, exonThickStart
+      exonThickStart = x - exonThickStart
+      exonThickEnd = x - exonThickEnd
+    if p < exonThickStart:
       return None
-    if p >= thickEnd:
+    if p >= exonThickEnd:
       return None
-    return p - thickStart
+    return p - exonThickStart
 
   def mRnaCoordinateToChromosome(self, p):
     """ Take position P with 0-based mRNA-relative position and convert it
