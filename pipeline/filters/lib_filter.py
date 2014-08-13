@@ -133,8 +133,8 @@ class PslRow(object):
       offset = p - q
       return self.tStarts[i] + offset
     return None
-  def pslLine(self):
-    """ Print out SELF as a psl formatted line.
+  def pslString(self):
+    """ return SELF as a psl formatted line.
     """
     s = ('%d %d %d %d %d %d %d %d %s %s %d %d %d %s %d %d %d %d %s %s %s' %
          (self.matches,
@@ -159,7 +159,7 @@ class PslRow(object):
           ','.join([str(b) for b in self.blockSizes]),
           ','.join([str(b) for b in self.qStarts]),
           ','.join([str(b) for b in self.tStarts])))
-    print s
+    return s
 
 
 """The following data types are used for iterating over gene-check-detail and
@@ -678,7 +678,7 @@ _codonToAminoAcid = {
   'AAT': 'Asn', 'AAC': 'Asn', 'AAY': 'Asn',
   'GAT': 'Asp', 'GAC': 'Asp', 'GAY': 'Asp',
   'TGT': 'Cys', 'TGC': 'Cys', 'TGY': 'Cys',
-  'CAA': 'Gin', 'CAG': 'Gin', 'CAR': 'Gin',
+  'CAA': 'Gln', 'CAG': 'Gln', 'CAR': 'Gln',
   'GAA': 'Glu', 'GAG': 'Glu', 'GAR': 'Glu',
   'GGT': 'Gly', 'GGC': 'Gly', 'GGA': 'Gly', 'GGG': 'Gly', 'GGN': 'Gly',
   'CAT': 'His', 'CAC': 'His', 'CAY': 'His',
