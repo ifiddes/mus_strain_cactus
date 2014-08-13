@@ -701,6 +701,7 @@ def codonToAminoAcid(c):
   """ Given a codon C, return an amino acid or ??? if codon unrecognized.
   Codons could be unrecognized due to ambiguity IUPAC characters.
   """
+  if c is None: return None
   c = c.upper()
   if c in _codonToAminoAcid:
     return _codonToAminoAcid[c]

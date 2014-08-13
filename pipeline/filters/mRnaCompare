@@ -30,7 +30,7 @@ def getCodon(transcript, codon_seq, codon_tup):
   (codonNumber, withinCodonIndex), return the 3 nucleotide sequence
   corresponding to the CODON_TUP
   """
-
+  if codon_tup is None: return None
   return codon_seq[codon_tup[0] * 3:codon_tup[0] * 3 + 3]
 
 
@@ -42,7 +42,10 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, codon_seq, codon_tu, numIndel
   i = start
   ot_start = a.targetCoordinateToQuery(i)
   while a.targetCoordinateToQuery(a.queryCoordinateToTarget(ot_start - 1)) is None:
-    # back up the ot_start to the first instance of indel
+    # back up the ot_start to the first instance of indel.
+    # we know that there is a discontinuity in the query coordinates which
+    # indicates that there should be some None alignments just before the
+    # T START.
     ot_start -= 1
   ot_start = ot.exonCoordinateToChromosome(ot_start)
   ot_stop = ot.exonCoordinateToChromosome(a.targetCoordinateToQuery(stop))
@@ -71,7 +74,8 @@ def searchMutation(t, ot, i, p_ot, codon_seq, original_codon_seq, mutated_codons
   """
   codon_tup = t.mRnaCoordinateToCodon(i)  # codon tuple
   o_codon_tup = ot.chromosomeCoordinateToCodon(p_ot)
-
+  if codon_tup is None: return None
+  if o_codon_tup is None: return None
   codon = getCodon(t, codon_seq, codon_tup)
   o_codon = getCodon(ot, original_codon_seq, o_codon_tup)
   aa = lib_filter.codonToAminoAcid(codon)  # amino acid
