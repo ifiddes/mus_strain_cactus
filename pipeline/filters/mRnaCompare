@@ -35,18 +35,27 @@ def getCodon(transcript, codon_seq, codon_tup):
 
 
 def recordOutOfFrame(a, t, ot, p, outOfFrameStart, codon_seq, codon_tu, numIndels):
-  """ Having discovered the end of an outOfFrame
+  """ Having discovered the end of an outOfFrame, make a TranscriptAnnotation
+  label for it.
   """
   start = min(outOfFrameStart, p)
   stop = max(outOfFrameStart, p) + 1
-  i = start
-  ot_start = a.targetCoordinateToQuery(i)
-  while a.targetCoordinateToQuery(a.queryCoordinateToTarget(ot_start - 1)) is None:
+  ot_start = a.targetCoordinateToQuery(start)
+  if a.strand == '+':
+    inc = -1
+  else:
+    inc = 1
+  while a.targetCoordinateToQuery(a.queryCoordinateToTarget(ot_start + inc)) is None:
     # back up the ot_start to the first instance of indel.
     # we know that there is a discontinuity in the query coordinates which
     # indicates that there should be some None alignments just before the
     # T START.
-    ot_start -= 1
+    ot_start += inc
+    if ot_start < a.qStart or ot_start > a.qEnd:
+      # it was Nones all the way down: give up
+      ot_start = a.targetCoordinateToQuery(i)
+      break
+    assert(ot_start >= 0)
   ot_start = ot.exonCoordinateToChromosome(ot_start)
   ot_stop = ot.exonCoordinateToChromosome(a.targetCoordinateToQuery(stop))
   annot = lib_filter.TranscriptAnnotation(
@@ -58,9 +67,19 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, codon_seq, codon_tu, numIndel
     t.name, [])
   annot.addLabel('outOfFrame')
   # number of out of frame codons wrt transcript T
-  numOOF_this = 1 + t.chromosomeCoordinateToCodon(stop)[0] - t.chromosomeCoordinateToCodon(start)[0]
+  startCodon = t.chromosomeCoordinateToCodon(start)
+  stopCodon = t.chromosomeCoordinateToCodon(stop)
+  if startCodon is not None and stopCodon is not None:
+    numOOF_this = 1 + t.chromosomeCoordinateToCodon(stop)[0] - t.chromosomeCoordinateToCodon(start)[0]
+  else:
+    numOOF_this = 1
   # number of out of frame codons wrt transcript OT
-  numOOF_them = 1 + ot.chromosomeCoordinateToCodon(ot_stop)[0] - ot.chromosomeCoordinateToCodon(ot_start)[0]
+  startCodon = ot.chromosomeCoordinateToCodon(ot_start)
+  stopCodon = ot.chromosomeCoordinateToCodon(ot_stop)
+  if startCodon is not None and stopCodon is not None:
+    numOOF_them = 1 + ot.chromosomeCoordinateToCodon(ot_stop)[0] - ot.chromosomeCoordinateToCodon(ot_start)[0]
+  else:
+    numOOF_them = 1
   annot.addLabel('outOfFrameCodonsThis_%d' % numOOF_this)
   annot.addLabel('outOfFrameCodonsThem_%d' % numOOF_them)
   # number of frame shifting indels in OT

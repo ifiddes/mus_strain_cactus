@@ -1965,7 +1965,9 @@ class filterTests(unittest.TestCase):
                    'ATGATCCAATGA\n',  # 12
                  }
     refSequences = {'test_0_r':  # ref
-                    'ATGACCTCCAAATGA\n'  # 15
+                    'ATGACCTCCAAATGA\n',  # 15
+                    'test_0_r_rc':
+                      'TCATTTGGAGGTCAT\n',  # 15
                     }
     seqFile = createSequenceFile(sequences, tmpDir)
     seqDict = lib_filter.getSequences(seqFile)
@@ -1981,19 +1983,38 @@ class filterTests(unittest.TestCase):
     # number of out of frame codons wrt target: 2
     # number of out of frame codons wrt query: 3
     # number of frame shifting indels: 2
+    #####
+    #            14 11 8 6 4   0
+    # ref        ATGACCTCCAAATGA  query
+    #            |||         |||  in-frame codon alignments
+    # non ref    ATGA--TCC-AATGA  target
+    #            0  3  4 6 7   11
+    #               =========     out of frame
+    # number of out of frame codons wrt target: 2
+    # number of out of frame codons wrt query: 3
+    # number of frame shifting indels: 2
     pslLines = [simplePsl('+', 15, 0, 15, 12, 0, 12,
                           [4, 3, 5], [0, 6, 10], [0, 4, 7],
-                          qName='ensmust0', tName='test_0_nr')
+                          qName='ensmust0', tName='test_0_nr'),
+                simplePsl('+', 15, 0, 15, 12, 0, 12,
+                          [4, 3, 5], [0, 6, 10], [0, 4, 7],
+                          qName='ensmust1', tName='test_0_nr')
                 ]
     pslFile = createAlignmentFile(pslLines, tmpDir)
     refTranscriptBedLines = []
     refTranscriptBedLines.append(bedLine(
         'test_0_r', 0, 15, 'ensmust0', 0, '+', 0, 15,
         '128,0,0', 1, '15', '0'))
+    refTranscriptBedLines.append(bedLine(
+        'test_0_r', 0, 15, 'ensmust1', 0, '-', 0, 15,
+        '128,0,0', 1, '15', '0'))
     createBedFile(refTranscriptBedLines, 'ref.bed', tmpDir)
     transcriptBedLines = []
     transcriptBedLines.append(bedLine(
         'test_0_nr', 0, 12, 'ensmust0', 0, '+', 0, 12,
+        '128,0,0', 1, '12', '0'))
+    transcriptBedLines.append(bedLine(
+        'test_0_nr', 0, 12, 'ensmust1', 0, '-', 0, 12,
         '128,0,0', 1, '12', '0'))
     transcriptDetailsBedLines = []
     transcripts = [
@@ -2025,10 +2046,11 @@ class filterTests(unittest.TestCase):
     writtenTranscripts = lib_filter.getTranscripts(
       os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
     # test equality.
-    self.assertTrue(transcriptHasOutOfFrame(writtenTranscripts[0]))
-    self.assertEqual(2, outOfFrameCodonsThis(writtenTranscripts[0]))
-    self.assertEqual(3, outOfFrameCodonsThem(writtenTranscripts[0]))
-    self.assertEqual(2, frameShiftingIndels(writtenTranscripts[0]))
+    wt = writtenTranscripts[1]
+    self.assertTrue(transcriptHasOutOfFrame(wt))
+    self.assertEqual(2, outOfFrameCodonsThis(wt))
+    self.assertEqual(3, outOfFrameCodonsThem(wt))
+    self.assertEqual(2, frameShiftingIndels(wt))
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
@@ -2040,9 +2062,6 @@ class filterTests(unittest.TestCase):
     sequences = {'test_0_nr':  # non-ref / target
                    'ATGATTAAATGA\n',  # 12
                  }
-    refSequences = {'test_0_r':  # ref / query
-                    'ATGATCCAATGA\n'  # 12
-                    }
     seqFile = createSequenceFile(sequences, tmpDir)
     seqDict = lib_filter.getSequences(seqFile)
     refSeqFile = createSequenceFile(refSequences, tmpDir, filename='refSeq.fa')
@@ -2057,9 +2076,10 @@ class filterTests(unittest.TestCase):
     #               ===       synon    ATT.Ile<->ATC.Ile
     # number of out of frame codons wrt target: 0
     # number of frame shifting indels: 0
+    #####
     pslLines = [simplePsl('+', 12, 0, 12, 12, 0, 12,
                           [12], [0], [0],
-                          qName='ensmust0', tName='test_0_nr')
+                          qName='ensmust0', tName='test_0_nr'),
                 ]
     pslFile = createAlignmentFile(pslLines, tmpDir)
     refTranscriptBedLines = []
