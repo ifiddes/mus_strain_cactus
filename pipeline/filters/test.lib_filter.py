@@ -2054,7 +2054,7 @@ class filterTests(unittest.TestCase):
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
-  def d____test_mRnaCompare_1(self):
+  def test_mRnaCompare_1(self):
     """ mRnaCompare should detect outOfFrame mRNAs.
     """
     makeTempDirParent()
