@@ -29,7 +29,7 @@ def main():
       a_name = t.hashkey(deuniquify=True)
       if a_name not in alignments_dict:
         continue
-      for a in aligments_dict[a_name]:
+      for a in alignments_dict[a_name]:
         if len(a.strand) > 1:
           # this code assumes the target is always positive strand.
           # for this project I believe this is true.
