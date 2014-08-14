@@ -2062,6 +2062,9 @@ class filterTests(unittest.TestCase):
     sequences = {'test_0_nr':  # non-ref / target
                    'ATGATTAAATGA\n',  # 12
                  }
+    refSequences = {'test_0_r':  # ref / query
+                    'ATGATCCAATGA\n'  # 12
+                    }
     seqFile = createSequenceFile(sequences, tmpDir)
     seqDict = lib_filter.getSequences(seqFile)
     refSeqFile = createSequenceFile(refSequences, tmpDir, filename='refSeq.fa')
