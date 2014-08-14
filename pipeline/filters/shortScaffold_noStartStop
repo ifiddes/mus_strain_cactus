@@ -42,13 +42,13 @@ def main():
         # If the alignment starts or ends right on top of a transcript, mark it.
         if a.strand.startswith('+'):
           if 'noStart' in annot.labels and a.tStart == 0 and a.qStart != 0:
-          # aligned: #  unaligned: -  whatever: .  edge: |
-          # query  |---#####....
-          # target    |#####....
+            # aligned: #  unaligned: -  whatever: .  edge: |
+            # query  |---#####....
+            # target    |#####....
             annot.addLabel('alignmentAbutsEdge')
           if 'noStop' in annot.labels and a.tEnd == a.tSize and a.qEnd != a.qSize:
-          # query  ...######---|
-          # target ...######|
+            # query  ...######---|
+            # target ...######|
             annot.addLabel('alignmentAbutsEdge')
         else:
           assert(a.strand.startswith('-'))
