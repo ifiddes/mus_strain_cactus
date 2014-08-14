@@ -608,14 +608,18 @@ def FileType(f):
     raise ArgumentTypeError('FileType:%s is not a readable file' % f)
 
 
-def boilerplateArguments():
+def boilerplateArguments(extraArguments=None, extraChecks=None):
   """ start from scratch and hand back a valid and initialized args object.
   """
   from argparse import ArgumentParser
   parser = ArgumentParser()
   initializeArguments(parser)
+  if extraArguments is not None:
+    extraArguments(parser)
   args = parser.parse_args()
   checkArguments(args, parser)
+  if extraChecks is not None:
+    extraChecks(args, parser)
   return args
 
 

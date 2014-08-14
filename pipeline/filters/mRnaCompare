@@ -130,8 +130,16 @@ def searchMutation(t, ot, i, p_ot, codon_seq, original_codon_seq, mutated_codons
   t.annotations.append(annot)
 
 
+def extraArgs(parser):
+  """ For arguments used in testing.
+  """
+  parser.add_argument(
+    '--allowSingleExons', action='store_true', default=False,
+    help='Processes single exon transcripts. default=%(default)s')
+
+
 def main():
-  args = lib_filter.boilerplateArguments()
+  args = lib_filter.boilerplateArguments(extraArgs)
   original_seq_dict = lib_filter.getSequences(args.refSequence, upper=True)
   seq_dict = lib_filter.getSequences(args.sequence, upper=True)
   transcripts = lib_filter.getTranscripts(
@@ -147,6 +155,7 @@ def main():
     alignments_dict.setdefault(key, [])
     alignments_dict[key].append(a)
   for t in transcripts:
+    if len(t.exons) == 1 and not args.allowSingleExons: continue
     if t.chromosomeInterval.chromosome not in seq_dict: continue
     ot = original_transcripts_dict[lib_filter.removeAlignmentNumber(t.name)]
     if ot.chromosomeInterval.chromosome not in original_seq_dict:

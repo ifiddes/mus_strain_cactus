@@ -2041,7 +2041,8 @@ class filterTests(unittest.TestCase):
     metaFilter.makeCall(
       'mRnaCompare', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
       originalGeneCheckBed, originalGeneCheckBedDetails,
-      alignment, sequence, referenceSequence, chromSizes, tmpDir)
+      alignment, sequence, referenceSequence, chromSizes, tmpDir,
+      extra='--allowSingleExons')
     # read transcripts from file
     writtenTranscripts = lib_filter.getTranscripts(
       os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
@@ -2119,7 +2120,8 @@ class filterTests(unittest.TestCase):
     metaFilter.makeCall(
       'mRnaCompare', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
       originalGeneCheckBed, originalGeneCheckBedDetails,
-      alignment, sequence, referenceSequence, chromSizes, tmpDir)
+      alignment, sequence, referenceSequence, chromSizes, tmpDir,
+      extra='--allowSingleExons')
     # read transcripts from file
     writtenTranscripts = lib_filter.getTranscripts(
       os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))

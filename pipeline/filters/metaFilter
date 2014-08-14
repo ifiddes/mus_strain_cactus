@@ -31,7 +31,8 @@ def getBin(bin):
 
 def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
              originalGeneCheckBed, originalGeneCheckBedDetails,
-             alignment, sequence, refSequence, chromSizes, outDir):
+             alignment, sequence, refSequence, chromSizes, outDir,
+             extra=None):
   """ Function to make a call to a filter and handle input / output.
   """
   if not os.path.exists(outDir):
@@ -43,6 +44,8 @@ def makeCall(bin, refGenome, genome, geneCheckBed, geneCheckBedDetails,
             'alignment', 'sequence', 'refSequence', 'chromSizes', 'outDir']:
     cmd.append('--%s' % v)
     cmd.append(eval(v))
+  if extra is not None:
+    cmd.append(extra)
   lib_run.Touch(os.path.join(outDir, 'clocking_in'))
   lib_run.RunCommandsSerial([cmd], outDir)
   lib_run.Touch(os.path.join(outDir, 'clocking_out'))
