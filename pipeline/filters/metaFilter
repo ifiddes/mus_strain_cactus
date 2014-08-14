@@ -136,6 +136,7 @@ def main():
   filters.append('noStopCorrecter')
   filters.append('paralogs')
   filters.append('nonsense')
+  filters.append('mRnaCompare')
   ##############################
   # Do not change the order of filters below this line
   filters.append('gigo')

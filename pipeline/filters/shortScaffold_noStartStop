@@ -37,7 +37,7 @@ def main():
         #####
         # If the query does not completely map to the target, mark it.
         if a.qSize != a.qEnd - a.qStart:
-        annot.addLabel('alignmentPartialMap')
+          annot.addLabel('alignmentPartialMap')
         #####
         # If the alignment starts or ends right on top of a transcript, mark it.
         if a.strand.startswith('+'):
