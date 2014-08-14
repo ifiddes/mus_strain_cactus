@@ -139,7 +139,7 @@ def main():
     alignments_dict[key].append(a)
   for t in transcripts:
     if t.chromosomeInterval.chromosome not in seq_dict: continue
-    ot = original_transcripts_dict[t.name]
+    ot = original_transcripts_dict[lib_filter.removeAlignmentNumber(t.name)]
     if ot.chromosomeInterval.chromosome not in original_seq_dict:
       continue
     t_seq = seq_dict[t.chromosomeInterval.chromosome]
