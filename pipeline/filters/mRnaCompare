@@ -18,9 +18,13 @@ def alignmentCoversGene(psl, t, mRNALength):
   """ Given a PSLRow object and a TRANSCRIPT object, determine
   if the PSL target range fits with where the MRNA is in the transcript.
   """
-  if psl.tStart > t.mRnaCoordinateToChromosome(0):
+  mRna_left = min(t.mRnaCoordinateToChromosome(0),
+                  t.mRnaCoordinateToChromosome(mRNALength - 1))
+  mRna_right = max(t.mRnaCoordinateToChromosome(0),
+                  t.mRnaCoordinateToChromosome(mRNALength - 1))
+  if psl.tStart > mRna_left:
     return False
-  if psl.tEnd < t.mRnaCoordinateToChromosome(mRNALength - 1):
+  if psl.tEnd < mRna_right:
     return False
   return True  # at the moment this isn't so much "True" as "Possibly"
 
@@ -34,13 +38,18 @@ def getCodon(transcript, codon_seq, codon_tup):
   return codon_seq[codon_tup[0] * 3:codon_tup[0] * 3 + 3]
 
 
-def recordOutOfFrame(a, t, ot, p, outOfFrameStart, codon_seq, codon_tu, numIndels):
+def recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels):
   """ Having discovered the end of an outOfFrame, make a TranscriptAnnotation
   label for it.
   """
   start = min(outOfFrameStart, p)
   stop = max(outOfFrameStart, p) + 1
   ot_start = a.targetCoordinateToQuery(start)
+  if ot_start is None:
+    print 'ot_start is None'
+    print a.pslString()
+    print t.bedString()
+    print ot.bedString()
   if a.strand == '+':
     inc = -1
   else:
@@ -157,8 +166,9 @@ def main():
     if aa_seq[-1] != 'Stop':
       continue
     o_aa_seq = [lib_filter.codonToAminoAcid(c) for c
-              in lib_filter.readCodons(original_codon_seq)]
-    key = '%s_%s' % (t.name, t.chromosomeInterval.chromosome)
+                in lib_filter.readCodons(original_codon_seq)]
+    key = '%s_%s' % (lib_filter.removeAlignmentNumber(t.name),
+                     t.chromosomeInterval.chromosome)
     alignments = alignments_dict[key]
     if len(aa_seq) < 0.1 * len(o_aa_seq):
       continue
@@ -203,13 +213,13 @@ def main():
         elif outOfFrame and ((o_codon_tup is not None) and (codon_tup[1] == o_codon_tup[1])):
           # we just came back into frame
           outOfFrame = False
-          recordOutOfFrame(a, t, ot, p, outOfFrameStart, codon_seq, codon_tup, numIndels)
+          recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels)
           numIndels = 0
       if outOfFrame:
         # was still out of frame at the end of the mRna
         outOfFrame = False
         recordOutOfFrame(
-          a, t, ot, p, outOfFrameStart, codon_seq, codon_tup, numIndels)
+          a, t, ot, p, outOfFrameStart, numIndels)
         numIndels = 0
   lib_filter.writeAllBeds(transcripts, args)
 
