@@ -24,10 +24,17 @@ class Sequence(object):
     return self._length
   def setUpper(self):
     self._sequence = self._sequence.upper()
-  def getNucleotide(self, pos):
+  def getNucleotide(self, pos, relativeStrand=True, complementNuc=False):
     """ return the single nucleotide that resides at 0-based position POS.
     """
-    return self.sliceSequence(pos, pos + 1)
+    if relativeStrand:
+      n = self.sliceSequence(pos, pos + 1)
+      if complementNuc:
+        n = complement(n)
+    else:
+      # using slice sequence with '-' automatically complements
+      n = self.sliceSequence(pos, pos + 1, relativeStrand='-')
+    return n
   def sliceSequence(self, start, stop, relativeStrand='+'):
     """ return the proper slice of the sequence.
     BED format coordinates: 0 based start, stop is exclusive
@@ -40,9 +47,10 @@ class Sequence(object):
       # 0 1 2 3 4 5 6 7 8 9  +
       # 9 8 7 6 5 4 3 2 1 0  -
       #                  + strand | - strand
-      #   |-----|          (1, 5] = (5, 9]
-      # |---------|        (0, 6] = (4, 10]
-      #       |---------|  (3, 9] = (1, 7]
+      #               |    [7, 8) = [2, 3)
+      #   |-----|          [1, 5) = [5, 9)
+      # |---------|        [0, 6) = [4, 10)
+      #       |---------|  [3, 9) = [1, 7)
       a = self._length - stop
       b = self._length - stop + (stop - start)
       return reverseComplement(self._sequence[a:b])
@@ -108,7 +116,7 @@ class PslRow(object):
       if self.strand == '+':
         return self.qStarts[i] + offset
       else:
-        return self.qSize - (self.qStarts[i] + offset)
+        return self.qSize - (self.qStarts[i] + offset) - 1
     return None
   def queryCoordinateToTarget(self, p):
     """ Take position P in query coordinates (positive) and convert it
@@ -119,7 +127,7 @@ class PslRow(object):
     if self.strand == '+':
       pass
     elif self.strand == '-':
-      p = self.qSize - p
+      p = self.qSize - p - 1
     else:
       raise RuntimeError('Unanticipated strand: %s' % self.strand)
     if p < self.qStart: return None
@@ -539,14 +547,18 @@ class Transcript(object):
     # mrna              mmmm mmmm m
     for e in self.exons:
       if self.thickStart < e.start and e.stop < self.thickEnd:
+        # squarely in the CDS
         s += sequence.sliceSequence(e.start, e.stop)
       elif (e.start <= self.thickStart and e.stop < self.thickEnd
             and self.thickStart < e.stop):
+        # thickStart marks the start of the mRNA
         s += sequence.sliceSequence(self.thickStart, e.stop)
       elif e.start <= self.thickStart and self.thickEnd <= e.stop:
+        # thickStart and thickEnd mark the whole mRNA
         s += sequence.sliceSequence(self.thickStart, self.thickEnd)
       elif (self.thickStart < e.start and self.thickEnd <= e.stop
             and e.start < self.thickEnd):
+        # thickEnd marks the end of the mRNA
         s += sequence.sliceSequence(e.start, self.thickEnd)
     if not self.chromosomeInterval.strand:
       s = reverseComplement(s)
@@ -659,17 +671,25 @@ def checkArguments(args, parser):
       f.write(' --%s %s' % (name, value))
     f.write('\n')
 
+
+_nuc_pairs = [('a', 't'), ('g', 'c'), ('n', 'n')]
+_complement = {}
+for a, b in _nuc_pairs:
+  _complement[a], _complement[b] = b, a
+  _complement[a.upper()], _complement[b.upper()] = b.upper(), a.upper()
+_complement['-'] = '-'
+def complement(seq):
+  """ given a sequence, return the complement.
+  """
+  seq = ''.join([_complement[s] for s in seq])
+  return seq
+
+
 def reverseComplement(seq):
   """ Given a sequence, return the reverse complement.
   """
-  pairs = [('a', 't'), ('g', 'c'), ('n', 'n')]
-  complement = {}
-  for a, b in pairs:
-    complement[a], complement[b] = b, a
-    complement[a.upper()], complement[b.upper()] = b.upper(), a.upper()
-  complement['-'] = '-'
   seq = seq[::-1]  # reverse
-  seq = ''.join(map(lambda s: complement[s], seq))
+  seq = complement(seq)
   return seq
 
 
@@ -699,8 +719,6 @@ _codonToAminoAcid = {
   'TAT': 'Tyr', 'TAC': 'Tyr', 'TAY': 'Tyr',
   'GTT': 'Val', 'GTC': 'Val', 'GTA': 'Val', 'GTG': 'Val', 'GTN': 'Val',
   }
-
-
 def codonToAminoAcid(c):
   """ Given a codon C, return an amino acid or ??? if codon unrecognized.
   Codons could be unrecognized due to ambiguity IUPAC characters.

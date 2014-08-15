@@ -766,6 +766,12 @@ class pslCoordinateSpaceTests(unittest.TestCase):
                           [5, 3, 2], [3, 8, 15], [1, 10, 20]))
     psls.append(simplePsl('+', 1257, 0, 683, 13608, 758, 4954,
                           [109, 90, 484], [0, 109, 199], [758,2563,4470]))
+    psls.append(simplePsl('-', 5353, 101, 3546, 31353, 11338, 31141,
+                          [168,136,213,816,100,571],
+                          [1807,2922,3058,3271,4581,4681],
+                          [11338,13222,13580,13796,29960,30570],))
+    psls.append(simplePsl('+', 61, 22, 61, 61, 0, 61, [14, 5], [22, 56], [0, 14]))
+    psls.append(simplePsl('-', 61, 4, 56, 61, 0, 61, [20, 18], [5, 39], [0, 20]))
     ####################
     #   0        9
     # q ++++++++++
@@ -833,26 +839,19 @@ class pslCoordinateSpaceTests(unittest.TestCase):
     for i in xrange(22, 25):
       self.assertEqual(None, psl.targetCoordinateToQuery(i))
     ####################
-    #   +  21     16   9   5    0
-    #   -  3   7  8 10 15       24
-    # q    -----  ---  -- (24 long)
-    # t    +++++  +++  ++
-    #      1   5  10   20
+    # psls.append(simplePsl('-', 24, 3, 17, 30, 1, 22,
+    #                      [5, 3, 2], [3, 8, 15], [1, 10, 20]))
+    #      1   5  10,12  20,21
+    # t    +++++  +++    ++
+    # q    -----  ---    -- (24 long)
+    #     -3   7  8 10   15,16
+    #     +20  16 15,13  8,7
     psl = psls[5]
-    for i in xrange(0, 1):
-      self.assertEqual(None, psl.targetCoordinateToQuery(i))
-    for i in xrange(1, 6):
-      self.assertEqual(22 - i, psl.targetCoordinateToQuery(i))
-    for i in xrange(6, 10):
-      self.assertEqual(None, psl.targetCoordinateToQuery(i))
-    for i in xrange(10, 13):
-      self.assertEqual(26 - i, psl.targetCoordinateToQuery(i))
-    for i in xrange(13, 20):
-      self.assertEqual(None, psl.targetCoordinateToQuery(i))
-    for i in xrange(20, 22):
-      self.assertEqual(29 - i, psl.targetCoordinateToQuery(i))
-    for i in xrange(22, 35):
-      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for q, t in [(None, 0), (20, 1), (16, 5), (None, 6),
+                 (None, 7), (15, 10), (13, 12), (None, 13),
+                 (None, 19), (8, 20), (7, 21), (None, 22)
+                 ]:
+      self.assertEqual(q, psl.targetCoordinateToQuery(t))
     ####################
     # psls.append(simplePsl('+', 1257, 0, 683,
     #                       13608, 758, 4954,
@@ -865,12 +864,84 @@ class pslCoordinateSpaceTests(unittest.TestCase):
     psl = psls[6]
     for i in xrange(750, 758):
       self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(4954, 4960):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
     for q, t in [(0, 758), (108, 866), (None, 867),
                  (None, 2562), (109, 2563), (198, 2652), (None, 2653),
                  (None, 4469), (199, 4470), (682, 4953), (None, 4954),
                  (130, 2584)
                  ]:
       self.assertEqual(q, psl.targetCoordinateToQuery(t))
+    ####################
+    # psls.append(simplePsl('-', 5353, 101, 3546, 31353, 11338, 31141,
+    #                       [168,136,213,816,100,571],
+    #                       [1807,2922,3058,3271,4581,4681],
+    #                       [11338,13222,13580,13796,29960,30570],))
+    #
+    #
+    #
+    #  -
+    #  +1807  1974    2922  3057    3058  3270    3271  4086    4581  4680    4681  5251
+    # q -------       -------       -------       -------       -------       -------
+    # t +++++++       +++++++       +++++++       +++++++       +++++++       +++++++
+    #   11338 11505   13222 13557   13580 13792   13796 14611   29960 30059   30570 31140
+    psl = psls[7]
+    for i in xrange(11335, 11338):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for i in xrange(31141, 31145):
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for q, t in [(1807, 11338), (1974, 11505),
+                 (None, 11506), (None, 13221),
+                 (2922, 13222), (3057, 13557),
+                 (None, 13558), (None, 13579),
+                 (3058, 13580), (3270, 13792),
+                 (None, 13793), (None, 13795),
+                 (3171, 13796), (4086, 14611),
+                 (None, 14612), (None, 29961),
+                 (4581, 29960), (4680, 30059),
+                 (None, 30060), (None, 30569),
+                 (4681, 30570), (5251, 31140),]:
+      pass
+      #self.assertEqual(q, psl.targetCoordinateToQuery(t))
+    ####################
+    #0         1         2         3         4         5         6 tens position in query
+    #0123456789012345678901234567890123456789012345678901234567890 ones position in query
+    #                      ++++++++++++++                    +++++ plus strand alignment on query
+    #    ------------------              --------------------      minus strand alignment on query
+    #0987654321098765432109876543210987654321098765432109876543210 ones pos in query negative strand coordinates
+    #6         5         4         3         2         1         0 tens pos in query negative strand coordinates
+    # Plus strand:
+    #      qStart=22
+    #      qEnd=61
+    #      blockSizes=14,5
+    #      qStarts=22,56
+    # Minus strand:
+    #      qStart=4
+    #      qEnd=56
+    #      blockSizes=20,18
+    #      qStarts=5,39
+    # psls.append(simplePsl('+', 61, 22, 61, 61, 0, 61, [14, 5], [22, 56], [0, 14]))
+    # psls.append(simplePsl('-', 61, 4, 56, 61, 0, 61, [20, 18], [5, 39], [0, 20]))
+    psl = psls[8]
+    for i in [19, 20, 21]:
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for q, t in [(22, 0), (35, 13),
+                 (56, 14), (60, 18),
+                 ]:
+      self.assertEqual(q, psl.targetCoordinateToQuery(t))
+    #     0   19  20   37
+    # t   +++++   ++++++
+    # q   -----   ------
+    #    -5   24  39   56
+    #    +55  36  21   4
+    psl = psls[9]
+    for i in [38, 39, 40]:
+      self.assertEqual(None, psl.targetCoordinateToQuery(i))
+    for q, t in [(55, 0), (36, 19),
+                 (21, 20), (4, 37),
+                 ]:
+      self.assertEqual(q, psl.targetCoordinateToQuery(t))
+
 
   def test_psl_queryCoordinateToTarget(self):
     """ PSLRow.queryCoordinateToTarget() should return correct information.
@@ -949,49 +1020,37 @@ class pslCoordinateSpaceTests(unittest.TestCase):
     for i in xrange(17, 20):
       self.assertEqual(None, psl.queryCoordinateToTarget(i))
     ####################
-    #   +  21     16   9   5    0
-    #   -  3   7  8 10 15       24
-    # q    -----  ---  -- (24 long)
-    # t    +++++  +++  ++
-    #      1   5  10   20
+    #      1   5  10,12  20,21
+    # t    +++++  +++    ++
+    # q    -----  ---    -- (24 long)
+    #     -3   7  8 10   15,16
+    #     +20  16 15,13  8,7
     psl = psls[5]
-    for i in xrange(0, 8):
-      self.assertEqual(None, psl.queryCoordinateToTarget(i))
-    for i in xrange(8, 10):
-      self.assertEqual(29 - i, psl.queryCoordinateToTarget(i))
-    for i in xrange(10, 14):
-      self.assertEqual(None, psl.queryCoordinateToTarget(i))
-    for i in xrange(14, 17):
-      self.assertEqual(26 - i, psl.queryCoordinateToTarget(i))
-    for i in xrange(17, 22):
-      self.assertEqual(22 - i, psl.queryCoordinateToTarget(i))
-    for i in xrange(22, 30):
-      self.assertEqual(None, psl.queryCoordinateToTarget(i))
+    for q, t in [(21, None), (20, 1), (16, 5),
+                 (15, 10), (13, 12), (12, None),
+                 (9, None), (8, 20), (7, 21), (6, None),
+                 ]:
+      self.assertEqual(t, psl.queryCoordinateToTarget(q))
   def test_psl_roundtrip_queryTarget(self):
     """ PSLRow.queryCoordinateToTarget() and PSLRow.targetCoordinateToQuery() should play nice.
     """
     psls = []
     psls.append(simplePsl('-', 24, 3, 17, 30, 1, 22,
                           [5, 3, 2], [3, 8, 15], [1, 10, 20]))
-    ####################
-    #   +  21     16   9   5    0
-    #   -  3   7  8 10 15       24
-    # q    -----  ---  -- (24 long)
-    # t    +++++  +++  ++
-    #      1   5  10   20
+    # psls.append(simplePsl('-', 24, 3, 17, 30, 1, 22,
+    #                      [5, 3, 2], [3, 8, 15], [1, 10, 20]))
+    #      1   5  10,12  20,21
+    # t    +++++  +++    ++
+    # q    -----  ---    -- (24 long)
+    #     -3   7  8 10   15,16
+    #     +20  16 15,13  8,7
     psl = psls[0]
-    for i in xrange(8, 10):
-      self.assertEqual(i, psl.targetCoordinateToQuery(psl.queryCoordinateToTarget(i)))
-    for i in xrange(14, 17):
-      self.assertEqual(i, psl.targetCoordinateToQuery(psl.queryCoordinateToTarget(i)))
-    for i in xrange(17, 22):
-      self.assertEqual(i, psl.targetCoordinateToQuery(psl.queryCoordinateToTarget(i)))
-    for i in xrange(1, 6):
-      self.assertEqual(i, psl.queryCoordinateToTarget(psl.targetCoordinateToQuery(i)))
-    for i in xrange(10, 13):
-      self.assertEqual(i, psl.queryCoordinateToTarget(psl.targetCoordinateToQuery(i)))
-    for i in xrange(20, 22):
-      self.assertEqual(i, psl.queryCoordinateToTarget(psl.targetCoordinateToQuery(i)))
+    for q, t in [(20, 1), (16, 5),
+                 (15, 10), (13, 12),
+                 (8, 20), (7, 21),
+                 ]:
+      self.assertEqual(t, psl.queryCoordinateToTarget(psl.targetCoordinateToQuery(t)))
+      self.assertEqual(q, psl.targetCoordinateToQuery(psl.queryCoordinateToTarget(q)))
 
 
 class codonGeneSpaceTests(unittest.TestCase):

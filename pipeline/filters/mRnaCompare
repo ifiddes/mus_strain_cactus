@@ -45,11 +45,6 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels):
   start = min(outOfFrameStart, p)
   stop = max(outOfFrameStart, p) + 1
   ot_start = a.targetCoordinateToQuery(start)
-  if ot_start is None:
-    print 'ot_start is None'
-    print a.pslString()
-    print t.bedString()
-    print ot.bedString()
   if a.strand == '+':
     inc = -1
   else:
@@ -79,9 +74,10 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels):
   startCodon = t.chromosomeCoordinateToCodon(start)
   stopCodon = t.chromosomeCoordinateToCodon(stop)
   if startCodon is not None and stopCodon is not None:
-    numOOF_this = 1 + t.chromosomeCoordinateToCodon(stop)[0] - t.chromosomeCoordinateToCodon(start)[0]
+    numOOF_this = 1 + stopCodon[0] - startCodon[0]
   else:
     numOOF_this = 1
+  assert(numOOF_this >= 0)
   # number of out of frame codons wrt transcript OT
   startCodon = ot.chromosomeCoordinateToCodon(ot_start)
   stopCodon = ot.chromosomeCoordinateToCodon(ot_stop)
@@ -89,6 +85,7 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels):
     numOOF_them = 1 + ot.chromosomeCoordinateToCodon(ot_stop)[0] - ot.chromosomeCoordinateToCodon(ot_start)[0]
   else:
     numOOF_them = 1
+  assert(numOOF_them >= 0)
   annot.addLabel('outOfFrameCodonsThis_%d' % numOOF_this)
   annot.addLabel('outOfFrameCodonsThem_%d' % numOOF_them)
   # number of frame shifting indels in OT
@@ -163,8 +160,8 @@ def main():
     t_seq = seq_dict[t.chromosomeInterval.chromosome]
     ot_seq = original_seq_dict[ot.chromosomeInterval.chromosome]
     codon_seq = t.getMRna(t_seq)
-    original_codon_seq = ot.getMRna(ot_seq)
-    if codon_seq == original_codon_seq:
+    o_codon_seq = ot.getMRna(ot_seq)
+    if codon_seq == o_codon_seq:
       continue
     aa_seq = [lib_filter.codonToAminoAcid(c) for c
               in lib_filter.readCodons(codon_seq)]
@@ -175,7 +172,7 @@ def main():
     if aa_seq[-1] != 'Stop':
       continue
     o_aa_seq = [lib_filter.codonToAminoAcid(c) for c
-                in lib_filter.readCodons(original_codon_seq)]
+                in lib_filter.readCodons(o_codon_seq)]
     key = '%s_%s' % (lib_filter.removeAlignmentNumber(t.name),
                      t.chromosomeInterval.chromosome)
     alignments = alignments_dict[key]
@@ -194,6 +191,7 @@ def main():
       prevQ = None
       numIndels = 0
       for i in xrange(0, len(codon_seq)):
+        # walk through every position of the codon_seq and map over to the o_codon_seq
         p = t.mRnaCoordinateToChromosome(i)
         q = a.targetCoordinateToQuery(p)
         p_ot = ot.exonCoordinateToChromosome(q)
@@ -209,9 +207,12 @@ def main():
           numIndels += 1
         prevQ = q
         prevPositionWasNone = False
-        if t_seq.getNucleotide(p) != ot_seq.getNucleotide(p_ot):
+        if (t_seq.getNucleotide(
+            p, complementNuc=(not t.chromosomeInterval.strand)) !=
+            ot_seq.getNucleotide(
+            p_ot, complementNuc=(not ot.chromosomeInterval.strand))):
           # these nucleotides are different: there is a mutation
-          searchMutation(t, ot, i, p_ot, codon_seq, original_codon_seq, mutated_codons)
+          searchMutation(t, ot, i, p_ot, codon_seq, o_codon_seq, mutated_codons)
         codon_tup = t.mRnaCoordinateToCodon(i)  # codon tuple
         o_codon_tup = ot.chromosomeCoordinateToCodon(p_ot)
         if not outOfFrame and ((o_codon_tup is None) or (codon_tup[1] != o_codon_tup[1])):
@@ -225,7 +226,7 @@ def main():
           recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels)
           numIndels = 0
       if outOfFrame:
-        # was still out of frame at the end of the mRna
+        # was still out of frame at the end of the mRNA
         outOfFrame = False
         recordOutOfFrame(
           a, t, ot, p, outOfFrameStart, numIndels)

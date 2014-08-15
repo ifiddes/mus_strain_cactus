@@ -44,7 +44,7 @@ def main():
         seq = lib_filter.reverseComplement(
           seq_dict[chrom].sliceSequence(thickStart, thickStart + 3))
       if seq in STOP_CODONS:
-        annot.addLabel('outOfFrameStop')
+        annot.addLabel('stopIsOutOfFrame')
   lib_filter.writeAllBeds(transcripts, args)
 
 
