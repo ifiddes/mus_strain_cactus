@@ -79,13 +79,13 @@ class MergeCall(Target):
     comparative_gffs = []
     single_gffs = []
     comparative_outs = [os.path.join(self.args.out_dir,
-                                     'merged.%s.gff' % self.seq)]
+                                     'merged.%s.cgp.gff' % self.seq)]
     single_outs = [os.path.join(
-        self.args.out_dir, 'merged.%s.base.gff' % self.seq)]
+        self.args.out_dir, 'merged.%s.mea.gff' % self.seq)]
     comparative_errs = [os.path.join(self.args.out_dir,
                                      'merged.%s.stderr' % self.seq)]
     single_errs = [os.path.join(
-      self.args.out_dir, 'merged.%s.base.stderr' % self.seq)]
+      self.args.out_dir, 'merged.%s.mea.stderr' % self.seq)]
     for d in self.dirs:
       if os.path.exists(os.path.join(d, '%s.cgp.gff' % self.seq)):
         comparative_gffs.append(os.path.join(d, '%s.cgp.gff' % self.seq))
