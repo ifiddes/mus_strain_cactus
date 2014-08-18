@@ -142,12 +142,12 @@ def searchMutation(t, ot, i, p_ot, codon_seq, original_codon_seq, mutated_codons
   if aa != o_aa:
     annot.addLabel('nonsynon')
     # me first - then you
-    annot.addLabel('%s.%s-%s.%s' %
+    annot.addLabel('%s.%s_%s.%s' %
                    (codon, aa, o_codon, o_aa))
   else:
     annot.addLabel('synon')
     # me first - then you
-    annot.addLabel('%s.%s-%s.%s' % (codon, aa, o_codon, o_aa))
+    annot.addLabel('%s.%s_%s.%s' % (codon, aa, o_codon, o_aa))
   t.annotations.append(annot)
 
 
