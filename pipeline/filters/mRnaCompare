@@ -71,20 +71,40 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels):
     t.name, [])
   annot.addLabel('outOfFrame')
   # number of out of frame codons wrt transcript T
-  startCodon = t.chromosomeCoordinateToCodon(start)
-  stopCodon = t.chromosomeCoordinateToCodon(stop)
+  startCodon = min(t.chromosomeCoordinateToCodon(start),
+                   t.chromosomeCoordinateToCodon(stop))
+  stopCodon = max(t.chromosomeCoordinateToCodon(start),
+                  t.chromosomeCoordinateToCodon(stop))
   if startCodon is not None and stopCodon is not None:
     numOOF_this = 1 + stopCodon[0] - startCodon[0]
   else:
     numOOF_this = 1
+  if numOOF_this < 0:
+    print 'numOOF_this < 0: %d' % numOOF_this
+    print 'a: ', a.pslString()
+    print 't: ', t.bedString()
+    print 'ot: ', ot.bedString()
+    print 'P: ', p
+    print 'outOfFrameStart: ', outOfFrameStart
+    print 'numIndels: ', numIndels
   assert(numOOF_this >= 0)
   # number of out of frame codons wrt transcript OT
-  startCodon = ot.chromosomeCoordinateToCodon(ot_start)
-  stopCodon = ot.chromosomeCoordinateToCodon(ot_stop)
+  startCodon = min(ot.chromosomeCoordinateToCodon(ot_start),
+                   ot.chromosomeCoordinateToCodon(ot_stop))
+  stopCodon = max(ot.chromosomeCoordinateToCodon(ot_start),
+                  ot.chromosomeCoordinateToCodon(ot_stop))
   if startCodon is not None and stopCodon is not None:
-    numOOF_them = 1 + ot.chromosomeCoordinateToCodon(ot_stop)[0] - ot.chromosomeCoordinateToCodon(ot_start)[0]
+    numOOF_them = 1 + stopCodon[0] - startCodon[0]
   else:
     numOOF_them = 1
+  if numOOF_them < 0:
+    print 'numOOF_them < 0: %d' % numOOF_them
+    print 'a: ', a.pslString()
+    print 't: ', t.bedString()
+    print 'ot: ', ot.bedString()
+    print 'P: ', p
+    print 'outOfFrameStart: ', outOfFrameStart
+    print 'numIndels: ', numIndels
   assert(numOOF_them >= 0)
   annot.addLabel('outOfFrameCodonsThis_%d' % numOOF_this)
   annot.addLabel('outOfFrameCodonsThem_%d' % numOOF_them)
@@ -105,25 +125,29 @@ def searchMutation(t, ot, i, p_ot, codon_seq, original_codon_seq, mutated_codons
   o_codon = getCodon(ot, original_codon_seq, o_codon_tup)
   aa = lib_filter.codonToAminoAcid(codon)  # amino acid
   o_aa = lib_filter.codonToAminoAcid(o_codon)  # original amino acid
-  if codon_tup in mutated_codons:
+  if codon_tup[0] in mutated_codons:
     return
-  mutated_codons.add(codon_tup)
+  mutated_codons.add(codon_tup[0])
+  if t.chromosomeInterval.strand:
+    codon_tup_start = (codon_tup[0], 0)  # left most position
+  else:
+    codon_tup_start = (codon_tup[0], 2)  # left most position
   annot = lib_filter.TranscriptAnnotation(
     lib_filter.ChromosomeInterval(
       t.chromosomeInterval.chromosome,
-      t.codonCoordinateToChromosome(codon_tup),
-      t.codonCoordinateToChromosome(codon_tup) + 3,
+      t.codonCoordinateToChromosome(codon_tup_start),
+      t.codonCoordinateToChromosome(codon_tup_start) + 3,
       t.chromosomeInterval.strand),
     t.name, [])
   if aa != o_aa:
     annot.addLabel('nonsynon')
-    # me first <-> then you
-    annot.addLabel('%s.%s<->%s.%s' %
+    # me first - then you
+    annot.addLabel('%s.%s-%s.%s' %
                    (codon, aa, o_codon, o_aa))
   else:
     annot.addLabel('synon')
-    # me first <-> then you
-    annot.addLabel('%s.%s<->%s.%s' % (codon, aa, o_codon, o_aa))
+    # me first - then you
+    annot.addLabel('%s.%s-%s.%s' % (codon, aa, o_codon, o_aa))
   t.annotations.append(annot)
 
 
@@ -160,6 +184,7 @@ def main():
     t_seq = seq_dict[t.chromosomeInterval.chromosome]
     ot_seq = original_seq_dict[ot.chromosomeInterval.chromosome]
     codon_seq = t.getMRna(t_seq)
+    if 'N' in codon_seq: continue
     o_codon_seq = ot.getMRna(ot_seq)
     if codon_seq == o_codon_seq:
       continue

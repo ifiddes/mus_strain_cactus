@@ -30,7 +30,7 @@ def classify(a):
   """
   if a.endswith('preexisting'):
     return 'input'
-  if a in ['nonsense']:
+  if a in ['nonsense', 'nonsynon', 'synon']:
     return 'nonsense'
   if a in ['alignmentPartialMap', 'alignmentAbutsEdge', 'containsNs']:
     return 'assembly'
