@@ -7,10 +7,10 @@ def RunCommands(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
   """ Wrapper for RunCommandsS and RunCommandsP.
   """
   if serial:
-    RunCommandsSerial(cmds, local_temp_dir, in_ipes, out_pipes, err_pipes,
+    RunCommandsSerial(cmds, local_temp_dir, in_pipes, out_pipes, err_pipes,
                       ignore_returns)
   else:
-    RunCommandsParallel(cmds, local_temp_dir, in_ipes, out_pipes, err_pipes,
+    RunCommandsParallel(cmds, local_temp_dir, in_pipes, out_pipes, err_pipes,
                         ignore_returns)
 
 
@@ -23,7 +23,7 @@ def HandlePipes(n, in_pipes, out_pipes, err_pipes, ignore_returns):
     out_pipes = [None] * n
   if err_pipes is None:
     err_pipes = [None] * n
-  if ignore_returns is None:
+  if ignore_returns is None or ignore_returns == False:
     ignore_returns = [False] * n
   return in_pipes, out_pipes, err_pipes, ignore_returns
 
@@ -133,7 +133,7 @@ def RunCommandsParallel(cmds, local_temp_dir, in_pipes=None, out_pipes=None,
     raise ValueError('local_temp_dir "%s" does not exist.' % local_temp_dir)
   procs = []
   in_pipes, out_pipes, err_pipes, ignore_returns = HandlePipes(
-    len(cmds), in_pipes, out_pipes, err_pipes, ingore_returns)
+    len(cmds), in_pipes, out_pipes, err_pipes, ignore_returns)
   for i, c in enumerate(cmds, 0):
     sin, sout, serr = HandlePipesInstance(in_pipes[i], out_pipes[i],
                                           err_pipes[i])
