@@ -2135,8 +2135,8 @@ class filterTests(unittest.TestCase):
     #            |||||**|||||  in-frame codon alignments
     # non ref    ATGATTAAATGA  target
     #            0          11
-    #                  ***    nonsynon AAA.Lys<->CAA.Gln
-    #               ===       synon    ATT.Ile<->ATC.Ile
+    #                  ***    nonsynon AAA.Lys_CAA.Gln
+    #               ===       synon    ATT.Ile_ATC.Ile
     # number of out of frame codons wrt target: 0
     # number of frame shifting indels: 0
     #####
@@ -2188,8 +2188,8 @@ class filterTests(unittest.TestCase):
     self.assertTrue(transcriptHasMutations(writtenTranscripts[0]))
     self.assertEqual(1, nonSynonCount(writtenTranscripts[0]))
     self.assertEqual(1, synonCount(writtenTranscripts[0]))
-    self.assertEqual('AAA.Lys<->CAA.Gln', firstNonSynon(writtenTranscripts[0]))
-    self.assertEqual('ATT.Ile<->ATC.Ile', firstSynon(writtenTranscripts[0]))
+    self.assertEqual('AAA.Lys_CAA.Gln', firstNonSynon(writtenTranscripts[0]))
+    self.assertEqual('ATT.Ile_ATC.Ile', firstSynon(writtenTranscripts[0]))
     # cleanup
     self.addCleanup(removeDir, tmpDir)
 
