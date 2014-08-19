@@ -32,6 +32,15 @@ echo '# Updating bed files'
 mkdir -p ./bedDirs_$release
 /hive/users/dearl/msca/mus_strain_cactus/pipeline/src/result2bedDirs.py --outDir ./bedDirs_$release /hive/users/dearl/msca/mus_strain_cactus/pipeline/results_$release/metaFilter.*
 
+echo '# Checking for custom beds'
+extra_beds=""
+for d in /hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/*/; do
+  _d=$(basename $d)
+  if [[ $_d != "input_geneCheck" ]] && [[ $_d != "metaFilter" ]] && [[ $_d != "input_geneCheck_details" ]] && [[ $_d != "metaFilter_details" ]]; then
+    extra_beds="$extra_beds,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/$_d"
+  fi
+done
+
 echo '# Bringing over original input gene-check beds'
 mkdir -p bedDirs_$release/input_geneCheck/C57B6J
 mkdir -p bedDirs_$release/input_geneCheck_details/C57B6J
@@ -123,7 +132,7 @@ echo '# Launching hal2assemblyHub.py'
 --lod --lodTxtFile=/hive/users/dearl/msca/mouseBrowser_$release/lod.txt \
 --lodDir=/hive/users/dearl/msca/mouseBrowser_$release/lod \
 --finalBigBedDirs=/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/knownGene,/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/wgEncodeGencodeCompVM2 \
---bedDirs=/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter_details,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck_details \
+--bedDirs=/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/metaFilter_details,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck,/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/input_geneCheck_details$extra_beds \
 --tabBed \
 --jobTree=./jt_assembly_hub_$release \
 --batchSystem=singleMachine \
