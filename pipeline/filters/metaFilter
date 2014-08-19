@@ -124,7 +124,10 @@ def sanitize(location):
         for line in f:
           line = line.strip()
           data = line.split()
-          data[3] = lib_filter.removeAlignmentNumber(data[3])
+          labels = data[3].split('/')
+          # final label is name
+          labels[-1] = lib_filter.removeAlignmentNumber(labels[-1])
+          data[3] = '/'.join(labels)
           clean.write('%s\n' % '\t'.join(data))
 
 
