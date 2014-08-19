@@ -88,7 +88,7 @@ def GffToBed(gff, bed):
         line = line.strip()
         data = line.split()
         bedlist = [data[0], str(int(data[3]) - 1), data[4],
-                   data[2], data[6]]
+                   data[2], '0', data[6]]
         b.write('%s\n' % '\t'.join(bedlist))
 
 
