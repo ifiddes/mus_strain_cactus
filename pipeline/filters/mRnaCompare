@@ -51,6 +51,7 @@ class Counts(object):
     pairs_0 = [(name, getattr(self, name)) for name in variables_0]
     pairs_1 = [(name, getattr(self, name)) for name in variables_1]
     with open(os.path.join(args.outDir, 'counts.log'), 'w') as f:
+      f.write('Category Count (Percent of Transcripts)\n')
       for name, value in pairs_0:
         f.write('%s %d (%.2f)\n' % (name, value,
                                     100 * float(value) / self.transcripts))
@@ -62,7 +63,7 @@ class Counts(object):
               )
       for name, value in pairs_1:
         f.write('%s %d\n' % (name, value))
-      f.write('\n')
+      f.write('\nAA-seq length ratios:\n')
       for v in self.aaSeqLens:
         f.write('%f\n' % v)
 
