@@ -226,6 +226,7 @@ def main():
     key = '%s_%s' % (a.qName, a.tName)
     alignments_dict.setdefault(key, [])
     alignments_dict[key].append(a)
+  counts.alignments = len(alignments_dict)
   counts.transcripts = len(transcripts)
   counts.o_transcripts = len(original_transcripts)
   counts.seqs = len(seq_dict)
