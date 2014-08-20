@@ -52,7 +52,8 @@ class Counts(object):
     pairs_1 = [(name, getattr(self, name)) for name in variables_1]
     with open(os.path.join(args.outDir, 'counts.log'), 'w') as f:
       for name, value in pairs_0:
-        f.write('%s %d\n' % (name, value))
+        f.write('%s %d (%.2f)\n' % (name, value,
+                                    100 * float(value) / self.transcripts))
       f.write('aaSeqLens n %d min %d ave %.2f med %.1f max %d stdev %.2f\n' %
               (len(self.aaSeqLens), numpy.min(self.aaSeqLens),
                numpy.mean(self.aaSeqLens),
