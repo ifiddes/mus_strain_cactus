@@ -533,6 +533,7 @@ def main():
   ax = EstablishAxes(fig, args)
   stat_dict = ReadFiles(args)
   PlotData(stat_dict, ax, args)
+
   WriteImage(fig, pdf, args)
 
 if __name__ == '__main__':
