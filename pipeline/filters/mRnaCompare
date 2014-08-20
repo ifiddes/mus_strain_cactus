@@ -10,9 +10,59 @@ Compares the mRNA sequences between the genome in question
 and the original species to look for synonymous and
 nonsynonymous mutations.
 """
+import numpy
+import os
 import sys
 import lib_filter
 
+
+class Counts(object):
+  """ Object to store the number of things that happen during a single run.
+  """
+  def __init__(self):
+    self.transcipts = 0
+    self.o_transcipts = 0
+    self.alignments = 0
+    self.seqs = 0
+    self.o_seqs = 0
+    self.dropped_singleExons = 0
+    self.dropped_missingSeqs = 0
+    self.dropped_o_missingSeqs = 0
+    self.dropped_mRnaNs = 0
+    self.dropped_matchingMRna = 0
+    self.dropped_emptyAASeq = 0
+    self.dropped_noStart = 0
+    self.dropped_noStop = 0
+    self.aaSeqLens = []
+    self.dropped_aaSeqTooShort = 0
+    self.walkAlignment = 0
+    self.dropped_alignmentNoCoverGene = 0
+    self.walkMRna = 0
+  def recordCounts(self, args):
+    variables_0 = ['transcripts', 'o_transcripts', 'alignments', 'seqs',
+                   'o_seqs', 'dropped_singleExons', 'dropped_missingSeqs',
+                   'dropped_o_missingSeqs', 'dropped_mRnaNs',
+                   'dropped_matchingMRna', 'dropped_emptyAASeq',
+                   'dropped_noStart', 'dropped_noStop',
+                   ]
+    variables_1 = ['dropped_aaSeqTooShort', 'walkAlignment',
+                   'dropped_alignmentNoCoverGene', 'walkMRna',
+                   ]
+    pairs_0 = [(name, getattr(self, name)) for name in variables_0]
+    pairs_1 = [(name, getattr(self, name)) for name in variables_1]
+    with open(os.path.join(args.outDir, 'counts.log'), 'w') as f:
+      for name, value in pairs_0:
+        f.write('%s %d\n' % (name, value))
+      f.write('aaSeqLens min %d ave %.2f med %.1f max %d stdev %.2f\n' %
+              (numpy.min(self.aaSeqLens), numpy.mean(self.aaSeqLens),
+              numpy.median(self.aaSeqLens), numpy.max(self.aaSeqLens),
+              numpy.std(self.aaSeqLens))
+              )
+      for name, value in pairs_1:
+        f.write('%s %d\n' % (name, value))
+      f.write('\n')
+      for v in self.aaSeqLens:
+        f.write('%f\n' % v)
 
 def alignmentCoversGene(psl, t, mRNALength):
   """ Given a PSLRow object and a TRANSCRIPT object, determine
@@ -161,8 +211,9 @@ def extraArgs(parser):
 
 def main():
   args = lib_filter.boilerplateArguments(extraArgs)
-  original_seq_dict = lib_filter.getSequences(args.refSequence, upper=True)
+  counts = Counts()
   seq_dict = lib_filter.getSequences(args.sequence, upper=True)
+  original_seq_dict = lib_filter.getSequences(args.refSequence, upper=True)
   transcripts = lib_filter.getTranscripts(
     args.geneCheckBed, args.geneCheckBedDetails)
   original_transcripts = lib_filter.getTranscripts(
@@ -175,38 +226,57 @@ def main():
     key = '%s_%s' % (a.qName, a.tName)
     alignments_dict.setdefault(key, [])
     alignments_dict[key].append(a)
+  counts.transcripts = len(transcripts)
+  counts.o_transcripts = len(original_transcripts)
+  counts.seqs = len(seq_dict)
+  counts.o_seqs = len(original_seq_dict)
   for t in transcripts:
-    if len(t.exons) == 1 and not args.allowSingleExons: continue
-    if t.chromosomeInterval.chromosome not in seq_dict: continue
+    if len(t.exons) == 1 and not args.allowSingleExons:
+      counts.dropped_singleExons += 1
+      continue
+    if t.chromosomeInterval.chromosome not in seq_dict:
+      counts.dropped_missingSeqs += 1
+      continue
     ot = original_transcripts_dict[lib_filter.removeAlignmentNumber(t.name)]
     if ot.chromosomeInterval.chromosome not in original_seq_dict:
+      counts.dropped_o_missingSeqs += 1
       continue
     t_seq = seq_dict[t.chromosomeInterval.chromosome]
     ot_seq = original_seq_dict[ot.chromosomeInterval.chromosome]
     codon_seq = t.getMRna(t_seq)
-    if 'N' in codon_seq: continue
+    if 'N' in codon_seq:
+      counts.dropped_mRnaNs += 1
+      continue
     o_codon_seq = ot.getMRna(ot_seq)
     if codon_seq == o_codon_seq:
+      counts.dropped_matchingMRna += 1
       continue
     aa_seq = [lib_filter.codonToAminoAcid(c) for c
               in lib_filter.readCodons(codon_seq)]
     if aa_seq == []:
+      counts.dropped_emptyAASeq += 1
       continue
     if aa_seq[0] != 'Met':
+      counts.dropped_noStart += 1
       continue
     if aa_seq[-1] != 'Stop':
+      counts.dropped_noStop += 1
       continue
     o_aa_seq = [lib_filter.codonToAminoAcid(c) for c
                 in lib_filter.readCodons(o_codon_seq)]
     key = '%s_%s' % (lib_filter.removeAlignmentNumber(t.name),
                      t.chromosomeInterval.chromosome)
     alignments = alignments_dict[key]
+    counts.aaSeqLens.append(len(aa_seq) / float(len(o_aa_seq)))
     if len(aa_seq) < 0.1 * len(o_aa_seq):
+      counts.dropped_aaSeqTooShort += 1
       continue
     mutated_codons = set()
     for a in alignments:
+      counts.walkAlignment += 1
+      # if the psl does not cover the gene in question skip it
       if not alignmentCoversGene(a, t, len(codon_seq)):
-        # if the psl does not cover the gene in question skip it
+        counts.dropped_alignmentNoCoverGene += 1
         continue
       outOfFrame = False  # keep track of when we go out and come into frame.
       outOfFrameStart = None
@@ -215,6 +285,7 @@ def main():
       prevPositionWasJump = False  # keep track of the number of indels
       prevQ = None
       numIndels = 0
+      counts.walkMRna += 1
       for i in xrange(0, len(codon_seq)):
         # walk through every position of the codon_seq and map over to the o_codon_seq
         p = t.mRnaCoordinateToChromosome(i)
@@ -256,6 +327,7 @@ def main():
         recordOutOfFrame(
           a, t, ot, p, outOfFrameStart, numIndels)
         numIndels = 0
+  counts.recordCounts(args)
   lib_filter.writeAllBeds(transcripts, args)
 
 
