@@ -53,10 +53,11 @@ class Counts(object):
     with open(os.path.join(args.outDir, 'counts.log'), 'w') as f:
       for name, value in pairs_0:
         f.write('%s %d\n' % (name, value))
-      f.write('aaSeqLens min %d ave %.2f med %.1f max %d stdev %.2f\n' %
-              (numpy.min(self.aaSeqLens), numpy.mean(self.aaSeqLens),
-              numpy.median(self.aaSeqLens), numpy.max(self.aaSeqLens),
-              numpy.std(self.aaSeqLens))
+      f.write('aaSeqLens n %d min %d ave %.2f med %.1f max %d stdev %.2f\n' %
+              (len(self.aaSeqLens), numpy.min(self.aaSeqLens),
+               numpy.mean(self.aaSeqLens),
+               numpy.median(self.aaSeqLens), numpy.max(self.aaSeqLens),
+               numpy.std(self.aaSeqLens))
               )
       for name, value in pairs_1:
         f.write('%s %d\n' % (name, value))
