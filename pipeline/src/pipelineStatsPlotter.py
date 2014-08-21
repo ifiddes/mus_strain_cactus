@@ -36,9 +36,15 @@ class Stat(object):
   def __init__(self, name):
     self.name = name
     self.outOfFrame = 0.
+    self.outOfFrame_raw = 0
     self.nonsynon = 0.
+    self.nonsynon_raw = 0
     self.synon = 0.
+    self.synon_raw = 0
     self.nonsense = 0.
+    self.nonsense_raw = 0
+    self.filteredOut = 0
+    self.matchingMRna = 0
 
 
 def InitArguments(parser):
@@ -448,18 +454,45 @@ def ReadFiles(args):
     stat = Stat(os.path.dirname(xml).split('.')[-1])
     graph = lsg.readStatGraph(xml)
     stats = lsg.getTagStats(graph, 'nonsynon')
-    stat.nonsynon = (100. * stats.tagTranscriptAnnotations /
-                     stats.nodeTranscriptAnnotations)
+    stat.nonsynon_raw = stats.tagTranscripts
+    stat.nonsynon = (100. * stats.tagTranscripts /
+                     stats.nodeTranscripts)
     stats = lsg.getTagStats(graph, 'synon')
-    stat.synon = (100. * stats.tagTranscriptAnnotations /
-                  stats.nodeTranscriptAnnotations)
+    stat.synon_raw = stats.tagTranscripts
+    stat.synon = (100. * stats.tagTranscripts /
+                  stats.nodeTranscripts)
     stats = lsg.getTagStats(graph, 'outOfFrame')
-    stat.outOfFrame = (100. * stats.tagTranscriptAnnotations /
-                       stats.nodeTranscriptAnnotations)
+    stat.outOfFrame_raw = stats.tagTranscripts
+    stat.outOfFrame = (100. * stats.tagTranscripts /
+                       stats.nodeTranscripts)
     stats = lsg.getTagStats(graph, 'nonsense')
+    stat.nonsense_raw = stats.tagTranscriptAnnotations
     stat.nonsense = (100. * stats.tagTranscriptAnnotations /
                      stats.nodeTranscriptAnnotations)
     stat_dict[stat.name] = stat
+    # NOT SURE WHAT TO DO WITH THIS PART
+    transcripts = 0
+    with open(os.path.join(d, 'mRnaCompare', 'counts.log'), 'r') as f:
+      for line in f:
+        line = line.strip()
+        if line == '':
+          break
+        tokens = line.split()
+        if tokens[0] == 'transcripts':
+          transcripts = int(tokens[1])
+          continue
+        if tokens[0] in ['dropped_singleExons', 'dropped_missingSeqs',
+                         'dropped_o_missingSeqs', 'dropped_mRnaNs',
+                         'dropped_emptyAASeq', 'dropped_noStart',
+                         'dropped_noStop']:
+          stat.filteredOut += int(tokens[1])
+          continue
+        if tokens[0] == 'dropped_matchingMRna':
+          stat.matchingMRna = int(tokens[1])
+    denominator = transcripts - stat.filteredOut
+    stat.nonsynon = 100. * stat.nonsynon_raw / denominator
+    stat.synon = 100. * stat.synon_raw / denominator
+    stat.outOfFrame = 100. * stat.outOfFrame_raw / denominator
   return stat_dict
 
 
@@ -490,7 +523,7 @@ def PlotData(stat_dict, ax, args):
            'Rattus': 0.026107,
            }
   order = sorted(dists.keys(), key=lambda k: dists[k])
-  point_order = ['outOfFrame', 'nonsense', 'synon', 'nonsynon']
+  point_order = ['outOfFrame', 'synon', 'nonsynon']  # 'nonsense',
   for i, data in enumerate(point_order):
     ydata = [getattr(stat_dict[k], data) for k in order]
     if args.distance:
@@ -514,9 +547,11 @@ def PlotData(stat_dict, ax, args):
   else:
     ax.set_xscale('log')
     ax.set_xlabel('Phylogenetic distance from C57B6J')
-  ax.set_ylim([-0.5, 55.])
+  _range = numpy.max(ydata) - numpy.min(ydata)
+  ax.set_ylim([numpy.min(ydata) - 0.1 * _range,
+               numpy.max(ydata) + 0.1 * _range])
   ax.set_ylabel('Percent')
-  ax.set_title('Plot.')
+  ax.set_title(args.title)
   legend_labels = point_order
   proxy_plots = MakeProxyPlots(legend_labels, args)
   leg = plt.legend(proxy_plots, legend_labels, 'upper left', numpoints=1)
