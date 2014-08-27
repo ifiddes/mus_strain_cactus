@@ -139,7 +139,7 @@ def main():
   ##############################
   filters.append('nLook')
   filters.append('shortScaffold_noStartStop')
-  filters.append('noStopCorrecter')
+  filters.append('noStopCorrector')
   filters.append('paralogs')
   filters.append('nonsense')
   filters.append('mRnaCompare')

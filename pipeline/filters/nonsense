@@ -33,13 +33,13 @@ def main():
           p = t.mRnaCoordinateToChromosome(i * 3)
         else:
           p = t.mRnaCoordinateToChromosome(i * 3) - 2
-        a = lib_filter.TranscriptAnnotation(
+        annot = lib_filter.TranscriptAnnotation(
           lib_filter.ChromosomeInterval(
             t.chromosomeInterval.chromosome, p, p + 3,
             t.chromosomeInterval.strand),
           t.name, [])
-        a.addLabel('nonsense')
-        t.annotations.append(a)
+        annot.addLabel('nonsense')
+        t.annotations.append(annot)
   lib_filter.writeAllBeds(transcripts, args)
 
 
