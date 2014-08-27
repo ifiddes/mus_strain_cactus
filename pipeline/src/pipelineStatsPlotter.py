@@ -36,13 +36,17 @@ class Stat(object):
   def __init__(self, name):
     self.name = name
     self.outOfFrame = 0.
-    self.outOfFrame_raw = 0
+    self.outOfFrame_transcripts = 0
+    self.outOfFrame_transcriptAnnotationss = 0
     self.nonsynon = 0.
-    self.nonsynon_raw = 0
+    self.nonsynon_transcripts = 0
+    self.nonsynon_transcriptAnnotations = 0
     self.synon = 0.
-    self.synon_raw = 0
+    self.synon_transcripts = 0
+    self.synon_transcriptAnnotations = 0
     self.nonsense = 0.
-    self.nonsense_raw = 0
+    self.nonsense_transcripts = 0
+    self.nonsense_transcriptAnnotations = 0
     self.filteredOut = 0
     self.matchingMRna = 0
 
@@ -57,6 +61,8 @@ def InitArguments(parser):
                       help='location of pipeline results dir')
   parser.add_argument('--distance', action='store_true', default=False,
                       help='x-axis is phylogenetic distance.')
+  parser.add_argument('--perTranscript', action='store_true', default=False,
+                      help='plot the number of things per transcript.')
   parser.add_argument('--out', dest='out', default='my_plot',
                       type=str,
                       help=('path/filename where figure will be created. No '
@@ -454,23 +460,26 @@ def ReadFiles(args):
     stat = Stat(os.path.dirname(xml).split('.')[-1])
     graph = lsg.readStatGraph(xml)
     stats = lsg.getTagStats(graph, 'nonsynon')
-    stat.nonsynon_raw = stats.tagTranscripts
+    stat.nonsynon_transcripts = stats.tagTranscripts
+    stat.nonsynon_transcriptAnnotations = stats.tagTranscriptAnnotations
     stat.nonsynon = (100. * stats.tagTranscripts /
                      stats.nodeTranscripts)
     stats = lsg.getTagStats(graph, 'synon')
-    stat.synon_raw = stats.tagTranscripts
+    stat.synon_transcripts = stats.tagTranscripts
+    stat.synon_transcriptAnnotations = stats.tagTranscriptAnnotations
     stat.synon = (100. * stats.tagTranscripts /
                   stats.nodeTranscripts)
     stats = lsg.getTagStats(graph, 'outOfFrame')
-    stat.outOfFrame_raw = stats.tagTranscripts
+    stat.outOfFrame_transcripts = stats.tagTranscripts
+    stat.outOfFrame_transcriptAnnotations = stats.tagTranscriptAnnotations
     stat.outOfFrame = (100. * stats.tagTranscripts /
                        stats.nodeTranscripts)
     stats = lsg.getTagStats(graph, 'nonsense')
-    stat.nonsense_raw = stats.tagTranscriptAnnotations
+    stat.nonsense_transcripts = stats.tagTranscripts
+    stat.nonsense_transcriptAnnotations = stats.tagTranscriptAnnotations
     stat.nonsense = (100. * stats.tagTranscriptAnnotations /
                      stats.nodeTranscriptAnnotations)
     stat_dict[stat.name] = stat
-    # NOT SURE WHAT TO DO WITH THIS PART
     transcripts = 0
     with open(os.path.join(d, 'mRnaCompare', 'counts.log'), 'r') as f:
       for line in f:
@@ -490,9 +499,14 @@ def ReadFiles(args):
         if tokens[0] == 'dropped_matchingMRna':
           stat.matchingMRna = int(tokens[1])
     denominator = transcripts - stat.filteredOut
-    stat.nonsynon = 100. * stat.nonsynon_raw / denominator
-    stat.synon = 100. * stat.synon_raw / denominator
-    stat.outOfFrame = 100. * stat.outOfFrame_raw / denominator
+    if not args.perTranscript:
+      stat.nonsynon = 100. * stat.nonsynon_transcripts / denominator
+      stat.synon = 100. * stat.synon_transcripts / denominator
+      stat.outOfFrame = 100. * stat.outOfFrame_transcripts / denominator
+    else:
+      stat.nonsynon = stat.nonsynon_transcriptAnnotations / denominator
+      stat.synon = stat.synon_transcriptAnnotations / denominator
+      stat.outOfFrame = stat.outOfFrame_transcriptAnnotations / denominator
   return stat_dict
 
 
@@ -524,10 +538,18 @@ def PlotData(stat_dict, ax, args):
            }
   order = sorted(dists.keys(), key=lambda k: dists[k])
   point_order = ['outOfFrame', 'synon', 'nonsynon']  # 'nonsense',
+  ymin = sys.maxint
+  ymax = -ymin
   for i, data in enumerate(point_order):
     ydata = [getattr(stat_dict[k], data) for k in order]
+    ymin = min(numpy.min(ydata), ymin)
+    ymax = max(numpy.max(ydata), ymax)
     if args.distance:
       xdata = [dists[s] for s in order]
+      _range = numpy.max(xdata) - numpy.min(ydata)
+      if args.jitter:
+        xdata += numpy.random.uniform(low=0 - _range*0.01, high=_range*0.01,
+                                      size=len(xdata))
     else:
       xdata = numpy.array(range(0, len(order))) + 0.05 * (i - 1.5)
     ax.add_line(
@@ -538,6 +560,7 @@ def PlotData(stat_dict, ax, args):
                    markersize=args.markersize,
                    markerfacecolor=ColorPicker(i, args),
                    markeredgecolor='None',
+                   alpha=args.alpha,
                    linewidth=0))
   if not args.distance:
     ax.xaxis.set_ticks(numpy.arange(0, len(order)))
@@ -545,12 +568,17 @@ def PlotData(stat_dict, ax, args):
                             horizontalalignment='right')
     ax.set_xlim([-1, len(order)])
   else:
-    ax.set_xscale('log')
+    if args.is_log_y: ax.set_xscale('log')
     ax.set_xlabel('Phylogenetic distance from C57B6J')
-  _range = numpy.max(ydata) - numpy.min(ydata)
-  ax.set_ylim([numpy.min(ydata) - 0.1 * _range,
-               numpy.max(ydata) + 0.1 * _range])
-  ax.set_ylabel('Percent')
+  _range = ymax - ymin
+  ax.set_ylim([ymin - 0.1 * _range, ymax + 0.1 * _range])
+  _range = numpy.max(xdata) - numpy.min(xdata)
+  ax.set_xlim([numpy.min(xdata) - 0.1 * _range,
+               numpy.max(xdata) + 0.1 * _range])
+  if args.perTranscript:
+    ax.set_ylabel('Mutations per Transcript')
+  else:
+    ax.set_ylabel('Percent')
   ax.set_title(args.title)
   legend_labels = point_order
   proxy_plots = MakeProxyPlots(legend_labels, args)
