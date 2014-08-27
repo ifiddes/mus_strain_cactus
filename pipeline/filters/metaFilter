@@ -16,7 +16,7 @@ sys.path.append(
       os.path.dirname(  # pipeline
         os.path.dirname(  # filters
           os.path.abspath(sys.argv[0])))),
-    'src'))  # to import lib_run
+    'lib'))  # to import lib_run
 import shutil
 import sys
 import lib_filter

@@ -6,12 +6,18 @@ from argparse import ArgumentParser
 from jobTree.scriptTree.stack import Stack
 from jobTree.scriptTree.target import Target
 from glob import glob
+import os
+import sys
+sys.path.append(
+  os.path.join(
+      os.path.dirname(  # mus_strain_cactus
+        os.path.dirname(  # augustus
+          os.path.abspath(sys.argv[0]))),
+    'lib'))  # to import lib_run
 import lib_run
 # import MySQLdb
-import os
 from sonLib.bioio import logger
 import subprocess
-import sys
 import time
 ##################################################
 # Copyright (c) 2014 Dent Earl, Benedict Paten, Mark Diekhans, Craig Hunter

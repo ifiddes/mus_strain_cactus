@@ -7,13 +7,19 @@ from argparse import ArgumentParser
 from jobTree.scriptTree.stack import Stack
 from jobTree.scriptTree.target import Target
 from glob import glob
-import lib_run
 from math import floor
 import os
 from sonLib.bioio import logger
 import subprocess
 import sys
 import time
+sys.path.append(
+  os.path.join(
+      os.path.dirname(  # mus_strain_cactus
+        os.path.dirname(  # augustus
+          os.path.abspath(sys.argv[0]))),
+    'lib'))  # to import lib_run
+import lib_run
 ##################################################
 # Copyright (c) 2014 Dent Earl, Benedict Paten, Mark Diekhans, Craig Hunter
 # ... and other members of the Reconstruction Team of David Haussler's
