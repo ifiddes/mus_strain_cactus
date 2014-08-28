@@ -18,9 +18,10 @@ import re
 import sys
 sys.path.append(
   os.path.join(
-      os.path.dirname(  # mus_strain_cactus
+    os.path.dirname(  # mus_strain_cactus
+      os.path.dirname(  # src
         os.path.dirname(  # augustus
-          os.path.abspath(sys.argv[0]))),
+          os.path.abspath(sys.argv[0])))),
     'lib'))  # to import lib_run
 import lib_run
 
