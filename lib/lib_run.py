@@ -276,12 +276,12 @@ def PrettyTimeToSeconds(t):
   def triageWeek(t):
     assert(len(t) == 7)
     assert(t[1].startswith('week'))
-    s = 7 * 24 * 60 * 60 * int(t[0][:-1])
+    s = 7 * 24 * 60 * 60 * int(t[0])
     return s + triageDay(t[2:])
   def triageDay(t):
     assert(len(t) == 5)
     assert(t[1].startswith('day'))
-    s = 24 * 60 * 60 * int(t[0][:-1])
+    s = 24 * 60 * 60 * int(t[0])
     return s + triageHour(t[2:])
   def triageHour(t):
     assert(len(t) == 3)
@@ -303,7 +303,7 @@ def PrettyTimeToSeconds(t):
   try:
     n = float(d[0])
     # either week or day data leads the list
-    if d[0].startswith('week'):
+    if d[0].endswith('week'):
       return triageWeek(d)
     else:
       return triageDay(d)
@@ -316,7 +316,9 @@ def PrettyTimeToSeconds(t):
     elif d[0].endswith('s'):
       return triageSecond(d)
     else:
-      raise RuntimeError('wtf is wrong with this prettyString: %s' % t)
+      print ('wtf is wrong with this prettyString: '
+             '->%s<-, d[0]=%s' % (t, d[0]))
+      raise
 
 
 def TimeStamp(out_path, time_start=None, name=None, tag=''):

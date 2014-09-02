@@ -148,7 +148,7 @@ def reportResults(windows, args):
          len([w for w in windows if w.success]),
          len([w for w in windows if w.inProgress]),
          ))
-  print('%9s  %12s % 12s %6s %15s %12s' %
+  print('%9s  %18s % 18s %6s %18s %18s' %
         ('', 'ave', 'med', 'min', 'max', 'std'))
   for name, times in [
     ('hal2maf', [w.halTime for w in windows if w.halComplete]),
@@ -163,7 +163,7 @@ def reportResults(windows, args):
       tmin = formatTime(numpy.min(times), args)
       tmax = formatTime(numpy.max(times), args)
       tstd = formatTime(numpy.std(times), args)
-      print('%9s  %12s %12s %6s %15s %12s' %
+      print('%9s  %18s %18s %6s %18s %18s' %
             (name, tmean, tmed, tmin, tmax, tstd))
 
 
