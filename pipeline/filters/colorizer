@@ -19,7 +19,7 @@ def colorCmp(a, b):
   """
   if a == b:
     return a
-  for value in ['input', 'nonsense', 'alignment', 'generic', 'ok']:
+  for value in ['input', 'mutation', 'alignment', 'generic', 'ok']:
     if a == value or b == value:
       return value
 
@@ -31,7 +31,7 @@ def classify(a):
   if a.endswith('preexisting'):
     return 'input'
   if a in ['nonsense', 'nonsynon', 'synon']:
-    return 'nonsense'
+    return 'mutation'
   if a in ['alignmentPartialMap', 'alignmentAbutsEdge', 'containsNs']:
     return 'assembly'
   if a in ['hasOkCopies', 'hasBadCopies']:
@@ -46,7 +46,7 @@ def colorize(t):
   """
   # rgb colors
   colors = {'input': '219,220,222',  # grey
-            'nonsense': '132,35,27',  # red-ish
+            'mutation': '132,35,27',  # red-ish
             'assembly': '167,206,226',  # l blue
             'alignment': '35,125,191',  # blue
             'generic': '163,116,87',  # l brown
