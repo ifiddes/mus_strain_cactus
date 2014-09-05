@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 """
+n50_matrix_plotter
+4 sept 2014
+dent earl, dearl a soe ucsc edu
+
+tool to inspect data release directories and pull out *sizes files,
+then create a matrix plot of species and n-curves.
 
 """
 ##############################
