@@ -115,6 +115,7 @@ def CheckArguments(args, parser):
     if not os.path.isdir(d):
       parser.error('%s is not a directory.' % d)
 
+
 def InitImage(args):
   """ Initialize a new image.
 
