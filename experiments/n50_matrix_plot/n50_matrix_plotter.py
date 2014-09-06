@@ -257,6 +257,7 @@ def OnePlot(d_list, ax, args):
     # plot each release for a given species
     ax.plot(d.cumSum, d.sizes, color=colors_medium[ReleaseToIndex(d.release)])
   ax.set_title(d.name)
+  ax.set_xlim([0.0, 1.0])
   ax.set_xticks([0.0, 0.5, 1.0])
   ax.set_xticklabels([0, 0.5, 1.0])
   ax.locator_params(axis='y', nbins=4)

@@ -586,7 +586,6 @@ def PlotData(stat_dict, ax, args):
   leg._drawFrame = False
 
 
-
 def main():
   parser = ArgumentParser()
   InitArguments(parser)
