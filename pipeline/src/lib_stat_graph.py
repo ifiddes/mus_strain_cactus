@@ -9,7 +9,10 @@ import xml.etree.ElementTree as ET
 import xml.parsers.expat as expat # exception handling for empty xml
 sys.path.append(
   os.path.join(
-    os.path.dirname(os.path.abspath(sys.argv[0])), 'filters'))
+    os.path.dirname( # pipeline
+      os.path.dirname( # src
+        os.path.abspath(__file__))),
+      'filters'))
 import lib_filter
 
 
