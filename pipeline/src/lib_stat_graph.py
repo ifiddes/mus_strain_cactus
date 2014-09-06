@@ -84,7 +84,12 @@ def recordStatGraph(g, path):
 def readStatGraph(xml):
   """ read a stat graph located at path PATH.
   """
-  return ET.parse(xml)
+  try:
+    sg = ET.parse(xml)
+  except ET.ParseError:
+    sys.stderr.write('Stat graph %s seems to be not well formed :( ' % xml)
+    raise
+  return sg
 
 
 def recordOk(root, transcript):
@@ -122,6 +127,7 @@ def cleanLabel(label):
   """
   if label.startswith('^'):
     label = label[1:] + '_prexisting'
+  label = label.replace('?', 'Q')  # happens with mRnaCompare filter labels
   return label
 
 
