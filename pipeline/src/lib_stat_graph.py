@@ -341,7 +341,8 @@ def getTagStats(graph, tag):
 def reportTagStats(stats, tag, lower):
   """ Given some tag statistics STATS, report the data.
   """
-  transcript_level_tags = ['hasOkCopies', 'hasBadCopies', 'ok', 'not_ok']
+  transcript_level_tags = ['stats', 'hasOkCopies', 'hasBadCopies',
+                           'ok', 'not_ok']
   level = 0
   increment = 1
   if tag in transcript_level_tags:
