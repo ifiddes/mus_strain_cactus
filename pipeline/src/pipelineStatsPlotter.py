@@ -35,9 +35,12 @@ import lib_stat_graph as lsg
 class Stat(object):
   def __init__(self, name):
     self.name = name
+    self.ok = 0.
+    self.ok_transcripts = 0
+    self.ok_transcriptsAonnations = 0
     self.outOfFrame = 0.
     self.outOfFrame_transcripts = 0
-    self.outOfFrame_transcriptAnnotationss = 0
+    self.outOfFrame_transcriptAnnotations = 0
     self.nonsynon = 0.
     self.nonsynon_transcripts = 0
     self.nonsynon_transcriptAnnotations = 0
@@ -63,6 +66,11 @@ def InitArguments(parser):
                       help='x-axis is phylogenetic distance.')
   parser.add_argument('--perTranscript', action='store_true', default=False,
                       help='plot the number of things per transcript.')
+  parser.add_argument(
+    '--tags', type=str, default='ok,outOfFrame,synon,nonsynon,nonsense',
+    help='comma separated list of tags,')
+  parser.add_argument('--exclude', type=str, default='',
+                      help='comma separated list of species to exclude')
   parser.add_argument('--out', dest='out', default='my_plot',
                       type=str,
                       help=('path/filename where figure will be created. No '
@@ -170,6 +178,8 @@ def CheckArguments(args, parser):
   args.xmin = sys.maxint
   args.ymax = -sys.maxint
   args.ymin = sys.maxint
+  args.tags = args.tags.split(',')
+  args.exclude = args.exclude.split(',')
   DefineColors(args)
 
 
@@ -457,28 +467,18 @@ def ReadFiles(args):
   stat_dict = {}
   for d in glob(os.path.join(args.in_dir, 'metaFilter.*')):
     xml = os.path.join(d, 'stats.xml')
-    stat = Stat(os.path.dirname(xml).split('.')[-1])
+    name = os.path.dirname(xml).split('.')[-1]
+    if name in args.exclude:
+      continue
+    stat = Stat(name)
     graph = lsg.readStatGraph(xml)
-    stats = lsg.getTagStats(graph, 'nonsynon')
-    stat.nonsynon_transcripts = stats.tagTranscripts
-    stat.nonsynon_transcriptAnnotations = stats.tagTranscriptAnnotations
-    stat.nonsynon = (100. * stats.tagTranscripts /
-                     stats.nodeTranscripts)
-    stats = lsg.getTagStats(graph, 'synon')
-    stat.synon_transcripts = stats.tagTranscripts
-    stat.synon_transcriptAnnotations = stats.tagTranscriptAnnotations
-    stat.synon = (100. * stats.tagTranscripts /
-                  stats.nodeTranscripts)
-    stats = lsg.getTagStats(graph, 'outOfFrame')
-    stat.outOfFrame_transcripts = stats.tagTranscripts
-    stat.outOfFrame_transcriptAnnotations = stats.tagTranscriptAnnotations
-    stat.outOfFrame = (100. * stats.tagTranscripts /
-                       stats.nodeTranscripts)
-    stats = lsg.getTagStats(graph, 'nonsense')
-    stat.nonsense_transcripts = stats.tagTranscripts
-    stat.nonsense_transcriptAnnotations = stats.tagTranscriptAnnotations
-    stat.nonsense = (100. * stats.tagTranscriptAnnotations /
-                     stats.nodeTranscriptAnnotations)
+    tags = args.tags  # ['ok', 'nonsynon', 'synon', 'outOfFrame', 'nonsense']
+    tuples = [(t, '%s_transcripts' % t, '%s_transcriptAnnotations' % t) for t in tags]
+    for name, v_t, v_ta in tuples:
+      stats = lsg.getTagStats(graph, name)
+      setattr(stat, v_t, stats.tagTranscripts)
+      setattr(stat, v_ta, stats.tagTranscriptAnnotations)
+      setattr(stat, name, (100. * stats.tagTranscripts / stats.nodeTranscripts))
     stat_dict[stat.name] = stat
     transcripts = 0
     with open(os.path.join(d, 'mRnaCompare', 'counts.log'), 'r') as f:
@@ -537,15 +537,15 @@ def PlotData(stat_dict, ax, args):
            'Rattus': 0.026107,
            }
   order = sorted(dists.keys(), key=lambda k: dists[k])
-  point_order = ['outOfFrame', 'synon', 'nonsynon']  # 'nonsense',
+  point_order = args.tags #['ok', 'outOfFrame', 'synon', 'nonsynon']  # 'nonsense',
   ymin = sys.maxint
   ymax = -ymin
   for i, data in enumerate(point_order):
-    ydata = [getattr(stat_dict[k], data) for k in order]
+    ydata = [getattr(stat_dict[k], data) for k in order if k not in args.exclude]
     ymin = min(numpy.min(ydata), ymin)
     ymax = max(numpy.max(ydata), ymax)
     if args.distance:
-      xdata = [dists[s] for s in order]
+      xdata = [dists[s] for s in order if s not in args.exclude]
       _range = numpy.max(xdata) - numpy.min(ydata)
       if args.jitter:
         xdata += numpy.random.uniform(low=0 - _range*0.01, high=_range*0.01,
@@ -568,7 +568,7 @@ def PlotData(stat_dict, ax, args):
                             horizontalalignment='right')
     ax.set_xlim([-1, len(order)])
   else:
-    if args.is_log_y: ax.set_xscale('log')
+    if args.is_log_x: ax.set_xscale('log')
     ax.set_xlabel('Phylogenetic distance from C57B6J')
   _range = ymax - ymin
   ax.set_ylim([ymin - 0.1 * _range, ymax + 0.1 * _range])
