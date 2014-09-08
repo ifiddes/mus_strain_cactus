@@ -499,14 +499,13 @@ def ReadFiles(args):
         if tokens[0] == 'dropped_matchingMRna':
           stat.matchingMRna = int(tokens[1])
     denominator = transcripts - stat.filteredOut
-    if not args.perTranscript:
-      stat.nonsynon = 100. * stat.nonsynon_transcripts / denominator
-      stat.synon = 100. * stat.synon_transcripts / denominator
-      stat.outOfFrame = 100. * stat.outOfFrame_transcripts / denominator
-    else:
-      stat.nonsynon = stat.nonsynon_transcriptAnnotations / denominator
-      stat.synon = stat.synon_transcriptAnnotations / denominator
-      stat.outOfFrame = stat.outOfFrame_transcriptAnnotations / denominator
+    for name, v_t, v_ta in tuples:
+      if not args.perTranscript:
+        setattr(stat, name, 100. * getattr(stat, '%s_transcripts' % name) / denominator)
+        # stat.nonsynon = 100. * stat.nonsynon_transcripts / denominator
+      else:
+        setattr(stat, name, getattr(stat, '%s_transcriptAnnotations' % name) / denominator)
+        # stat.nonsynon = stat.nonsynon_transcriptAnnotations / denominator
   return stat_dict
 
 
