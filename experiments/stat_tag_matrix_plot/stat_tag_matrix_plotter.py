@@ -210,11 +210,12 @@ def EstablishAxes(data_list, fig, args):
   args.axBottom = 0.34 / args.height
   args.axTop = 1.0 - (0.28 / args.height)
   args.axHeight = args.axTop - args.axBottom
-  margin = 0.01
+  xmargin = 0.01
+  ymargin = 0.03
   ncol = len(data_list)
   nrow = len(args.rows)
-  args.itemWidth = (args.axWidth - (ncol - 1) * margin) / float(ncol)
-  args.itemHeight = (args.axHeight - (nrow - 1) * margin) / float(nrow)
+  args.itemWidth = (args.axWidth - (ncol - 1) * xmargin) / float(ncol)
+  args.itemHeight = (args.axHeight - (nrow - 1) * ymargin) / float(nrow)
   x, y = args.axLeft, args.axTop - args.itemHeight
   axDict = {}
   for r in args.rows:
@@ -224,8 +225,8 @@ def EstablishAxes(data_list, fig, args):
                          args.itemWidth, args.itemHeight])
       FixAxis(i, ax)
       axDict[(r, c.name)] = ax
-      x += margin + args.itemWidth
-    y -= margin + args.itemHeight
+      x += xmargin + args.itemWidth
+    y -= ymargin + args.itemHeight
   return axDict
 
 
@@ -412,6 +413,7 @@ def PlotOneDelta(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
   if drawYAxis:
     ax.locator_params(axis='y', nbins=3)
     ax.text(0.5, 0, r, ha='center', va='bottom', size='xx-small')
+    ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 999))
   else:
     ax.set_yticks([])
 
@@ -449,6 +451,7 @@ def PlotOneRaw(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
   if drawYAxis:
     ax.locator_params(axis='y', nbins=3)
     ax.text(0.5, 0, r, ha='center', va='bottom', size='xx-small')
+    ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 999))
   else:
     ax.set_yticks([])
 
