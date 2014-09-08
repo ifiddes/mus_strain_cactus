@@ -42,12 +42,13 @@ import lib_stat_graph as lsg
 class Strain(object):
   """ represents a strain genome, one column in the plot
   """
-  def __init__(self, name, xml_0, xml_1):
+  def __init__(self, name, xml_0, xml_1=None):
     self.name = name
     self.xml_0 = xml_0
     self.xml_1 = xml_1
     self.graph_0 = lsg.readStatGraph(xml_0)
-    self.graph_1 = lsg.readStatGraph(xml_1)
+    if self.xml_1 is not None:
+      self.graph_1 = lsg.readStatGraph(xml_1)
     self.transcript_level_tags = ['hasOkCopies', 'hasBadCopies',
                                   'ok', 'not_ok']
   def getRootValue_0(self):
@@ -93,8 +94,10 @@ class Strain(object):
 
 
 def InitializeArguments(parser):
-  parser.add_argument('releases', nargs=2, type=str,
+  parser.add_argument('releases', nargs='+', type=str,
                       help='assembly release directories.')
+  parser.add_argument('--mode', choices=['delta', 'raw'],
+                      help='mode to plot. choices are delta or raw.')
   parser.add_argument('--out', dest='out', default='my_plot',
                       type=str,
                       help=('path/filename where figure will be created. No '
@@ -109,7 +112,7 @@ def InitializeArguments(parser):
                             'if --outFormat is all or png. '
                             'default=%(default)s'))
   parser.add_argument('--out_format', dest='out_format', default='pdf',
-                      type=str,
+                      type=str, choices=['pdf', 'png', 'eps', 'all'],
                       help=('output format [pdf|png|eps|all]. '
                             'default=%(default)s'))
   parser.add_argument('--no_legend', dest='is_legend', default=True,
@@ -132,16 +135,30 @@ def InitializeArguments(parser):
 
 
 def CheckArguments(args, parser):
-  args.rows = ['stats', 'ok', 'ok:hasOkCopies', 'ok:hasBadCopies',
-               'not_ok', 'not_ok:hasOkCopies', 'not_ok:hasBadCopies',
-               'not_ok:noStop', 'not_ok:noStop:alignmentPartialMap',
-               'not_ok:noStop:alignmentPartialMap:alignmentAbutsEdge',
-               'not_ok:noStart', 'not_ok:noStart:alignmentPartialMap',
-               'not_ok:noStart:alignmentPartialMap:alignmentAbutsEdge',
-               'not_ok:nonsense',
-               'not_ok:synon', 'not_ok:nonsynon', 'not_ok:outOfFrame']
+  if args.mode == 'delta':
+    args.rows = ['stats', 'ok', 'ok:hasOkCopies', 'ok:hasBadCopies',
+                 'not_ok', 'not_ok:hasOkCopies', 'not_ok:hasBadCopies',
+                 'not_ok:noStop', 'not_ok:noStop:alignmentPartialMap',
+                 'not_ok:noStop:alignmentPartialMap:alignmentAbutsEdge',
+                 'not_ok:noStart', 'not_ok:noStart:alignmentPartialMap',
+                 'not_ok:noStart:alignmentPartialMap:alignmentAbutsEdge',
+                 'not_ok:nonsense',
+                 'not_ok:synon', 'not_ok:nonsynon', 'not_ok:outOfFrame']
+  else:
+    args.rows = ['stats', 'ok', 'ok:hasOkCopies', 'ok:hasBadCopies',
+                 'not_ok', 'not_ok:hasOkCopies', 'not_ok:hasBadCopies',
+                 'not_ok:noStop', 'not_ok:noStop:alignmentPartialMap',
+                 'not_ok:noStop:alignmentPartialMap:alignmentAbutsEdge',
+                 'not_ok:noStart', 'not_ok:noStart:alignmentPartialMap',
+                 'not_ok:noStart:alignmentPartialMap:alignmentAbutsEdge',
+                 'not_ok:nonsense',
+                 'not_ok:synon', 'not_ok:nonsynon', 'not_ok:outOfFrame']
   if args.releases is None:
     parser.error('Specify *sizes files!')
+  if args.mode == 'delta' and len(args.releases) != 2:
+    parser.error('not enough release directories specified for --mode delta.')
+  if args.mode == 'raw' and len(args.releases) != 1:
+    parser.error('too many release directories specified for --mode raw.')
   for d in args.releases:
     if not os.path.exists(d):
       parser.error('release directory %s does not exist.' % d)
@@ -250,6 +267,29 @@ def WriteImage(fig, pdf, args):
 
 
 def ReadFiles(args):
+  """ read all the things.
+  """
+  if args.mode == 'delta':
+    return ReadFilesDelta(args)
+  else:
+    return ReadFilesRaw(args)
+
+
+def ReadFilesRaw(args):
+  """ read all the things and then return a list of Strain objects.
+  """
+  data = []
+  for r in args.releases:
+    xmls = glob(os.path.join(r, '*', 'stats.xml'))
+    for x in xmls:
+      # get all xmls
+      name = os.path.split(os.path.dirname(x))[1].split('.')[1]
+      data.append(Strain(name, x))
+  data = sorted(data, key=lambda d: d.getValue_0('ok'), reverse=True)
+  return data
+
+
+def ReadFilesDelta(args):
   """ read all the things and then return a list of Strain objects.
   """
   pairs = {} # keyed by strain name, valued by list (paths to xmls)
@@ -277,11 +317,18 @@ def GetLimits(r, data_list, args):
   for d in data_list:
     if r == 'stats':
       v0 = d.getRootValue_0()
-      v1 = d.getRootValue_1()
-      ylim[0] = min(ylim[0], min(v0, v1))
-      ylim[1] = max(ylim[1], max(v0, v1))
+      if args.mode == 'delta':
+        v1 = d.getRootValue_1()
+        ylim[0] = min(ylim[0], min(v0, v1))
+        ylim[1] = max(ylim[1], max(v0, v1))
+      else:
+        ylim[0] = min(ylim[0], v0)
+        ylim[1] = max(ylim[1], v0)
     else:
-      v = d.getDelta(r)
+      if args.mode == 'delta':
+        v = d.getDelta(r)
+      else:
+        v = d.getValue_0(r)
       ylim[0] = min(ylim[0], v)
       ylim[1] = max(ylim[1], v)
   # ensure that 0 is present in the yaxis
@@ -309,19 +356,13 @@ def PlotData(data_list, axDict, args):
 def PlotOne(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
   """ Plot one axes worth of data. d is a Strain object
   """
-  colors_medium = args.colors_medium = [( 98, 162, 209),  # m blue
-                                        (190, 154,  87),  # m mustard
-                                        (223, 133, 131),  # m pink
-                                        (  0, 183, 134),  # m green
-                                        (126, 173,  90),  # m olive
-                                        (  0, 180, 181),  # m teal
-                                        (187, 134, 209),  # m purple
-                                        (225, 122, 179),  # m magenta
-                                        ]
-  for i in xrange(0, len(colors_medium)):
-    colors_medium[i] = (colors_medium[i][0] / 255.0,
-                        colors_medium[i][1] / 255.0,
-                        colors_medium[i][2] / 255.0,)
+  if args.mode == 'delta':
+    PlotOneDelta(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle)
+  else:
+    PlotOneRaw(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle)
+
+
+def PlotOneDelta(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
   if r == 'stats':
     v0 = d.getRootValue_0()
     v1 = d.getRootValue_1()
@@ -331,11 +372,19 @@ def PlotOne(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
   if v == 0 or v is None:
     v = -0.1  # small negative nudge
   color = GetColor(v)
+  ax.add_line(lines.Line2D(xdata=[0.1, 0.9],
+                           ydata=[0, 0],
+                           color='gray',
+                           linewidth=0.5))
+  if v > 0:
+    va = 'bottom'
+  else:
+    va = 'top'
   if r != 'stats':
     ax.add_patch(patches.Rectangle((0.33, 0), 0.33, v, facecolor=color,
                                    linewidth=None,
                                    edgecolor='none',))
-    ax.text(0.5, v, '%d' % v, ha='center', va='bottom', size='x-small')
+    ax.text(0.5, v, '%d' % v, ha='center', va=va, size='x-small')
   else:
     ax.add_patch(patches.Rectangle((0.25, 0), 0.25, v0, facecolor=color,
                                    linewidth=None,
@@ -343,8 +392,8 @@ def PlotOne(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
     ax.add_patch(patches.Rectangle((0.5, 0), 0.25, v1, facecolor=color,
                                    linewidth=None,
                                    edgecolor='none',))
-    ax.text(0.33, v0, '%d' % v0, ha='center', va='bottom', size='xx-small')
-    ax.text(0.66, v1, '%d' % v1, ha='center', va='bottom', size='xx-small')
+    ax.text(0.33, v0, '%d' % v0, ha='center', va=va, size='xx-small')
+    ax.text(0.66, v1, '%d' % v1, ha='center', va=va, size='xx-small')
   ax.set_xlim(xlim)
   ax.set_ylim(ylim)
   if drawTitle:
@@ -352,6 +401,44 @@ def PlotOne(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
   ax.set_xticks([])
   if drawYAxis:
     ax.locator_params(axis='y', nbins=3)
+    ax.text(0.5, 0, r, ha='center', va='bottom', size='xx-small')
+  else:
+    ax.set_yticks([])
+
+
+def PlotOneRaw(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
+  if r == 'stats':
+    v = d.getRootValue_0()
+  else:
+    v = d.getValue_0(r)
+  if v == 0 or v is None:
+    v = -0.1  # small negative nudge
+  color = GetColor(v)
+  ax.add_line(lines.Line2D(xdata=[0.1, 0.9],
+                           ydata=[0, 0],
+                           color='gray',
+                           linewidth=0.5))
+  if v > 0:
+    va = 'bottom'
+  else:
+    va = 'top'
+  if r != 'stats':
+    ax.add_patch(patches.Rectangle((0.33, 0), 0.33, v, facecolor=color,
+                                   linewidth=None,
+                                   edgecolor='none',))
+  else:
+    ax.add_patch(patches.Rectangle((0.33, 0), 0.33, v, facecolor=color,
+                                   linewidth=None,
+                                   edgecolor='none',))
+  ax.text(0.5, v, '%d' % v, ha='center', va=va, size='xx-small')
+  ax.set_xlim(xlim)
+  ax.set_ylim(ylim)
+  if drawTitle:
+    ax.set_title(d.name)
+  ax.set_xticks([])
+  if drawYAxis:
+    ax.locator_params(axis='y', nbins=3)
+    ax.text(0.5, 0, r, ha='center', va='bottom', size='xx-small')
   else:
     ax.set_yticks([])
 
