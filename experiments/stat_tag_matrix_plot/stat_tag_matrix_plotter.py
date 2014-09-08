@@ -98,6 +98,8 @@ def InitializeArguments(parser):
                       help='assembly release directories.')
   parser.add_argument('--mode', choices=['delta', 'raw'],
                       help='mode to plot. choices are delta or raw.')
+  parser.add_argument('--exclude', type=str,
+                      help='specify species to exclude, comma separated list.')
   parser.add_argument('--out', dest='out', default='my_plot',
                       type=str,
                       help=('path/filename where figure will be created. No '
@@ -164,6 +166,10 @@ def CheckArguments(args, parser):
       parser.error('release directory %s does not exist.' % d)
     if not os.path.isdir(d):
       parser.error('%s is not a directory.' % d)
+  if args.exclude is not None:
+    args.exclude = args.exclude.split(',')
+  else:
+    args.exclude = []
 
 
 def InitImage(args):
@@ -284,6 +290,8 @@ def ReadFilesRaw(args):
     for x in xmls:
       # get all xmls
       name = os.path.split(os.path.dirname(x))[1].split('.')[1]
+      if name in args.exclude:
+        continue
       data.append(Strain(name, x))
   data = sorted(data, key=lambda d: d.getValue_0('ok'), reverse=True)
   return data
@@ -298,6 +306,8 @@ def ReadFilesDelta(args):
     for x in xmls:
       # get all xmls
       name = os.path.split(os.path.dirname(x))[1].split('.')[1]
+      if name in args.exclude:
+        continue
       strain = pairs.setdefault(name, [])
       strain.append(x)
   data = []
