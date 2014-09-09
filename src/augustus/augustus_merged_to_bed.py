@@ -6,7 +6,6 @@ dent earl, dearl a soe ucsc edu
 script to take the output of a augustus_gff_merge.py
 and turn it into a bed based track for use with the
 UCSC genome browser.
-
 """
 from argparse import ArgumentParser
 from glob import glob
@@ -16,8 +15,8 @@ import os
 def InitializeArguments(parser):
   """
   """
-  parser.add_argument('--in_dir')
-  parser.add_argument('--out_dir')
+  parser.add_argument('--in_dir', help='path to a merged augustus directory')
+  parser.add_argument('--out_dir', help='path to output directory.')
   parser.add_argument('--track_prefix', help='preceedes \'_cgp\' and \'_mea\'')
 
 
