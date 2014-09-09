@@ -42,10 +42,11 @@ import lib_stat_graph as lsg
 class Strain(object):
   """ represents a strain genome, one column in the plot
   """
-  def __init__(self, name, xml_0, xml_1=None):
+  def __init__(self, name, xml_0, xml_1=None, mode=None):
     self.name = name
     self.xml_0 = xml_0
     self.xml_1 = xml_1
+    self.mode = mode
     self.graph_0 = lsg.readStatGraph(xml_0)
     if self.xml_1 is not None:
       self.graph_1 = lsg.readStatGraph(xml_1)
@@ -64,14 +65,20 @@ class Strain(object):
   def getValue_0(self, t):
     """ given a tag T, return the value from graph 0
     """
-    s0 = lsg.getTagStats(self.graph_0, t)
-    while s0.children != []:
-      assert len(s0.children) == 1
-      s0 = s0.children[0]
+    return self.getValue(t, self.graph_0)
+  def getValue_1(self, t):
+    """ given a tag T, return the value from graph 0
+    """
+    return self.getValue(t, self.graph_1)
+  def getValue(self, t, graph):
+    s = lsg.getTagStats(graph, t)
+    while s.children != []:
+      assert len(s.children) == 1
+      s = s.children[0]
     if t in self.transcript_level_tags:
-      return s0.tagTranscripts
+      return s.tagTranscripts
     else:
-      return s0.tagTranscriptAnnotations
+      return s.tagTranscriptAnnotations
   def getDelta(self, t):
     """ given a tag T, return the delta between the two graphs
     """
@@ -90,13 +97,16 @@ class Strain(object):
     else:
       t0 = s0.tagTranscriptAnnotations
       t1 = s1.tagTranscriptAnnotations
-    return t1 - t0
+    if self.mode == 'delta':
+      return t1 - t0
+    elif self.mode == 'delta_percent':
+      return 100. * (t1 - t0) / float(t0)
 
 
 def InitializeArguments(parser):
   parser.add_argument('releases', nargs='+', type=str,
                       help='assembly release directories.')
-  parser.add_argument('--mode', choices=['delta', 'raw'],
+  parser.add_argument('--mode', choices=['delta', 'raw', 'delta_percent'],
                       help='mode to plot. choices are delta or raw.')
   parser.add_argument('--exclude', type=str,
                       help='specify species to exclude, comma separated list.')
@@ -137,7 +147,7 @@ def InitializeArguments(parser):
 
 
 def CheckArguments(args, parser):
-  if args.mode == 'delta':
+  if args.mode.startswith('delta'):
     args.rows = ['stats', 'ok', 'ok:hasOkCopies', 'ok:hasBadCopies',
                  'not_ok', 'not_ok:hasOkCopies', 'not_ok:hasBadCopies',
                  'not_ok:noStop', 'not_ok:noStop:alignmentPartialMap',
@@ -157,7 +167,7 @@ def CheckArguments(args, parser):
                  'not_ok:synon', 'not_ok:nonsynon', 'not_ok:outOfFrame']
   if args.releases is None:
     parser.error('Specify *sizes files!')
-  if args.mode == 'delta' and len(args.releases) != 2:
+  if args.mode.startswith('delta') and len(args.releases) != 2:
     parser.error('not enough release directories specified for --mode delta.')
   if args.mode == 'raw' and len(args.releases) != 1:
     parser.error('too many release directories specified for --mode raw.')
@@ -276,7 +286,7 @@ def WriteImage(fig, pdf, args):
 def ReadFiles(args):
   """ read all the things.
   """
-  if args.mode == 'delta':
+  if args.mode.startswith('delta'):
     return ReadFilesDelta(args)
   else:
     return ReadFilesRaw(args)
@@ -315,8 +325,8 @@ def ReadFilesDelta(args):
   # only read strains that have two xmls
   for name, value in pairs.items():
     if len(value) == 2:
-      data.append(Strain(name, value[0], value[1]))
-  data = sorted(data, key=lambda d: d.getDelta('ok'), reverse=True)
+      data.append(Strain(name, value[0], value[1], args.mode))
+  data = sorted(data, key=lambda d: d.getValue_1('ok'), reverse=True)
   return data
 
 
@@ -328,7 +338,7 @@ def GetLimits(r, data_list, args):
   for d in data_list:
     if r == 'stats':
       v0 = d.getRootValue_0()
-      if args.mode == 'delta':
+      if args.mode.startswith('delta'):
         v1 = d.getRootValue_1()
         ylim[0] = min(ylim[0], min(v0, v1))
         ylim[1] = max(ylim[1], max(v0, v1))
@@ -336,7 +346,7 @@ def GetLimits(r, data_list, args):
         ylim[0] = min(ylim[0], v0)
         ylim[1] = max(ylim[1], v0)
     else:
-      if args.mode == 'delta':
+      if args.mode.startswith('delta'):
         v = d.getDelta(r)
       else:
         v = d.getValue_0(r)
@@ -367,7 +377,7 @@ def PlotData(data_list, axDict, args):
 def PlotOne(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle):
   """ Plot one axes worth of data. d is a Strain object
   """
-  if args.mode == 'delta':
+  if args.mode.startswith('delta'):
     PlotOneDelta(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle)
   else:
     PlotOneRaw(r, d, ax, args, j, drawYAxis, xlim, ylim, drawTitle)
