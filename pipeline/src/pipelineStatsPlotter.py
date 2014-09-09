@@ -481,6 +481,8 @@ def ReadFiles(args):
       setattr(stat, name, (100. * stats.tagTranscripts / stats.nodeTranscripts))
     stat_dict[stat.name] = stat
     transcripts = 0
+    # go through the counts.log file and get information about
+    # the numbers of things that were dropped by mRnaCompare.
     with open(os.path.join(d, 'mRnaCompare', 'counts.log'), 'r') as f:
       for line in f:
         line = line.strip()
@@ -498,14 +500,22 @@ def ReadFiles(args):
           continue
         if tokens[0] == 'dropped_matchingMRna':
           stat.matchingMRna = int(tokens[1])
-    denominator = transcripts - stat.filteredOut
     for name, v_t, v_ta in tuples:
+      if name == 'ok':
+        # ok has its own denominator because we dont track dropped things
+        # that happened to be ok -- dropped really only applies to annotations.
+        denominator = transcripts
+      else:
+        denominator = transcripts - stat.filteredOut
       if not args.perTranscript:
+        # print stat.name, name, getattr(stat, '%s_transcripts' % name), denominator, 100. * getattr(stat, '%s_transcripts' % name) / denominator
         setattr(stat, name, 100. * getattr(stat, '%s_transcripts' % name) / denominator)
         # stat.nonsynon = 100. * stat.nonsynon_transcripts / denominator
       else:
+        # print stat.name, name, getattr(stat, '%s_transcriptAnnotations' % name), denominator, 100. * getattr(stat, '%s_transcriptAnnotations' % name) / denominator
         setattr(stat, name, getattr(stat, '%s_transcriptAnnotations' % name) / denominator)
         # stat.nonsynon = stat.nonsynon_transcriptAnnotations / denominator
+
   return stat_dict
 
 
@@ -569,8 +579,11 @@ def PlotData(stat_dict, ax, args):
   else:
     if args.is_log_x: ax.set_xscale('log')
     ax.set_xlabel('Phylogenetic distance from C57B6J')
-  _range = ymax - ymin
-  ax.set_ylim([ymin - 0.1 * _range, ymax + 0.1 * _range])
+  if args.is_log_y:
+    ax.set_yscale('log')
+  else:
+    _range = ymax - ymin
+    ax.set_ylim([ymin - 0.1 * _range, ymax + 0.1 * _range])
   _range = numpy.max(xdata) - numpy.min(xdata)
   ax.set_xlim([numpy.min(xdata) - 0.1 * _range,
                numpy.max(xdata) + 0.1 * _range])
