@@ -200,7 +200,6 @@ class AugustusCall(Target):
     hal2maf_cmd.append('--noAncestors')  # Augustus throws these out.
     hal2maf_cmd.append('--refSequence')
     hal2maf_cmd.append(self.ref_sequence)
-    hal2maf_cmd.append('--ucscNames')
     hal2maf_cmd.append('--start')
     hal2maf_cmd.append(str(self.window_start))
     hal2maf_cmd.append('--length')
