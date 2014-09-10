@@ -26,7 +26,7 @@ def CheckArguments(args, parser):
   pairs = [(n, getattr(args, n)) for n in ['in_dir', 'out_dir', 'track_prefix']]
   for name, value in pairs:
     if value is None:
-      parser.error('Specify --%s')
+      parser.error('Specify --%s' % name)
 
 
 def GetGffs(args):
