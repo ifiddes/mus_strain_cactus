@@ -23,7 +23,7 @@ def InitializeArguments(parser):
 def CheckArguments(args, parser):
   """
   """
-  pairs = [(n, args.__dict__[n]) for n in ['in_dir', 'out_dir', 'track_prefix']]
+  pairs = [(n, getattr(args, n)) for n in ['in_dir', 'out_dir', 'track_prefix']]
   for name, value in pairs:
     if value is None:
       parser.error('Specify --%s')
@@ -32,7 +32,9 @@ def CheckArguments(args, parser):
 def GetGffs(args):
   """ Return a tuple of lists of paths to gffs
   """
+  # cgp = comparative genome prediction
   cgp = glob(os.path.join(args.in_dir,'*cgp.gff'))
+  # mea = maximum expected accuracy
   mea = glob(os.path.join(args.in_dir,'*mea.gff'))
   return cgp, mea
 
