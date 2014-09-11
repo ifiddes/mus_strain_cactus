@@ -164,6 +164,15 @@ for d in metaFilter metaFilter_details input_geneCheck input_geneCheck_details; 
   cp -r browser_$release/liftoverbed/$d/* ../mouseBrowser_$release/liftoverbed/$d/ &
 done
 wait
+echo '# Copying custom bed files.'
+for d in /hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/*/; do
+  _d=$(basename $d)
+  if [[ $_d != "input_geneCheck" ]] && [[ $_d != "metaFilter" ]] && [[ $_d != "input_geneCheck_details" ]] && [[ $_d != "metaFilter_details" ]]; then
+    mkdir -p ../mouseBrowser_$release/liftoverbed/$_d;
+    cp -r browser_$release/liftoverbed/$_d/* ../mouseBrowser_$release/liftoverbed/$_d/ &
+  fi
+done
+wait
 for b in refGene knownGene wgEncodeGencodeCompVM2; do
   mkdir -p ../mouseBrowser_$release/liftoverbed/$b/C57B6J
   for f in browser_$release/liftoverbed/$b/C57B6J/*; do
