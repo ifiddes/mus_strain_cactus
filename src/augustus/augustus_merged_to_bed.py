@@ -45,7 +45,11 @@ def GffSpecies(g):
   tokens = g.split('.')
   assert tokens[-1] == 'gff'
   assert tokens[-2] in ['cgp', 'mea']
-  return tokens[-3]
+  s = tokens[-3]
+  # this accounts for use cases where a single window
+  # is used as in_dir instead of a merged result.
+  s = os.path.basename(s)
+  return s
 
 
 def GffToName(g, mode):
@@ -54,7 +58,9 @@ def GffToName(g, mode):
   tokens = g.split('.')
   assert tokens[-1] == 'gff'
   assert tokens[-2] == mode
-  return '%s.%s.bed' % (tokens[-3], mode)
+  s = tokens[-3]
+  s = os.path.basename(s)
+  return '%s.%s.bed' % (s, mode)
 
 
 def MakeBedsBuildDirs(gffs, args):
@@ -87,6 +93,8 @@ def GffToBed(gff, bed):
     with open(gff, 'r') as g:
       for line in g:
         line = line.strip()
+        if line.startswith('#'):
+          continue
         data = line.split()
         bedlist = [data[0], str(int(data[3]) - 1), data[4],
                    data[2], '0', data[6]]
