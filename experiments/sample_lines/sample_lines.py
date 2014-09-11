@@ -26,6 +26,7 @@ def CheckArguments(args, parser):
 
 
 def GetFileLength(filename):
+  i = 0
   with open(filename) as f:
     for i, line in enumerate(f, 1):
       pass
@@ -46,6 +47,8 @@ def main():
   args = parser.parse_args()
   CheckArguments(args, parser)
   length = GetFileLength(args.input)
+  if not length:
+    return
   samples = random.sample(xrange(length), args.number_of_samples)
   PrintSamples(samples, args)
 
