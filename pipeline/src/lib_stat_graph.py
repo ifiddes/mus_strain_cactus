@@ -6,11 +6,11 @@ import math
 import os
 import sys
 import xml.etree.ElementTree as ET
-import xml.parsers.expat as expat # exception handling for empty xml
+import xml.parsers.expat as expat  # exception handling for empty xml
 sys.path.append(
   os.path.join(
-    os.path.dirname( # pipeline
-      os.path.dirname( # src
+    os.path.dirname(  # pipeline
+      os.path.dirname(  # src
         os.path.abspath(__file__))),
       'filters'))
 import lib_filter
@@ -77,7 +77,6 @@ def buildStatGraph(args):
 def recordStatGraph(g, path):
   """ record a stat graph G to a file located in PATH.
   """
-  # g = ET.ElementTree(g)
   g.write(path, xml_declaration=True, encoding='utf-8', method='xml')
 
 
