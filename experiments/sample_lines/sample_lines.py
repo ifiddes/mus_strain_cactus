@@ -36,9 +36,12 @@ def GetFileLength(filename):
 def PrintSamples(samples, args):
   with open(args.input) as f:
     for i, line in enumerate(f, 1):
-      if i in samples:
-        line = line.strip()
+      if samples is None:
         print line
+      else:
+        if i in samples:
+          line = line.strip()
+          print line
 
 
 def main():
@@ -49,8 +52,11 @@ def main():
   length = GetFileLength(args.input)
   if not length:
     return
-  samples = random.sample(xrange(length), args.number_of_samples)
-  PrintSamples(samples, args)
+  if length < args.number_of_samples:
+    PrintSamples(None, args)
+  else:
+    samples = random.sample(xrange(length), args.number_of_samples)
+    PrintSamples(samples, args)
 
 
 if __name__ == '__main__':
