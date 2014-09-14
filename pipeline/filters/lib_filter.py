@@ -649,6 +649,7 @@ def initializeArguments(parser):
   parser.add_argument('--refSequence', type=FileType)
   parser.add_argument('--chromSizes', type=FileType)
   parser.add_argument('--outDir', type=DirType)
+  parser.add_argument('--mode', choices=['transmap', 'augustus'])
 
 
 def checkArguments(args, parser):

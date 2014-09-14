@@ -61,12 +61,20 @@ class Counts(object):
       for name, value in pairs_1:
         f.write('%s %d (%.2f)\n' % (name, value,
                                     100 * float(value) / self.transcripts))
-      f.write('aaSeqLens n %d min %d ave %.2f med %.1f max %d stdev %.2f\n' %
-              (len(self.aaSeqLens), numpy.min(self.aaSeqLens),
-               numpy.mean(self.aaSeqLens),
-               numpy.median(self.aaSeqLens), numpy.max(self.aaSeqLens),
-               numpy.std(self.aaSeqLens))
-              )
+      if self.aaSeqLens:
+        f.write('aaSeqLens n %d min %d ave %.2f med %.1f max %d stdev %.2f\n' %
+                (len(self.aaSeqLens), numpy.min(self.aaSeqLens),
+                 numpy.mean(self.aaSeqLens),
+                 numpy.median(self.aaSeqLens), numpy.max(self.aaSeqLens),
+                 numpy.std(self.aaSeqLens))
+                )
+      else:
+        f.write('aaSeqLens n %d min %f ave %.2f med %.1f max %f stdev %.2f\n' %
+                (0, float('nan'),
+                 float('nan'),
+                 float('nan'), float('nan'),
+                 float('nan'))
+                )
       for name, value in pairs_1:
         f.write('%s %d\n' % (name, value))
       f.write('\nAA-seq length ratios:\n')
@@ -246,6 +254,8 @@ def main():
       continue
     if t.chromosomeInterval.chromosome not in seq_dict:
       counts.dropped_missingSeqs += 1
+      continue
+    if lib_filter.removeAlignmentNumber(t.name) not in original_transcripts_dict:
       continue
     ot = original_transcripts_dict[lib_filter.removeAlignmentNumber(t.name)]
     if ot.chromosomeInterval.chromosome not in original_seq_dict:
