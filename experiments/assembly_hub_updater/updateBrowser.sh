@@ -33,6 +33,15 @@ echo '# Updating bed files'
 mkdir -p ./bedDirs_$release
 /hive/users/dearl/msca/mus_strain_cactus/pipeline/src/result2bedDirs.py --outDir ./bedDirs_$release /hive/users/dearl/msca/mus_strain_cactus/pipeline/results_$release/metaFilter.*
 
+if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/ratEnsGene" ]; then
+  # this will actually be considered a "custom" bed but whatever. I aint got time to make this perfect.
+  echo '# Extracting ensGene for Rattus'
+  mkdir -p ./bedDirs_$release/ratEnsGene/Rattus
+  hgsql -e "select * from ensGene" rn5 | cut -f 2- > ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp
+  python ./ngan_scripts/gp2bed.py ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp && rm ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp
+  perl -ple 's/chr//' < ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp > ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed && rm ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp
+fi
+
 echo '# Checking for custom beds'
 extra_beds=""
 for d in /hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/*/; do
@@ -52,14 +61,6 @@ echo '# Removing old symlinks'
 for d in refGene knownGene wgEncodeGencodeCompVM2 wgEncodeGencodeCompVM2_CDS; do
   rm -f /cluster/home/dearl/msca/myMouseBrowser/browser_$release/liftoverbed/$d/$d
 done
-
-if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/ratEnsGene" ]; then
-  echo '# Extracting ensGene for Rattus'
-  mkdir -p ./bedDirs_$release/ratEnsGene/Rattus
-  hgsql -e "select * from ensGene" rn5 | cut -f 2- > ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp
-  python ./ngan_scripts/gp2bed.py ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp && rm ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp
-  perl -ple 's/chr//' < ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp > ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed && rm ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp
-fi
 
 if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene" ]; then
   echo "# Extracting refGene, knownGene, wgEncodeGencodeComp data."
@@ -132,6 +133,8 @@ rm -rf jt_assembly_hub_$release
 
 echo '# Launching hal2assemblyHub.py'
 # create an assembly hub
+# --finalBigBedDirs are for things we already liftedover on our own
+# --bedDirs we use for things we dont want to liftover
 /hive/users/dearl/msca/proj/src/progressiveCactus/submodules/hal/bin/hal2assemblyHub.py /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/msca.hal \
 /hive/users/dearl/msca/myMouseBrowser/browser_$release \
 --hub=msca_$release --shortLabel=MouseStrain_$release \
