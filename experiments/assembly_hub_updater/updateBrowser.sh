@@ -10,6 +10,7 @@ release=$1
 
 if [ "$release" != "1302" ] && [ "$release" != "1405" ]; then
   echo "Release must be either 1302 or 1405"
+  exit
 fi
 
 # Rattus is put at the front of the list (out of alphabetical order) because
@@ -51,6 +52,14 @@ echo '# Removing old symlinks'
 for d in refGene knownGene wgEncodeGencodeCompVM2 wgEncodeGencodeCompVM2_CDS; do
   rm -f /cluster/home/dearl/msca/myMouseBrowser/browser_$release/liftoverbed/$d/$d
 done
+
+if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bedDirs_$release/ratEnsGene" ]; then
+  echo '# Extracting ensGene for Rattus'
+  mkdir -p ./bedDirs_$release/ratEnsGene/Rattus
+  hgsql -e "select * from ensGene" rn5 | cut -f 2- > ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp
+  python ./ngan_scripts/gp2bed.py ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp && rm ./bedDirs_$release/ratEnsGene/Rattus/rn5.ensGene.gp
+  perl -ple 's/chr//' < ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp > ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed && rm ./bedDirs_$release/ratEnsGene/Rattus/Rattus.ensGene.bed.tmp
+fi
 
 if [ ! -d "/hive/users/dearl/msca/myMouseBrowser/bigBedDirs_$release/refGene" ]; then
   echo "# Extracting refGene, knownGene, wgEncodeGencodeComp data."
