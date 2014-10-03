@@ -21,7 +21,7 @@ import lib_filter
 def initializeArguments(parser):
   parser.add_argument('--geneCheck', type=lib_filter.FileType)
   parser.add_argument('--geneCheckDetails', type=lib_filter.FileType)
-  parser.add_argument('--label', choices=['nonsynon', 'synon'],
+  parser.add_argument('--label', choices=['nonsynon', 'synon', 'nonsense'],
                       help='single label to search for.')
 
 
@@ -54,7 +54,6 @@ def processTranscripts(args):
   """
   transcripts = lib_filter.getTranscripts(args.geneCheck, args.geneCheckDetails)
   matches = []
-  print 'label: %s' % str(args.label)
   for t in transcripts:
     if t.annotations == []:
       continue
