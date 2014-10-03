@@ -53,3 +53,6 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# override for transMap
+!src/transMap/bin
+!src/transMap/lib
