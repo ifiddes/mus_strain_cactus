@@ -44,6 +44,8 @@ def containsOnlyLabel(transAnns, args):
       return False
     if args.label == a.labels[0] and len(a.labels) == 2:
       success = True
+    elif args.label == 'nonsense' and args.label == a.labels[0]:
+      success = True
     else:
       return False
   return success
