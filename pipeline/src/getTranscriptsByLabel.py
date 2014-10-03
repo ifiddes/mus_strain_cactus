@@ -58,6 +58,11 @@ def getAnnotationSet(transAnns, args):
         labels.add('%s%s' % ('_'.join(list(itertools.islice(a.labels, 0, i))), suffix))
     else:
       labels.add(a.labels[0])
+    printed = False
+    for l in a.labels:
+      if l.startswith('nonsynon') and not printed:
+        print a.labels
+        printed = True
   return labels
 
 
@@ -66,6 +71,7 @@ def processTranscripts(args):
   """
   transcripts = lib_filter.getTranscripts(args.geneCheck, args.geneCheckDetails)
   matches = []
+  print 'labels: %s' % str(args.labels)
   for t in transcripts:
     if t.annotations == []:
       continue
