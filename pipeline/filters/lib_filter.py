@@ -781,7 +781,7 @@ def readSequence(infile):
       else:
         header = buff
       assert(header.startswith('>'))
-      name = header.replace('>', '').strip()
+      name = header.replace('>', '').strip().split(" ")[0]
       seq = ''
     line = infile.readline().strip()
     if line:
