@@ -179,7 +179,7 @@ wait
 
 if [ ! -f ../mouseBrowser_$release/msca.hal ]; then
   echo '# Copying main hal file.'
-  cp $HAL_FILE ../mouseBrowser_$release/$(basename $HAL_FILE)
+  cp $HAL_FILE $MOUSE_HUBS_DIR/mouseBrowser_$release/$(basename $HAL_FILE)
 fi
 
 echo '# Copying bed files.'
