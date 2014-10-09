@@ -217,14 +217,13 @@ for f in genomes.txt groups.txt hub.txt hubTreeModified.nw haltree.nw; do
 done
 wait
 
-# Not sure this is necessary.
-# echo '# Replacing 2bit symlinks with actual 2bit files.'
-# # replace 2bit symlinks with actual 2bit files
-# for g in $genomes; do
-#   rm -f $MOUSE_HUBS_DIR/mouseBrowser_$release/$g/$g.2bit;
-#   cp /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/$g.2bit $MOUSE_HUBS_DIR/mouseBrowser_$release/$g/$g.2bit &
-# done
-# wait
+echo '# Replacing 2bit symlinks with actual 2bit files.'
+# replace 2bit symlinks with actual 2bit files
+for g in $genomes; do
+  rm -f $MOUSE_HUBS_DIR/mouseBrowser_$release/$g/$g.2bit;
+  cp /hive/groups/recon/projs/mus_strain_cactus/data/assembly_rel_$release/$g.2bit $MOUSE_HUBS_DIR/mouseBrowser_$release/$g/$g.2bit &
+done
+wait
 
 echo '# Fixing perimissions.'
 # fix permissions
