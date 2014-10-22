@@ -137,6 +137,7 @@ def main():
   filters = ['uniquify']  # uniquify should always be run first
   # Add new filters somewhere in between the comment blocks:
   ##############################
+  filters.append('indel')
   filters.append('nLook')
   filters.append('shortScaffold_noStartStop')
   filters.append('noStopCorrector')

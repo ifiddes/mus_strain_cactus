@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+"""Labels indels relative to the reference on the transcripts and
+fixes false "introns" that get created on insertions."""
+import sys
+from collections import defaultdict
+import lib_filter
+
+def labelInsertions(original_transcript, transcript, alignment):
+    """Label any insertions in the target's exons."""
+    queryTranscriptStart = original_transcript.chromosomeInterval.start
+    queryTranscriptStop = original_transcript.chromosomeInterval.stop
+    queryTranscriptStrand = original_transcript.chromosomeInterval.strand
+    for exon in original_transcript.exons:
+        prevTargetPos = None
+        # Need to convert the original transcript's coordinates into
+        # transcript-relative coordinates.
+        queryRelativeStart = exon.start - queryTranscriptStart
+        queryRelativeStop = exon.stop - queryTranscriptStart
+        for query_i in xrange(queryRelativeStart, queryRelativeStop):
+            target_i = alignment.queryCoordinateToTarget(query_i)
+            if target_i is None:
+                # Indicates a deletion.
+                continue
+            if prevTargetPos is not None and abs(target_i - prevTargetPos) != 1:
+                # found an insertion.
+                # Make sure this is a deletion and not some other crazy rearrangement.
+                if transcript.chromosomeInterval.strand and target_i - prevTargetPos <= 0:
+                    sys.stderr.write("WARNING: crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevTargetPos, target_i))
+                    prevTargetPos = target_i
+                    continue
+                elif not transcript.chromosomeInterval.strand and target_i - prevTargetPos >= 0:
+                    sys.stderr.write("WARNING: crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevTargetPos, target_i))
+                    prevTargetPos = target_i
+                    continue
+                annot = lib_filter.TranscriptAnnotation(
+                    lib_filter.ChromosomeInterval(
+                        transcript.chromosomeInterval.chromosome,
+                        prevTargetPos,
+                        target_i,
+                        transcript.chromosomeInterval.strand),
+                    transcript.name, [])
+                annot.addLabel('insertion')
+                # TODO: possibly add insertion length as an annotation.
+            prevTargetPos = target_i
+
+def labelDeletions(original_transcript, transcript, alignment):
+    """Label any deletions in the target's exons."""
+    prevQueryPos = None
+    for exon in transcript.exons:
+        # We don't care much about transcript orientation here. We're
+        # going backwards sometimes.
+        for target_i in xrange(exon.start, exon.stop):
+            # query_i is relative to query transcript start
+            query_i = alignment.targetCoordinateToQuery(target_i)
+            # If this is None, then the "intron on insertion" bug has
+            # been fixed.
+            if query_i is None:
+                continue
+            #print "%d\t%d\t%s" % (query_i, prevQueryPos if prevQueryPos else -1, transcript.chromosomeInterval.strand)
+            if prevQueryPos is not None and abs(query_i - prevQueryPos) != 1:
+                # Just jumped past a deletion.
+                # Make sure this is really a deletion and not some
+                # crazy rearrangement, in which case we probably want
+                # to detect it in a different filter.
+                # NB: since the PSL query is the mRNA sequence, the
+                # strand is always positive. So we check the *target*
+                # strand to see if there's an inversion.
+                if transcript.chromosomeInterval.strand:
+                    assert query_i - prevQueryPos > 0
+                else:
+                    assert query_i - prevQueryPos < 0
+                annot = lib_filter.TranscriptAnnotation(
+                    lib_filter.ChromosomeInterval(
+                        transcript.chromosomeInterval.chromosome,
+                        target_i,
+                        target_i - 1 if transcript.chromosomeInterval.strand else target_i + 1,
+                        transcript.chromosomeInterval.strand),
+                    transcript.name, [])
+                annot.addLabel('deletion')
+                # TODO: maybe add deletion size here?
+            prevQueryPos = query_i
+
+def extraArgs(parser):
+    parser.add_argument('--noFixInsertions', help="Don't attempt to extend "
+                        "transcripts over an insertion", action="store_true",
+                        default=False)
+
+def main():
+    args = lib_filter.boilerplateArguments()
+
+    transcripts = lib_filter.getTranscripts(
+        args.geneCheckBed, args.geneCheckBedDetails)
+
+    original_transcripts = lib_filter.getTranscripts(
+        args.originalGeneCheckBed, args.originalGeneCheckBedDetails)
+    original_transcripts_dict = lib_filter.transcriptListToDict(
+      original_transcripts, noDuplicates=True)
+
+    alignments = lib_filter.getAlignments(args.alignment)
+    # label alignments so we can easily access them later (the
+    # transcript name and target chrom is unambiguous)
+    alignments_dict = defaultdict(list)
+    for a in alignments:
+        alignments_dict[(a.qName, a.tName)].append(a)
+
+    for transcript in transcripts:
+        original_transcript = original_transcripts_dict[lib_filter.removeAlignmentNumber(transcript.name)]
+        alignments = alignments_dict[(lib_filter.removeAlignmentNumber(transcript.name),
+                                      transcript.chromosomeInterval.chromosome)]
+        for alignment in alignments:
+            labelInsertions(original_transcript, transcript, alignment)
+            labelDeletions(original_transcript, transcript, alignment)
+        #deleteIntronsOnInsertions(transcript, alignment)
+
+    lib_filter.writeAllBeds(transcripts, args)
+
+if __name__ == '__main__':
+    main()
