@@ -63,9 +63,15 @@ def labelDeletions(original_transcript, transcript, alignment):
                 # strand is always positive. So we check the *target*
                 # strand to see if there's an inversion.
                 if transcript.chromosomeInterval.strand:
-                    assert query_i - prevQueryPos > 0
+                    if query_i - prevQueryPos <= 0:
+                        sys.stderr.write("WARNING: looking for deletions, found crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevQueryPos, query_i))
+                        prevQueryPos = query_i
+                        continue
                 else:
-                    assert query_i - prevQueryPos < 0
+                    if query_i - prevQueryPos >= 0:
+                        sys.stderr.write("WARNING: looking for deletions, found crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevQueryPos, query_i))
+                        prevQueryPos = query_i
+                        continue
                 annot = lib_filter.TranscriptAnnotation(
                     lib_filter.ChromosomeInterval(
                         transcript.chromosomeInterval.chromosome,
