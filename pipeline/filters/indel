@@ -75,8 +75,8 @@ def labelDeletions(original_transcript, transcript, alignment):
                 annot = lib_filter.TranscriptAnnotation(
                     lib_filter.ChromosomeInterval(
                         transcript.chromosomeInterval.chromosome,
-                        target_i - 1 if transcript.chromosomeInterval.strand else target_i,
-                        target_i if transcript.chromosomeInterval.strand else target_i + 1,
+                        target_i - 1 if transcript.chromosomeInterval.strand else target_i - 1,
+                        target_i + 1 if transcript.chromosomeInterval.strand else target_i + 1,
                         transcript.chromosomeInterval.strand),
                     transcript.name, [])
                 annot.addLabel('deletion')
