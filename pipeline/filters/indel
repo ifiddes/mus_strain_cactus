@@ -26,15 +26,18 @@ def labelInsertions(original_transcript, transcript, alignment):
                 sys.stderr.write("WARNING: crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevTargetPos, target_i))
                 prevTargetPos = target_i
                 continue
+            annotStart = min(prevTargetPos, target_i)
+            annotEnd = max(prevTargetPos, target_i)
             annot = lib_filter.TranscriptAnnotation(
                 lib_filter.ChromosomeInterval(
                     transcript.chromosomeInterval.chromosome,
-                    prevTargetPos,
-                    target_i,
+                    annotStart,
+                    annotEnd,
                     transcript.chromosomeInterval.strand),
                 transcript.name, [])
             annot.addLabel('insertion')
             # TODO: possibly add insertion length as an annotation.
+            transcript.annotations.append(annot)
         prevTargetPos = target_i
 
 def labelDeletions(original_transcript, transcript, alignment):
@@ -66,12 +69,13 @@ def labelDeletions(original_transcript, transcript, alignment):
                 annot = lib_filter.TranscriptAnnotation(
                     lib_filter.ChromosomeInterval(
                         transcript.chromosomeInterval.chromosome,
-                        target_i,
-                        target_i - 1 if transcript.chromosomeInterval.strand else target_i + 1,
+                        target_i - 1 if transcript.chromosomeInterval.strand else target_i,
+                        target_i if transcript.chromosomeInterval.strand else target_i + 1,
                         transcript.chromosomeInterval.strand),
                     transcript.name, [])
                 annot.addLabel('deletion')
                 # TODO: maybe add deletion size here?
+                transcript.annotations.append(annot)
             prevQueryPos = query_i
 
 def extraArgs(parser):
