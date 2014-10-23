@@ -37,7 +37,7 @@ def labelInsertions(original_transcript, transcript, alignment):
                 sys.stderr.write("WARNING: crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevTargetPos, target_i))
                 prevTargetPos = target_i
                 continue
-            annotStart = min(prevTargetPos, target_i)
+            annotStart = min(prevTargetPos, target_i) + 1
             annotEnd = max(prevTargetPos, target_i)
             annot = lib_filter.TranscriptAnnotation(
                 lib_filter.ChromosomeInterval(
@@ -64,7 +64,6 @@ def labelDeletions(original_transcript, transcript, alignment):
             # been fixed.
             if query_i is None:
                 continue
-            #print "%d\t%d\t%s" % (query_i, prevQueryPos if prevQueryPos else -1, transcript.chromosomeInterval.strand)
             if prevQueryPos is not None and abs(query_i - prevQueryPos) != 1:
                 # Just jumped past a deletion.
                 # Make sure this is really a deletion and not some
