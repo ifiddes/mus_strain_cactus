@@ -9,8 +9,19 @@ def labelInsertions(original_transcript, transcript, alignment):
     """Label any insertions in the target's exons."""
     queryTranscriptSize = reduce(lambda a, e: a + e.stop - e.start, original_transcript.exons, 0)
     assert queryTranscriptSize > 0
+    # Need to find the exon sizes since we are iterating along the
+    # spliced transcript and need to know when to ignore "insertions"
+    # that are actually introns.
+    exonSizes = [e.stop - e.start for e in original_transcript.exons]
+    if not original_transcript.chromosomeInterval.strand:
+        exonSizes.reverse()
+    # transcript-relative exon boundaries.
+    exonStarts = reduce(lambda a, es: a + [a[-1] + es], exonSizes, [0])
     prevTargetPos = None
     for query_i in xrange(queryTranscriptSize):
+        if query_i in exonStarts:
+            # At the end of an intron--don't want to call an insertion.
+            prevTargetPos = None
         target_i = alignment.queryCoordinateToTarget(query_i)
         if target_i is None:
             # Indicates a deletion.
@@ -42,8 +53,8 @@ def labelInsertions(original_transcript, transcript, alignment):
 
 def labelDeletions(original_transcript, transcript, alignment):
     """Label any deletions in the target's exons."""
-    prevQueryPos = None
     for exon in transcript.exons:
+        prevQueryPos = None
         # We don't care much about transcript orientation here. We're
         # going backwards sometimes.
         for target_i in xrange(exon.start, exon.stop):
