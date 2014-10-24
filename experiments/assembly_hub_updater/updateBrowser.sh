@@ -5,7 +5,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-if [ -z $1 ]; then
+if [ $# -eq 0 ]; then
   echo "Error, you must specify the release number as the first argument, either 1302, 1405, or 1409"
   exit 1
 fi
