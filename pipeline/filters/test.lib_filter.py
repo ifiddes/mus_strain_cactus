@@ -2259,6 +2259,8 @@ class filterTests(unittest.TestCase):
       os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
 
     self.assertEqual(len(writtenTranscripts), 1)
+    self.assertEqual(writtenTranscripts[0].chromosomeInterval, transcripts[0].chromosomeInterval)
+    self.assertEqual(writtenTranscripts[0].exons, transcripts[0].exons)
     self.assertEqual(len(writtenTranscripts[0].annotations), 1)
     annotation = writtenTranscripts[0].annotations[0]
     self.assertEqual(len(annotation.labels), 1)
@@ -2334,6 +2336,87 @@ class filterTests(unittest.TestCase):
       os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
 
     self.assertEqual(len(writtenTranscripts), 1)
+    self.assertEqual(writtenTranscripts[0].chromosomeInterval, transcripts[0].chromosomeInterval)
+    self.assertEqual(writtenTranscripts[0].exons, transcripts[0].exons)
+    self.assertEqual(len(writtenTranscripts[0].annotations), 1)
+    annotation = writtenTranscripts[0].annotations[0]
+    self.assertEqual(len(annotation.labels), 1)
+    self.assertEqual(annotation.labels[0], 'insertion')
+    self.assertEqual(annotation.chromosomeInterval.start, 8)
+    self.assertEqual(annotation.chromosomeInterval.stop, 10)
+
+    self.addCleanup(removeDir, tmpDir)
+
+  def test_indel_2(self):
+    """indel should fix introns that are created by insertions."""
+    makeTempDirParent()
+    tmpDir = os.path.abspath(makeTempDir('indel_2'))
+    sequences =  {'test_0_r':  # non-ref / target
+                  'ATGATCCAATGA\n'  # 12
+                 }
+    refSequences = {'test_0_nr':  # ref / query
+                    'ATGATTAAGA\n',  # 9
+                   }
+    seqFile = createSequenceFile(sequences, tmpDir)
+    seqDict = lib_filter.getSequences(seqFile)
+    refSeqFile = createSequenceFile(refSequences, tmpDir, filename='refSeq.fa')
+    refSeqDict = lib_filter.getSequences(refSeqFile)
+    ##########
+    #            0          9
+    # ref        ATGATTAA--GA  query
+    # exons       ****  ****
+    # non ref    ATGATCCAATGA  target
+    #            0          11
+    #####
+    pslLines = [simplePsl('+', 6, 0, 6, 12, 1, 11,
+                          [4, 1, 1], [0, 4, 5], [1, 7, 10],
+                          qName='ensmust0', tName='test_0_nr'),
+                ]
+    pslFile = createAlignmentFile(pslLines, tmpDir)
+    refTranscriptBedLines = []
+    refTranscriptBedLines.append(bedLine(
+        'test_0_r', 1, 9, 'ensmust0', 0, '+', 1, 9,
+        '128,0,0', 2, '4,2', '0,6'))
+    createBedFile(refTranscriptBedLines, 'ref.bed', tmpDir)
+    transcriptBedLines = []
+    transcriptBedLines.append(bedLine(
+        'test_0_nr', 1, 11, 'ensmust0', 0, '+', 1, 11,
+        '128,0,0', 3, '4,1,1', '0,6,9'))
+    transcriptDetailsBedLines = []
+    transcripts = [
+      transcript for transcript in lib_filter.transcriptIterator(
+        transcriptBedLines, transcriptDetailsBedLines)]
+    # write transcripts to files
+    outBed = os.path.join(tmpDir, 'test.bed')
+    outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
+    testFile = lib_filter.writeTranscriptBedFile(
+      transcripts, outBed)
+    testDetailsFile = lib_filter.writeDetailsBedFile(
+      transcripts, outDetailsBed)
+    # run the filter
+    with open(os.path.join(tmpDir, 'dummy.txt'), 'w') as f:
+      f.write('dummy\n')
+    with open(os.path.join(tmpDir, 'empty.txt'), 'w') as f:
+      f.write('')
+    originalGeneCheckBed = os.path.join(tmpDir, 'ref.bed')
+    originalGeneCheckBedDetails = os.path.join(tmpDir, 'empty.txt')
+    alignment = os.path.join(tmpDir, 'aln.psl')
+    sequence = os.path.join(tmpDir, 'seq.fa')
+    referenceSequence = os.path.join(tmpDir, 'refSeq.fa')
+    chromSizes = os.path.join(tmpDir, 'dummy.txt')
+    metaFilter.makeCall(
+      'indel', 'C57B6J', 'C57B6NJ', outBed, outDetailsBed,
+      originalGeneCheckBed, originalGeneCheckBedDetails,
+      alignment, sequence, referenceSequence, chromSizes, tmpDir)
+    # read transcripts from file
+    writtenTranscripts = lib_filter.getTranscripts(
+      os.path.join(tmpDir, 'out.bed'), os.path.join(tmpDir, 'out_details.bed'))
+
+    self.assertEqual(len(writtenTranscripts), 1)
+    self.assertEqual(writtenTranscripts[0].chromosomeInterval, transcripts[0].chromosomeInterval)
+    # decrease in # of exons
+    self.assertEqual(len(writtenTranscripts[0].exons), 2)
+    self.assertEqual([(e.start, e.stop) for e in writtenTranscripts[0].exons], [(1, 5), (7, 11)])
     self.assertEqual(len(writtenTranscripts[0].annotations), 1)
     annotation = writtenTranscripts[0].annotations[0]
     self.assertEqual(len(annotation.labels), 1)
