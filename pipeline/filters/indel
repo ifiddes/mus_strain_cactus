@@ -110,19 +110,7 @@ def deleteIntronsOnInsertions(transcript, insertions):
     transcript to seal up any introns that perfectly overlap an
     insertion.
     """
-    # first, get the introns
-    introns = []
-    prevExon = None
-    for exon in transcript.exons:
-        if prevExon is not None:
-            assert exon.start > prevExon.stop
-            assert exon.strand == prevExon.strand
-            intron = lib_filter.ChromosomeInterval(exon.chromosome,
-                                                   prevExon.stop,
-                                                   exon.start,
-                                                   exon.strand)
-            introns.append(intron)
-        prevExon = exon
+    introns = transcript.getIntrons()
     # check if an intron matches an insertion (there are only a few
     # insertions to compare with so, we iterate over the whole list for
     # every intron, although that may be a bit slower)
@@ -135,6 +123,22 @@ def deleteIntronsOnInsertions(transcript, insertions):
             assert borderingExons[1].start == intron.stop
             transcript.exons.remove(borderingExons[1])
             borderingExons[0].stop = borderingExons[1].stop
+
+def removeInvalidUnknownSpliceTags(transcript, insertions):
+    """Remove any unknownUtrSplice or unknownCdsSplice tags that don't
+    cover an intron (probably because the intron has been removed.)"""
+    introns = transcript.getIntrons()
+    annotationsToRemove = set() # can't modify list during iteration.
+    for annotation in transcript.annotations:
+        if annotation.chromosomeInterval in introns:
+            # This annotation covers an intron, ignore it
+            continue
+        for label in annotation.labels:
+            if label in ('unknownUtrSplice', 'unknownCdsSplice'):
+                assert annotation.chromosomeInterval in insertions
+                annotationsToRemove.add(annotation)
+    for annotation in annotationsToRemove:
+        transcript.annotations.remove(annotation)
 
 def extraArgs(parser):
     parser.add_argument('--noFixInsertions', help="Don't attempt to extend "
@@ -169,6 +173,7 @@ def main():
         if not args.noFixInsertions:
             # double negative, but, basically, fix insertions.
             deleteIntronsOnInsertions(transcript, insertions)
+            removeInvalidUnknownSpliceTags(transcript, insertions)
 
     lib_filter.writeAllBeds(transcripts, args)
 

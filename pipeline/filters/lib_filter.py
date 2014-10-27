@@ -587,6 +587,24 @@ class Transcript(object):
        ','.join([str(exon.start - self.chromosomeInterval.start)
                  for exon in self.exons])])
 
+  def getIntrons(self):
+    """Get a list of ChromosomeIntervals representing the introns for this
+    transcript. The introns are in *+ strand of CHROMOSOME* ordering,
+    not the order that they appear in the transcript!"""
+    introns = []
+    prevExon = None
+    for exon in self.exons:
+      if prevExon is not None:
+        assert exon.start > prevExon.stop
+        assert exon.strand == prevExon.strand
+        intron = ChromosomeInterval(exon.chromosome,
+                                    prevExon.stop,
+                                    exon.start,
+                                    exon.strand)
+        introns.append(intron)
+      prevExon = exon
+    return introns
+
   def __cmp__(self, transcript):
     return cmp((self.chromosomeInterval, self.name),
                (transcript.chromosomeInterval, transcript.name))

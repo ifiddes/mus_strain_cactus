@@ -2386,6 +2386,24 @@ class filterTests(unittest.TestCase):
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(
         transcriptBedLines, transcriptDetailsBedLines)]
+    self.assertEqual(len(transcripts), 1)
+    # Add unknownSplice tags to both so that we can check that the one
+    # corresponding to the removed intron gets removed but the correct
+    # one stays.
+    transcripts[0].annotations.append(lib_filter.TranscriptAnnotation(
+      lib_filter.ChromosomeInterval(
+        'test_0_nr',
+        5,
+        7,
+        True),
+      'ensmust0', ['unknownUtrSplice']))
+    transcripts[0].annotations.append(lib_filter.TranscriptAnnotation(
+      lib_filter.ChromosomeInterval(
+        'test_0_nr',
+        8,
+        10,
+        True),
+      'ensmust0', ['unknownCdsSplice']))
     # write transcripts to files
     outBed = os.path.join(tmpDir, 'test.bed')
     outDetailsBed = os.path.join(tmpDir, 'test_details.bed')
@@ -2417,12 +2435,27 @@ class filterTests(unittest.TestCase):
     # decrease in # of exons
     self.assertEqual(len(writtenTranscripts[0].exons), 2)
     self.assertEqual([(e.start, e.stop) for e in writtenTranscripts[0].exons], [(1, 5), (7, 11)])
-    self.assertEqual(len(writtenTranscripts[0].annotations), 1)
-    annotation = writtenTranscripts[0].annotations[0]
-    self.assertEqual(len(annotation.labels), 1)
-    self.assertEqual(annotation.labels[0], 'insertion')
-    self.assertEqual(annotation.chromosomeInterval.start, 8)
-    self.assertEqual(annotation.chromosomeInterval.stop, 10)
+    # 1 insertion annotation, 1 remaining unkown splice annotation
+    self.assertEqual(len(writtenTranscripts[0].annotations), 2)
+
+    # Check the insertion annotation
+    insertionAnnotations = [i for i in writtenTranscripts[0].annotations if 'insertion' in i.labels]
+    self.assertEqual(len(insertionAnnotations), 1)
+    insertionAnnotation = insertionAnnotations[0]
+    self.assertEqual(len(insertionAnnotation.labels), 1)
+    self.assertEqual(insertionAnnotation.labels[0], 'insertion')
+    self.assertEqual(insertionAnnotation.chromosomeInterval.start, 8)
+    self.assertEqual(insertionAnnotation.chromosomeInterval.stop, 10)
+
+    # Check the remaining unknown splice annotation
+    unknownSpliceAnnotations = [i for i in writtenTranscripts[0].annotations \
+                                if 'unknownCdsSplice' in i.labels or 'unknownUtrSplice' in i.labels]
+    self.assertEqual(len(unknownSpliceAnnotations), 1)
+    unknownSpliceAnnotation = unknownSpliceAnnotations[0]
+    self.assertEqual(len(unknownSpliceAnnotation.labels), 1)
+    self.assertEqual(unknownSpliceAnnotation.labels[0], 'unknownUtrSplice')
+    self.assertEqual(unknownSpliceAnnotation.chromosomeInterval.start, 5)
+    self.assertEqual(unknownSpliceAnnotation.chromosomeInterval.stop, 7)
 
     self.addCleanup(removeDir, tmpDir)
 
