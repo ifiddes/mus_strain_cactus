@@ -62,8 +62,9 @@ def labelInsertions(original_transcript, transcript, alignment):
 
 def labelDeletions(original_transcript, transcript, alignment):
     """Label any deletions in the target's exons."""
+    queryIntrons = original_transcript.getIntrons()
+    prevQueryPos = None
     for exon in transcript.exons:
-        prevQueryPos = None
         # We don't care much about transcript orientation here. We're
         # going backwards sometimes.
         for target_i in xrange(exon.start, exon.stop):
@@ -73,7 +74,8 @@ def labelDeletions(original_transcript, transcript, alignment):
             # been fixed.
             if query_i is None:
                 continue
-            if prevQueryPos is not None and abs(query_i - prevQueryPos) != 1:
+            if prevQueryPos is not None and abs(query_i - prevQueryPos) != 1 \
+               and lib_filter.ChromosomeInterval(alignment.qName, prevQueryPos, query_i, True) not in queryIntrons:
                 # Just jumped past a deletion.
                 # Make sure this is really a deletion and not some
                 # crazy rearrangement, in which case we probably want

@@ -243,6 +243,9 @@ class ChromosomeInterval(object):
     # print 'yup!'
     return True
 
+  def size(self):
+    return self.stop - self.start
+
 
 class TranscriptAnnotation(object):
   """ Represents an annotation of a transcript, from one of the
