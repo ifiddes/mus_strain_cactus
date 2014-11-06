@@ -2494,7 +2494,7 @@ class filterTests(unittest.TestCase):
     transcriptBedLines = []
     transcriptBedLines.append(bedLine(
         'test_0_nr', 1, 9, 'ensmust0', 0, '+', 1, 9,
-        '128,0,0', 2, '4,2', '0,7'))
+        '128,0,0', 2, '4,2', '0,6'))
     transcriptDetailsBedLines = []
     transcripts = [
       transcript for transcript in lib_filter.transcriptIterator(

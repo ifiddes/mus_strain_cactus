@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 """Labels exonic indels relative to the reference on the transcripts
 and fixes false "introns" that get created on insertions.
-
-Known issues:
-- indels on exon boundaries won't be annotated.
 """
+
 import sys
 from collections import defaultdict
 import lib_filter
@@ -75,7 +73,7 @@ def labelDeletions(original_transcript, transcript, alignment):
             if query_i is None:
                 continue
             if prevQueryPos is not None and abs(query_i - prevQueryPos) != 1 \
-               and lib_filter.ChromosomeInterval(alignment.qName, prevQueryPos, query_i, True) not in queryIntrons:
+               and lib_filter.ChromosomeInterval(alignment.qName, min(prevQueryPos, query_i), max(prevQueryPos, query_i), True) not in queryIntrons:
                 # Just jumped past a deletion.
                 # Make sure this is really a deletion and not some
                 # crazy rearrangement, in which case we probably want
@@ -96,8 +94,8 @@ def labelDeletions(original_transcript, transcript, alignment):
                 annot = lib_filter.TranscriptAnnotation(
                     lib_filter.ChromosomeInterval(
                         transcript.chromosomeInterval.chromosome,
-                        target_i - 1 if transcript.chromosomeInterval.strand else target_i - 1,
-                        target_i + 1 if transcript.chromosomeInterval.strand else target_i + 1,
+                        target_i - 1,
+                        target_i + 1,
                         transcript.chromosomeInterval.strand),
                     transcript.name, [])
                 annot.addLabel('deletion')
