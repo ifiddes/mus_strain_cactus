@@ -32,13 +32,9 @@ def labelInsertions(original_transcript, transcript, alignment):
             continue
         if prevTargetPos is not None and abs(target_i - prevTargetPos) != 1:
             # found an insertion.
-            # Make sure this is a deletion and not some other crazy rearrangement.
-            if transcript.chromosomeInterval.strand and target_i - prevTargetPos <= 0:
-                sys.stderr.write("WARNING: crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevTargetPos, target_i))
-                prevTargetPos = target_i
-                continue
-            elif not transcript.chromosomeInterval.strand and target_i - prevTargetPos >= 0:
-                sys.stderr.write("WARNING: crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevTargetPos, target_i))
+            if (transcript.chromosomeInterval.strand and target_i - prevTargetPos <= 0) \
+               or (not transcript.chromosomeInterval.strand and target_i - prevTargetPos >= 0):
+                sys.stderr.write("WARNING: %s has a jump from (%d, %d) to (%d, %d), which is a rearrangement impossible with PSLs. This is due to ambiguity in what transcript is produced by what alignment. Assuming this is a separate alignment for the same transcript on the same scaffold and ignoring.\n" % (transcript.name, prevTargetPos, original_transcript.exonCoordinateToChromosome(query_i - 1), target_i, original_transcript.exonCoordinateToChromosome(query_i)))
                 prevTargetPos = target_i
                 continue
             annotStart = min(prevTargetPos, target_i) + 1
@@ -81,14 +77,9 @@ def labelDeletions(original_transcript, transcript, alignment):
                 # NB: since the PSL query is the mRNA sequence, the
                 # strand is always positive. So we check the *target*
                 # strand to see if there's an inversion.
-                if transcript.chromosomeInterval.strand:
-                    if query_i - prevQueryPos <= 0:
-                        sys.stderr.write("WARNING: looking for deletions, found crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevQueryPos, query_i))
-                        prevQueryPos = query_i
-                        continue
-                else:
-                    if query_i - prevQueryPos >= 0:
-                        sys.stderr.write("WARNING: looking for deletions, found crazy rearrangement on %s - jump from %d to %d\n" % (transcript.name, prevQueryPos, query_i))
+                if (transcript.chromosomeInterval.strand and query_i - prevQueryPos <= 0) \
+                   or (not transcript.chromosomeInterval.strand and query_i - prevQueryPos >= 0):
+                        sys.stderr.write("WARNING: %s has a jump from %d to %d, which is a rearrangement impossible with PSLs. This is due to ambiguity in what transcript is produced by what alignment. Assuming this is a separate alignment for the same transcript on the same scaffold and ignoring.\n" % (transcript.name, prevQueryPos, query_i))
                         prevQueryPos = query_i
                         continue
                 annot = lib_filter.TranscriptAnnotation(
