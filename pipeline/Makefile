@@ -66,8 +66,8 @@ else ifeq ($(release),1411)
 	sequenceDir = ${dataDir}/assembly_rel_${release}
 	geneCheckBeds = $(geneCheckBeds_1411)
 	alignmentDir = $(alignmentDir_1411)
-	originalGeneCheckBed = ${originalGeneCheckBeds}/wgEncodeGencodeBasicVM3.gene-check.bed
-	originalGeneCheckBedDetails = ${originalGeneCheckBeds}/wgEncodeGencodeBasicVM3.gene-check-details.bed
+	originalGeneCheckBed = ${originalGeneCheckBeds}/wgEncodeGencodeBasicVM2.coding.gene-check.bed
+	originalGeneCheckBedDetails = ${originalGeneCheckBeds}/wgEncodeGencodeBasicVM2.coding.gene-check-details.bed
 	metaFilterMode = transmap
 else ifeq ($(release),c6tr_cgp)
 	genomes = $(genomes_1405)
