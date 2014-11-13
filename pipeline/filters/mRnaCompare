@@ -112,14 +112,11 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels):
   start = min(outOfFrameStart, p)
   stop = max(outOfFrameStart, p) + 1
   ot_start = a.targetCoordinateToQuery(start)
-  if ot_start is None:
-    # FIXME
-    return
   if a.strand == '+':
     inc = -1
   else:
     inc = 1
-  while a.targetCoordinateToQuery(a.queryCoordinateToTarget(ot_start + inc)) is None:
+  while ot_start is not None and a.targetCoordinateToQuery(a.queryCoordinateToTarget(ot_start + inc)) is None:
     # back up the ot_start to the first instance of indel.
     # we know that there is a discontinuity in the query coordinates which
     # indicates that there should be some None alignments just before the
