@@ -112,6 +112,9 @@ def recordOutOfFrame(a, t, ot, p, outOfFrameStart, numIndels):
   start = min(outOfFrameStart, p)
   stop = max(outOfFrameStart, p) + 1
   ot_start = a.targetCoordinateToQuery(start)
+  if ot_start is None:
+    # FIXME
+    return
   if a.strand == '+':
     inc = -1
   else:
