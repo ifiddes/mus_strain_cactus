@@ -6,18 +6,18 @@ set -o pipefail
 set -o nounset
 
 if [ $# -eq 0 ]; then
-  echo "Error, you must specify the release number as the first argument, either 1302, 1405, or 1409"
+  echo "Error, you must specify the release number as the first argument, either 1302, 1405, 1411, or 1409"
   exit 1
 fi
 release=$1
 
-MUS_STRAIN_CACTUS_DIR=$(dirname $0)/../..
-PROGRESSIVE_CACTUS_DIR=/hive/users/dearl/msca/proj/src/progressiveCactus
-MOUSE_HUBS_DIR=$MUS_STRAIN_CACTUS_DIR/hubs
+MUS_STRAIN_CACTUS_DIR=$(readlink -f $(dirname $0)/../..)
+PROGRESSIVE_CACTUS_DIR=/cluster/home/jcarmstr/progressiveCactus-msca
+MOUSE_HUBS_DIR=$MUS_STRAIN_CACTUS_DIR/hubsToTestIndelAnnot
 HAL_FILE=/hive/users/jcarmstr/msca/$release/$release.hal
 
-if [ "$release" != "1302" ] && [ "$release" != "1405" ] && [ "$release" != "1409" ]; then
-  echo "Release must be either 1302, 1405, or 1409."
+if [ "$release" != "1302" ] && [ "$release" != "1405" ] && [ "$release" != "1409" ] && [ "$release" != "1411" ]; then
+  echo "Release must be either 1302, 1405, 1409, or 1411."
   exit
 fi
 
@@ -135,7 +135,7 @@ if [ ! -f $MOUSE_HUBS_DIR/mouseBrowser_$release/lod.txt ]; then
   pushd $PROGRESSIVE_CACTUS_DIR/submodules/ > /dev/null
   OLD_PATH=$PATH
   PATH=$PATH:$PROGRESSIVE_CACTUS_DIR/submodules/hal/bin
-  $PROGRESSIVE_CACTUS_DIR/submodules/hal/bin/halLodInterpolate.py $HAL_FILE $MOUSE_HUBS_DIR/mouseBrowser_$release/lod.txt.tmp --outHalDir $MOUSE_HUBS_DIR/mouseBrowser_$release/lod --numProc 12
+  $PROGRESSIVE_CACTUS_DIR/submodules/hal/bin/halLodInterpolate.py $HAL_FILE $MOUSE_HUBS_DIR/mouseBrowser_$release/lod.txt.tmp --outHalDir $MOUSE_HUBS_DIR/mouseBrowser_$release/lod --numProc 10 --inMemory
   mv $MOUSE_HUBS_DIR/mouseBrowser_$release/lod.txt.tmp $MOUSE_HUBS_DIR/mouseBrowser_$release/lod.txt
   PATH=$OLD_PATH
   popd > /dev/null
