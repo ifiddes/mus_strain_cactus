@@ -5,7 +5,7 @@ import src.psl_genecheck_lib as lib
 from collections import defaultdict
 
 class AbstractClassifier(Target):
-    def __init__(self, genome, filepaths, originalGeneCheckBed, originalGeneCheckBedDetails, outDir, refGenome):
+    def __init__(self, genome, filepaths, originalGeneCheckBed, originalGeneCheckBedDetails, outDb, refGenome):
         #initialize the Target
         Target.__init__(self)
 
@@ -14,7 +14,7 @@ class AbstractClassifier(Target):
         self.refGenome = refGenome
         self.orig_bed = originalGeneCheckBed
         self.orig_bed_details = originalGeneCheckBedDetails
-        self.output = outDatabase
+        self.output = outDb
         self.bed_file = filepaths["bed"]
         self.bed_details_file = filepaths["details"]
 

@@ -27,7 +27,7 @@ def build_parser(args):
     parser.add_argument('--sequenceDir', type=DirType)    
     parser.add_argument('--originalGeneCheckBed', type=FileType)
     parser.add_argument('--originalGeneCheckBedDetails', type=FileType)
-    parser.add_argument('--outDb', type=dirType, default="results.db")
+    parser.add_argument('--outDb', type=str, default="results.db")
     return parser
 
 
