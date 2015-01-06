@@ -22,8 +22,8 @@ all :
 	cd jobTree && make
 
 run : all
-	if [ -d .jobTree ] ; then \
-		rm -rf .jobTree; \
+	if [ -d ${jobTree} ] ; then \
+		rm -rf ${jobTree}; \
 	fi
 	python src/main.py --refGenome ${refGenome} --genomes ${genomes} --geneCheckDir ${geneCheckBeds} \
 	--alignmentDir ${alignmentDir} --sequenceDir ${sequenceDir} --originalGeneCheckBed ${originalGeneCheckBed} \
