@@ -3,14 +3,18 @@ import sqlite3 as sql
 
 class ExclusiveSqlConnection(object):
     """meant to be used with a with statement to ensure proper closure"""
-    def __init__(self, path):
-        self.con = sql.connect(path, isolation_level = "EXCLUSIVE")
-        con.execute("BEGIN EXCLUSIVE")
-        self.cur = con.cursor()
 
-    def __exit__(self):
-        con.commit()
-        con.close()
+    def __init__(self, path):
+        self.path = path
+
+    def __enter__(self):
+        self.con = sql.connect(self.path, isolation_level = "EXCLUSIVE")
+        self.con.execute("BEGIN EXCLUSIVE")
+        return self.con.cursor()
+
+    def __exit__(self, exception_type, exception_val, trace):
+        self.con.commit()
+        self.con.close()
 
 
 def hasTable(cur, table):
@@ -23,24 +27,43 @@ def hasTable(cur, table):
         return False
 
 
-def updateTable(cur, table, set_col_val, where):
+def updateTable(cur, table, set_col, set_val, where_col, where_val):
     """
     table = name of table to be updated
-    set_col_val = list of (column, value) pairs to be set
-    where = pair of (column, value) where changes should occur
+    set_col = column where change should occur
+    set_val = value in that column to change
+    where_col = column whose value determines if changes occur
+    where_val = value in where_col that determines which rows get changed
     """
-    where_col, where_val = where
-    for col, val in set_col_val:
-        cur.execute("UPDATE {} SET {}=? WHERE {}=?".format(table, col, where_col),
-                (val, where_val))
+    cur.execute("UPDATE {} SET {}={} WHERE {}={}".format(table, set_col, set_val,
+            where_col, where_val))
 
 
-def initializeTable(cur, table, columns):
+def initializeTable(cur, table, columns, primary_key):
     """
     Builds a empty <table> in the sqlite db opened by <cur> with <[columns]>
     columns should be a list of name, type pairs
+    primary_key should be the column name that will be the primary key.
     """
-    n, t = columns[0]
-    cur.execute("CREATE TABLE {}({} {})".format(table, n, t))
-    for n, t in columns[1:]:
-        cur.execute("ALTER TABLE {} ADD COLUMN '{}' '{}'".format(table, n, t))
+    cur.execute("CREATE TABLE '{}'('{}' TEXT PRIMARY KEY)".format(table, primary_key))
+    for n, t in columns:
+        cur.execute("ALTER TABLE '{}' ADD COLUMN '{}' '{}'".format(table, n, t))
+
+
+def numberOfRows(cur, table):
+    """
+    Returns the number of rows in the provided table
+    """
+    cur.execute("SELECT Count(*) FROM {}".format(table))
+    return cur.fetchone()[0]
+
+
+def upsert(cur, table, primary_key_column, primary_key, col_to_change, value):
+    """
+    Wrapper for a 'upsert' command (which sqlite lacks). Given a table and a primary key
+    will insert a new row with this primary key as necessary. Current implementation
+    only inserts a value for one column. This could easily be changed.
+    """
+    cmd = "INSERT OR REPLACE INTO '{}' ('{}', '{}') VALUES ('{}', '{}')".format(table, 
+        primary_key_column, col_to_change, primary_key, value)
+    cur.execute(cmd)

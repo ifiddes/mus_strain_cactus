@@ -5,7 +5,7 @@ modified by: Ian Fiddes
 """
 
 import os, sys
-from collections import defaultdict
+from collections import defaultdict, deque
 
 
 class Sequence(object):
@@ -605,40 +605,13 @@ class Transcript(object):
         return cmp((self.chromosomeInterval, self.name),
                     (transcript.chromosomeInterval, transcript.name))
 
-def DirType(d):
-    """ given a string path to a directory, D, verify it can be used.
-    """
-    d = os.path.abspath(d)
-    if not os.path.exists(d):
-        raise ArgumentTypeError('DirType:%s does not exist' % d)
-    if not os.path.isdir(d):
-        raise ArgumentTypeError('DirType:%s is not a directory' % d)
-    if os.access(d, os.R_OK):
-        return d
-    else:
-        raise ArgumentTypeError('DirType:%s is not a readable dir' % d)
-
-
-def FileType(f):
-    """ given a string path to a file, F, verify it can be used.
-    """
-    f = os.path.abspath(f)
-    if not os.path.exists(f):
-        raise ArgumentTypeError('FileType:%s does not exist' % f)
-    if not os.path.isfile(f):
-        raise ArgumentTypeError('FileType:%s is not a regular file' % f)
-    if os.access(f, os.R_OK):
-        return f
-    else:
-        raise ArgumentTypeError('FileType:%s is not a readable file' % f)
-
-
 _nuc_pairs = [('a', 't'), ('g', 'c'), ('n', 'n')]
 _complement = {}
 for a, b in _nuc_pairs:
     _complement[a], _complement[b] = b, a
     _complement[a.upper()], _complement[b.upper()] = b.upper(), a.upper()
 _complement['-'] = '-'
+
 
 def complement(seq):
     """ given a sequence, return the complement.
@@ -659,6 +632,34 @@ def formatRatio(numerator, denominator):
     if denominator == 0:
         return float("nan")
     return float(numerator)/denominator
+
+
+def DirType(d):
+  """ given a string path to a directory, D, verify it can be used.
+  """
+  d = os.path.abspath(d)
+  if not os.path.exists(d):
+    raise ArgumentTypeError('DirType:%s does not exist' % d)
+  if not os.path.isdir(d):
+    raise ArgumentTypeError('DirType:%s is not a directory' % d)
+  if os.access(d, os.R_OK):
+    return d
+  else:
+    raise ArgumentTypeError('DirType:%s is not a readable dir' % d)
+
+
+def FileType(f):
+  """ given a string path to a file, F, verify it can be used.
+  """
+  f = os.path.abspath(f)
+  if not os.path.exists(f):
+    raise ArgumentTypeError('FileType:%s does not exist' % f)
+  if not os.path.isfile(f):
+    raise ArgumentTypeError('FileType:%s is not a regular file' % f)
+  if os.access(f, os.R_OK):
+    return f
+  else:
+    raise ArgumentTypeError('FileType:%s is not a readable file' % f)
 
 
 _codonToAminoAcid = {
@@ -823,16 +824,16 @@ def getTranscripts(bedFile, bedDetailsFile):
     Transcript objects.
     """
     transcripts = []
-    bf = open(bedFile, 'r')
-    bdf = open(bedDetailsFile, 'r')
-    for t in transcriptIterator(bf, bdf):
+    bedFile = open(bedFile, 'r')
+    bedDetailsFile = open(bedDetailsFile, 'r')
+    for t in transcriptIterator(bedFile, bedDetailsFile):
         transcripts.append(t)
     return transcripts
 
 def getUniqueTranscripts(bedFile, bedDetailsFile):
     """Same as getTranscripts but appends a unique alignment ID to each transcript"""
     transcripts = getTranscripts(bedFile, bedDetailsFile)
-    names = Counter()
+    names = defaultdict(list)
     for t in transcripts:
         if t.name not in names:
             names[t.name] = [t, 0]
