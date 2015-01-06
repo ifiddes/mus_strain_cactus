@@ -1,3 +1,10 @@
+"""
+Convenience library for interfacting with a sqlite database. Designed to handle concurrency
+issues when writing tons of stuff.
+
+Author: Ian Fiddes
+"""
+
 import sqlite3 as sql
 
 

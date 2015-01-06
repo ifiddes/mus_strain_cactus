@@ -1,4 +1,6 @@
 """
+THIS IS THE ORIGINAL LIBRARY FROM DENT
+
 convenience library for parsing genecheck psl files
 author: dent earl
 """

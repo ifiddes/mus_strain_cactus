@@ -1,6 +1,0 @@
-13 June 2014
-# something very strange seems to be going on.
-grep ENSMUST00000077375.4 /cluster/home/markd/compbio/gencode/mus_strain_cactus/cactusMapCheck/experiments/2014-04-16.simpleChain/results/lnb_0001/chained/C57B6NJ.chained.psl | grep 142425
-46	0	0	0	0	0	0	0	-	ENSMUST00000077375.4	3550	1395	1441	scaffold-142425	1198	1116	1162	1	46,	2109,	1116,
-46	0	0	0	0	0	0	0	-	ENSMUST00000077375.4	3550	1815	1861	scaffold-142425	1198	1116	1162	1	46,	1689,	1116,
-46	0	0	0	0	0	0	0	-	ENSMUST00000077375.4	3550	1647	1693	scaffold-142425	1198	1116	1162	1	46,	1857,	1116,
