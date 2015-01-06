@@ -15,12 +15,10 @@ class UnknownBases(AbstractClassifier):
     def run(self):
         #call methods from abstract_classifier that pull data needed for this classifier
         self.get_transcripts()
-        self.make_orig_transcript_dict()
         self.make_alignment_dict()
 
         n_counts = {}
         for transcript in self.transcripts:
-            orig_transcript = self.orig_transcript_dict[psl_lib.removeAlignmentNumber(transcript.name)]
             alignments = self.alignment_dict[psl_lib.removeAlignmentNumber(transcript.name),
                     transcript.chromosomeInterval.chromosome]
             n_counts[transcript.name] = sum(a.nCount for a in alignments)

@@ -20,7 +20,7 @@ class AbstractClassifier(Target):
         self.filepaths = filepaths
 
     def get_sequences(self):
-        self.sequences = psl_lib.getSequences(self.filepaths["fasta"])
+        self.sequences = psl_lib.getSequences(self.filepaths["fasta"], upper=True)
 
     def get_sizes(self):
         self.sizes = psl_lib.getChromSizes(self.filepaths["sizes"])
@@ -39,7 +39,7 @@ class AbstractClassifier(Target):
     def make_transcript_dict(self, noDuplicates=True):
         if not hasattr(self, 'transcripts'):
             self.get_transcripts()
-        self.transcript_dict = psl_lib.getUniqueTranscripts(self.transcripts, noDuplicates)
+        self.transcript_dict = psl_lib.transcriptListToDict(self.transcripts, noDuplicates)
 
     def get_orig_transcripts(self):
         self.orig_transcripts = psl_lib.getUniqueTranscripts(self.orig_bed, self.orig_bed_details)
