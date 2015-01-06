@@ -4,12 +4,16 @@ import sqlite3 as sql
 class ExclusiveSqlConnection(object):
     """meant to be used with a with statement to ensure proper closure"""
 
-    def __init__(self, path):
+    def __init__(self, path, timeout=120):
         self.path = path
+        self.timeout = timeout
 
     def __enter__(self):
-        self.con = sql.connect(self.path, isolation_level = "EXCLUSIVE")
-        self.con.execute("BEGIN EXCLUSIVE")
+        self.con = sql.connect(self.path, timeout = self.timeout, isolation_level = "EXCLUSIVE")
+        try:
+            self.con.execute("BEGIN EXCLUSIVE")
+        except sql.OperationalError:
+            print ("Database still locked after {} seconds.".format(self.timeout))
         return self.con.cursor()
 
     def __exit__(self, exception_type, exception_val, trace):
