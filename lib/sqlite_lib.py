@@ -45,6 +45,9 @@ def updateTable(cur, table, set_col, set_val, where_col, where_val):
     set_val = value in that column to change
     where_col = column whose value determines if changes occur
     where_val = value in where_col that determines which rows get changed
+
+    This breaks a big no-no of SQL and allows injection attacks. But, who cares?
+    This isn't a web application.
     """
     cur.execute("UPDATE {} SET {}={} WHERE {}={}".format(table, set_col, set_val,
             where_col, where_val))
@@ -55,10 +58,13 @@ def initializeTable(cur, table, columns, primary_key):
     Builds a empty <table> in the sqlite db opened by <cur> with <[columns]>
     columns should be a list of name, type pairs
     primary_key should be the column name that will be the primary key.
+
+    This breaks a big no-no of SQL and allows injection attacks. But, who cares?
+    This isn't a web application.
     """
-    cur.execute("CREATE TABLE '{}'('{}' TEXT PRIMARY KEY)".format(table, primary_key))
+    cur.execute("""CREATE TABLE '{}'({} TEXT PRIMARY KEY)""".format(table, primary_key))
     for n, t in columns:
-        cur.execute("ALTER TABLE '{}' ADD COLUMN '{}' '{}'".format(table, n, t))
+        cur.execute("""ALTER TABLE '{}' ADD COLUMN {} {} """.format(table, n, t))
 
 
 def numberOfRows(cur, table):
@@ -73,8 +79,15 @@ def upsert(cur, table, primary_key_column, primary_key, col_to_change, value):
     """
     Wrapper for a 'upsert' command (which sqlite lacks). Given a table and a primary key
     will insert a new row with this primary key as necessary. Current implementation
-    only inserts a value for one column. This could easily be changed.
+    only inserts a value for one column.
+
+    This breaks a big no-no of SQL and allows injection attacks. But, who cares?
+    This isn't a web application.
     """
-    cmd = "INSERT OR REPLACE INTO '{}' ('{}', '{}') VALUES ('{}', '{}')".format(table, 
-        primary_key_column, col_to_change, primary_key, value)
-    cur.execute(cmd)
+    #TODO: make col_to_change and value a list and iterate over them?
+    cmd = """INSERT OR IGNORE INTO '{}' ({}, {}) VALUES (?, ?)""".format(table, 
+            primary_key_column, col_to_change)
+    cur.execute(cmd, (primary_key, value))
+    cmd = """UPDATE '{}' SET {}=? WHERE {}=?""".format(table, col_to_change,
+            primary_key_column)
+    cur.execute(cmd, (value, primary_key))

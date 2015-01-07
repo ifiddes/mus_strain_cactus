@@ -1,7 +1,8 @@
 """
 Convenience library for working with psl alignment files.
 
-Author: Ian Fiddes
+Original Author: Dent Earl
+Modified by Ian Fiddes
 """
 
 
@@ -146,16 +147,25 @@ def pslIterator(infile, uniqify=True):
             yield r
         else:
             yield uniqifyPslRow(r, names[r.qName])
-            names[r.qName] += 1
+            names[removeAlignmentNumber(r.qName)] += 1
 
 
-def getPslDict(alignments):
+def getPslDict(alignments, noDuplicates=False):
     """
-    turns an alignment list from readPsl to a dict keyed on (transcript ID, chromosome)
+    turns an alignment list from readPsl to a dict keyed on alignmentID.
     """
-    alignments_dict = defaultdict(list)
+    alignments_dict = {}
     for a in alignments:
-        alignments_dict[(a.qName, a.tName)].append(a)
+        if a.qName not in alignments_dict:
+            alignments_dict[a.qName] = []
+        else:
+            if noDuplicates:
+                raise RuntimeError("getPslDict found duplicate transcript {}"
+                    "when noDuplicates was set".format(a.qName))
+        if noDuplicates:
+            alignments_dict[a.qName] = a
+        else:
+            alignments_dict[a.qName].append(a)
     return alignments_dict
 
 

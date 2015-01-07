@@ -5,6 +5,7 @@ Original Author: Dent Earl
 Modified by Ian Fiddes
 """
 
+import string
 
 class Transcript(object):
     """ Represent a transcript record from a bed file
@@ -429,6 +430,36 @@ class Sequence(object):
                                 % str(relativeStrand))
 
 
+class Attribute(object):
+    """
+    Stores attributes from the gencode attribute file.
+    """
+    
+    __slots__ = ("geneID", "geneName", "geneType", "transcriptID", "transcriptType")
+    
+    def __init__(self, geneID, geneName, geneType, transcriptID, transcriptType):
+        self.geneID = geneID
+        self.geneName = geneName
+        self.geneType = geneType
+        self.transcriptID = transcriptID
+        self.transcriptType = transcriptType
+
+
+_complement = string.maketrans("ATGC","TACG")
+
+
+def complement(seq):
+  """ given a sequence, return the complement.
+  """
+  return seq.translate(_complement)
+
+
+def reverseComplement(seq):
+  """ Given a sequence, return the reverse complement.
+  """
+  return seq.translate(_complement)[::-1]
+
+
 _codonToAminoAcid = {
     'ATG': 'Met',
     'TAA': 'Stop', 'TAG': 'Stop', 'TGA': 'Stop', 'TAR': 'Stop', 'TRA': 'Stop',
@@ -613,3 +644,20 @@ def transcriptIterator(transcriptsBedStream):
         
         yield Transcript(cI, name, exons, int(tokens[4]), int(tokens[6]),
                 int(tokens[7]), tokens[8])
+
+
+def getTranscriptAttributeDict(attributeFile):
+    """returns a dictionary mapping the transcript ID to an Attribute object.
+    This stores all of the relevant information from the gencode attributes file."""
+    attribute_dict = {}
+    with open(attributeFile) as f: 
+        for line in f:
+            line = line.split("\t")
+            if line[0] == "geneId": 
+                continue
+            geneID, geneName, geneType, geneStatus, transcriptID, transcriptName, \
+                    transcriptType, transcriptStatus, havanaGeneID, havanaTranscriptID, \
+                    ccdsID, level, transcriptClass = line
+            attribute_dict[transcriptID] = Attribute(geneID, geneName, geneType, 
+                    transcriptID, transcriptType)
+    return attribute_dict
