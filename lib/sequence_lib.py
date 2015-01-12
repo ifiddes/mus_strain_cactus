@@ -8,6 +8,8 @@ Modified by Ian Fiddes
 import string
 from itertools import izip
 from math import ceil, floor
+import re
+from lib.twobit import TwoBitFile, TwoBitSequence
 
 class Transcript(object):
     """
@@ -201,71 +203,74 @@ class Transcript(object):
 
         return exons
 
-    def getMRna(self, sequence):
+    def getMRna(self, twoBitFileObj):
         """
-        Returns the mRNA sequence for this transcript based on a Sequence object
+        Returns the mRNA sequence for this transcript based on a TwoBitFile object.
         and the start/end positions and the exons. Sequence returned in
         5'-3' transcript orientation.
         """
-        assert self.chromosomeInterval.chromosome == sequence.name
+        sequence = twoBitFileObj[self.chromosomeInterval.chromosome]
         assert self.chromosomeInterval.stop <= len(sequence)
         s = []
         for e in self.exonIntervals:
-            s.append(sequence.sliceSequence(e.start, e.stop))
+            s.append(sequence[e.start : e.stop])
         if self.chromosomeInterval.strand is True:
             return "".join(s)
         else:
             return reverseComplement("".join(s))
 
-    def getCds(self, sequence):
+    def getCds(self, twoBitFileObj):
         """
         Return the CDS sequence (as a string) for the transcript 
-        (based on the exons) using a SEQUENCE object as the source for dna sequence.
+        (based on the exons) using a TwoBitFile object as the sequence source.
         The returned sequence is in the correct 5'-3' orientation (i.e. it has
         been reverse complemented if necessary).
         """
-        assert self.chromosomeInterval.chromosome == sequence.name
+        sequence = twoBitFileObj[self.chromosomeInterval.chromosome]
         assert self.chromosomeInterval.stop <= len(sequence)
         #make sure this isn't a non-coding gene
         if self.thickStart == self.thickStop == 0:
             return ""
         s = []
-        # chromosome    ttttTTTTTTTTTTTtttt  t: thin T: THICK
-        # mRNA            eeeeee eeee eee
-        # CDS               mmmm mmmm m
         for e in self.exonIntervals:
-            if self.thickStart < e.start and e.stop < self.thickStop:
-                # squarely in the CDS
-                s.append(sequence.sliceSequence(e.start, e.stop))
-            elif (e.start <= self.thickStart and e.stop < self.thickStop
-                        and self.thickStart < e.stop):
-                # thickStart marks the start of the CDS
-                s.append(sequence.sliceSequence(self.thickStart, e.stop))
-            elif e.start <= self.thickStart and self.thickStop <= e.stop:
-                # thickStart and thickStop mark the whole CDS
-                s.append(sequence.sliceSequence(self.thickStart, self.thickStop))
-            elif (self.thickStart < e.start and self.thickStop <= e.stop
-                        and e.start < self.thickStop):
-                # thickStop marks the end of the CDS
-                s.append(sequence.sliceSequence(e.start, self.thickStop))
+            try:
+                if self.thickStart < e.start and e.stop < self.thickStop:
+                    # squarely in the CDS
+                    s.append(sequence[e.start : e.stop])
+                elif (e.start <= self.thickStart and e.stop < self.thickStop
+                            and self.thickStart < e.stop):
+                    # thickStart marks the start of the CDS
+                    s.append(sequence[self.thickStart : e.stop])
+                elif e.start <= self.thickStart and self.thickStop <= e.stop:
+                    # thickStart and thickStop mark the whole CDS
+                    s.append(sequence[self.thickStart : self.thickStop])
+                elif (self.thickStart < e.start and self.thickStop <= e.stop
+                            and e.start < self.thickStop):
+                    # thickStop marks the end of the CDS
+                    s.append(sequence[e.start : self.thickStop])
+            except:
+                return (e.start, e.stop)
         if not self.chromosomeInterval.strand:
             return reverseComplement("".join(s))
         else:
             return "".join(s)
 
-    def getProteinSequence(self, sequence):
+    def getProteinSequence(self, twoBitFileObj):
         """
         Returns the translated protein sequence for this transcript in single
         character space.
         """
-        return translateSequence(self.getCds(sequence))
+        cds = self.getCds(twoBitFileObj)
+        if len(cds) < 3:
+            return ""
+        return translateSequence(self.getCds(twoBitFileObj))
 
-    def getIntronSequences(self, sequence):
+    def getIntronSequences(self, twoBitFileObj):
         """
         Returns a list of strings representing each intron in 5'-3' transcript
         orientation
         """
-        assert self.chromosomeInterval.chromosome == sequence.name
+        sequence = twoBitFileObj[self.chromosomeInterval.chromosome]
         assert self.chromosomeInterval.stop <= len(sequence)
         introns = []
         prevExon = self.exonIntervals[0]
@@ -273,7 +278,7 @@ class Transcript(object):
             assert nextExon.strand == prevExon.strand
             assert nextExon.start > prevExon.stop
             start, stop = prevExon.stop, nextExon.start
-            intron = sequence.sliceSequence(start, stop)
+            intron = sequence[start : stop]
             if self.strand is True:
                 introns.append(intron)
             else:
@@ -339,12 +344,13 @@ class Transcript(object):
             if exon.containsCdsPos(p):
                 return exon.cdsPosToChromPos(p)
 
-    def cdsCoordinateToAminoAcid(self, p, sequence):
+    def cdsCoordinateToAminoAcid(self, p, twoBitFileObj):
         """
-        Takes a CDS-relative position and a Sequence object that contains this
+        Takes a CDS-relative position and a TwoBitFile object that contains this
         transcript and returns the amino acid at that CDS position.
         Returns None if this is invalid.
         """
+        sequence = twoBitFileObj[self.chromosomeInterval.sequence]
         cds = self.getCds(sequence)
         if p >= len(cds) or p < 0:
             return None
@@ -355,27 +361,27 @@ class Transcript(object):
         codon = cds[start : stop]
         return _codonTable[codon]
 
-    def transcriptCoordinateToAminoAcid(self, p, sequence):
+    def transcriptCoordinateToAminoAcid(self, p, twoBitFileObj):
         """
-        Takes a transcript coordinate position and a Sequence object that contains
+        Takes a transcript coordinate position and a TwoBitFile object that contains
         this transcript and returns the amino acid at that transcript position.
         If this position is not inside the CDS returns None.
         """
         cds_pos = self.transcriptCoordinateToCds(p)
         if cds_pos is None:
             return None
-        return self.cdsCoordinateToAminoAcid(cds_pos, sequence)
+        return self.cdsCoordinateToAminoAcid(cds_pos, twoBitFileObj)
 
-    def chromosomeCoordinateToAminoAcid(self, p, sequence):
+    def chromosomeCoordinateToAminoAcid(self, p, twoBitFileObj):
         """
-        Takes a chromosome coordinate and a Sequence object that contains this
+        Takes a chromosome coordinate and a TwoBitFile object that contains this
         transcript and returns the amino acid at that chromosome position.
         Returns None if this position is not inside the CDS.
         """
         cds_pos = self.chromosomeCoordinateToCds(p)
         if cds_pos is None:
             return None
-        return self.cdsCoordinateToAminoAcid(cds_pos, sequence)
+        return self.cdsCoordinateToAminoAcid(cds_pos, twoBitFileObj)
 
 
 class Exon(object):
@@ -643,76 +649,6 @@ class ChromosomeInterval(object):
         return self.stop - self.start
 
 
-class Sequence(object):
-    """ 
-    Represents a sequence of DNA.
-    """
-    
-    __slots__ = ('name', 'comments', '_sequence')    # conserve memory
-    
-    def __init__(self, name, comments, sequence):
-        self.name = name    # chromosome or scaffold name
-        self.comments = comments #list of space-seperated words after the first space
-        self._sequence = sequence    # ACGTs
-    
-    def __len__(self):
-        return len(self._sequence)
-
-    def __cmp__(self, other):
-        return cmp((self.name, self.comments, self._sequence), 
-                (other.name, other.comments, other._sequence))
-
-    def setSequence(self, seq):
-        self._sequence = seq
-        self._length = len(seq)
-    
-    def getSequence(self):
-        return self._sequence
-
-    def getComments(self):
-        return self.comments
-    
-    def setUpper(self):
-        self._sequence = self._sequence.upper()
-    
-    def getNucleotide(self, pos, relativeStrand=True, complementNuc=False):
-        """
-        Return the single nucleotide that resides at 0-based position POS.
-        """
-        if relativeStrand:
-            n = self.sliceSequence(pos, pos + 1)
-            if complementNuc:
-                n = complement(n)
-        else:
-            # using slice sequence with '-' automatically complements
-            n = self.sliceSequence(pos, pos + 1, relativeStrand='-')
-        return n
-    
-    def sliceSequence(self, start, stop, relativeStrand='+'):
-        """
-        Return the proper slice of the sequence.
-        BED format coordinates: 0 based start, stop is exclusive
-        [start, stop). E.g. Sequence.sliceSequence(0, 3) returns a string length 3.
-        """
-        assert(start < stop)
-        if relativeStrand == '+':
-            return self._sequence[start:stop]
-        elif relativeStrand == '-':
-            # 0 1 2 3 4 5 6 7 8 9  +
-            # 9 8 7 6 5 4 3 2 1 0  -
-            #                  + strand | - strand
-            #               |    [7, 8) = [2, 3)
-            #   |-----|          [1, 5) = [5, 9)
-            # |---------|        [0, 6) = [4, 10)
-            #       |---------|  [3, 9) = [1, 7)
-            a = self._length - stop
-            b = self._length - stop + (stop - start)
-            return reverseComplement(self._sequence[a:b])
-        else:
-            raise RuntimeError('Unanticipated relativeStrand: %s'
-                                % str(relativeStrand))
-
-
 class Attribute(object):
     """
     Stores attributes from the gencode attribute file.
@@ -807,7 +743,7 @@ def translateSequence(sequence):
     sequence = sequence[:len(sequence) - len(sequence) % 3]
     result = []
     for i in xrange(0, len(sequence), 3):
-        result.append(_codonTable[sequence[i : i + 3]])
+        result.append(codonToAminoAcid(sequence[i : i + 3]))
     return "".join(result)
 
 
@@ -819,42 +755,12 @@ def readCodons(seq):
         yield seq[i:i+3]
 
 
-def getFastaDict(infile, upper=False):
+def readTwoBit(file_path):
     """
-    Given a path to a fasta file, return a dictionary of Sequence objects
-    keyed on the sequence name.
+    Returns a dictionary that can randomly access two bit files.
+    Acts as a wrapper around the TwoBitFile class in twobitreader.py.
     """
-    seqDict = {}
-    seq = None
-    with open(infile, 'r') as f:
-        for seq in readFasta(f):
-            seqDict[seq.name] = seq
-            if upper:
-                seqDict[seq.name].setUpper()
-    return seqDict
-
-
-def readFasta(file_handle):
-    """
-    Generator to yield tuple representing one entry in a fasta file
-    tuple format. Yields Sequence objects.
-    Source: BioPython source code
-    """
-    name, comments, seq = None, '', []
-    for line in file_handle:
-        line = line.rstrip()
-        if line.startswith('>'):
-            if name:
-                yield Sequence(name, comments, ''.join(seq))
-            line = line[1:].split()
-            name, comments, seq = line[0], line[1:], []
-            if comments == []:
-                comments = [""] 
-        else:
-            line = ''.join([x for x in line if not x.isdigit() and not x.isspace()])
-            seq.append(line)
-    if name:
-        yield Sequence(name, comments, ''.join(seq))
+    return TwoBitFile(file_path)
 
 
 def getTranscripts(bedFile):

@@ -19,9 +19,7 @@ all :
 	cd jobTree && make
 
 run : all
-	if [ -d ${jobTree} ] ; then \
-		rm -rf ${jobTree}; \
-	fi
+	if [ -d ${jobTree} ] ; then rm -rf ${jobTree}; fi
 	python src/main.py --refGenome ${refGenome} --genomes ${genomes} --annotationBed ${annotationBed} \
 	--dataDir ${dataDir} --gencodeAttributeMap ${gencodeAttributeMap} \
 	--maxThreads=${maxThreads} --batchSystem=${batchSystem} --defaultMemory=${defaultMemory} \

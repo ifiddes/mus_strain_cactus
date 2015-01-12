@@ -1,3 +1,7 @@
+#Cython built twobit library
+*_twobit.c*
+*/build/
+
 #sql databases
 *.db
 
