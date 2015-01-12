@@ -184,7 +184,7 @@ class Transcript(object):
                 elif thick_stop > this_chrom_start and thick_stop <= this_chrom_stop:
                     cds_pos = thick_stop - this_chrom_start
                     this_cds_pos = 0
-                    this_cds_start = this_stop + thick_stop - this_chrom_stop + 1
+                    this_cds_start = this_start + this_chrom_stop - thick_stop
                 #is this the stop codon containing exon?
                 elif thick_start > this_chrom_start and thick_start < this_chrom_stop:
                     this_cds_pos = cds_pos
