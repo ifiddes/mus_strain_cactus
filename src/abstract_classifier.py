@@ -45,7 +45,7 @@ class AbstractClassifier(Target):
         self.transcript_dict = seq_lib.transcriptListToDict(self.transcripts, noDuplicates=True)
 
     def get_seq_dict(self):
-        self.seq_dict = seq_lib.getFastaDict(self.seqFasta, upper=True)
+        self.seq_dict = seq_lib.readTwoBit(self.seqFasta)
 
     def get_alignments(self):
         self.alignments = psl_lib.readPsl(self.alnPsl)

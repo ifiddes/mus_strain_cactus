@@ -2,7 +2,7 @@ from collections import Counter
 from itertools import izip
 
 from src.abstract_classifier import AbstractClassifier
-import lib.psl_genecheck_lib as psl_lib
+import lib.psl_lib as psl_lib
 import lib.sqlite_lib as sql_lib
 
 class UnknownBases(AbstractClassifier):
@@ -23,13 +23,13 @@ class UnknownBases(AbstractClassifier):
         for aln in self.alignments:
             if aln.strand == "+":
                 for tStart, blockSize in izip(aln.tStarts, aln.blockSizes):
-                    seq = self.seq_dict[aln.tName].sliceSequence(tStart, tStart + blockSize)
+                    seq = self.seq_dict[aln.tName][tStart : tStart + blockSize]
                     counts[aln.qName] += seq.count("N")
             else:
                 #on negative strand the tStarts are (+) strand but blockSizes are in
                 #transcript orientation
                 for tStart, blockSize in izip(aln.tStarts, reversed(aln.blockSizes)):
-                    seq = self.seq_dict[aln.tName].sliceSequence(tStart, tStart + blockSize)
+                    seq = self.seq_dict[aln.tName][tStart : tStart + blockSize]
                     counts[aln.qName] += seq.count("N")
 
         self.upsert_dict_wrapper(counts)

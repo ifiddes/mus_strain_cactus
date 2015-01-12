@@ -13,20 +13,21 @@ from src.basic_attributes import *
 from src.psl_attributes import *
 
 from src.unknown_bases import UnknownBases
+from src.end_stop import EndStop
 
 #classifiers we are currently working with
-classifiers = [UnknownBases]
+classifiers = [EndStop]
 
 #add in all of the basic attribute columns
-classifiers = classifiers + [TranscriptID, GeneID, GeneName, GeneType, TranscriptType]
+#classifiers = classifiers + [TranscriptID, GeneID, GeneName, GeneType, TranscriptType]
 #add in all of the psl attribute columns
-classifiers = classifiers + [SourceChrom, SourceStart, SourceStop, SourceStrand,
-                            DestChrom, DestStart, DestStop, DestStrand]
+#classifiers = classifiers + [SourceChrom, SourceStart, SourceStop, SourceStrand,
+#                            DestChrom, DestStart, DestStop, DestStrand]
 
 
 #hard coded file extension types that we are looking for
 alignment_ext = ".filtered.psl"
-sequence_ext = ".fa"
+sequence_ext = ".2bit"
 gene_check_ext = ".bed"
 #gene_check_details_ext = ".coding-gene-check-details.bed"
 
