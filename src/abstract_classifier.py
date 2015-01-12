@@ -60,7 +60,7 @@ class AbstractClassifier(Target):
         So you don't have to call __name__, self.primaryKey, etc each time"""
         with sql_lib.ExclusiveSqlConnection(self.output) as cur:
             sql_lib.upsert(cur, self.genome, self.primary_key, alignmentName, 
-                    self.__class__.__name__, value)
+                    self.__class__.__name__, str(value))
 
     def upsert_dict_wrapper(self, d):
         """even more convenient wrapper for upserting. Assumes input is a dict 
@@ -69,4 +69,4 @@ class AbstractClassifier(Target):
         with sql_lib.ExclusiveSqlConnection(self.output) as cur:
             for aln, value in d.iteritems():
                 sql_lib.upsert(cur, self.genome, self.primary_key, aln,
-                        self.__class__.__name__, value)
+                        self.__class__.__name__, str(value))

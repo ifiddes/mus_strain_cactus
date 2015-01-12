@@ -1164,6 +1164,7 @@ class ComplicatedTranscript2(unittest.TestCase):
         self.assertEqual(len(self.t), len(self.transcript_seq))
         self.assertEqual(len(self.t.getCds(self.chrom_seq)), len(self.cds_seq))
         self.assertEqual(len(self.t.getProteinSequence(self.chrom_seq)), len(self.amino_acid))
+        self.assertEqual(len(self.t.getCds(self.chrom_seq), self.t.getCdsLength()))
     
     def test_chromosome_coordinate_translations(self):
         """

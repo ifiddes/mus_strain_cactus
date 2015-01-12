@@ -14,9 +14,11 @@ from src.psl_attributes import *
 
 from src.unknown_bases import UnknownBases
 from src.end_stop import EndStop
+from src.begin_start import BeginStart
+from src.in_frame_stop import InFrameStop
 
 #classifiers we are currently working with
-classifiers = [EndStop]
+classifiers = [EndStop, UnknownBases, BeginStart, InFrameStop]
 
 #add in all of the basic attribute columns
 #classifiers = classifiers + [TranscriptID, GeneID, GeneName, GeneType, TranscriptType]
