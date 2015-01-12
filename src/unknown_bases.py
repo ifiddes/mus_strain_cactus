@@ -26,10 +26,10 @@ class UnknownBases(AbstractClassifier):
                     seq = self.seq_dict[aln.tName].sliceSequence(tStart, tStart + blockSize)
                     counts[aln.qName] += seq.count("N")
             else:
+                #on negative strand the tStarts are (+) strand but blockSizes are in
+                #transcript orientation
                 for tStart, blockSize in izip(aln.tStarts, reversed(aln.blockSizes)):
                     seq = self.seq_dict[aln.tName].sliceSequence(tStart, tStart + blockSize)
                     counts[aln.qName] += seq.count("N")
 
-        with sql_lib.ExclusiveSqlConnection(self.output) as cur:
-            for alignmentName, count in counts.iteritems():
-                self.upsert_wrapper(cur, alignmentName, count)
+        self.upsert_dict_wrapper(counts)

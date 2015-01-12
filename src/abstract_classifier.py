@@ -22,6 +22,9 @@ class AbstractClassifier(Target):
         self.primary_key = primaryKey
         self.db = outDb
 
+    def get_alignment_ids(self):
+        self.alignment_ids = set(x.split()[9] for x in open(self.alnPsl))
+
     def get_original_transcripts(self):
         self.original_transcripts = seq_lib.getTranscripts(self.annotationBed)
 
@@ -45,15 +48,25 @@ class AbstractClassifier(Target):
         self.seq_dict = seq_lib.getFastaDict(self.seqFasta, upper=True)
 
     def get_alignments(self):
-        self.alignments = psl_lib.readPsl(self.alnPsl, uniqify=True)
+        self.alignments = psl_lib.readPsl(self.alnPsl)
 
     def make_alignment_dict(self):
         if not hasattr(self, 'alignments'):
             self.get_alignments()
         self.alignment_dict = psl_lib.getPslDict(self.alignments, noDuplicates=True)
 
-    def upsert_wrapper(self, cur, alignmentName, value):
+    def upsert_wrapper(self, alignmentName, value):
         """convenience wrapper for upserting into a column in the sql lib.
         So you don't have to call __name__, self.primaryKey, etc each time"""
-        sql_lib.upsert(cur, self.genome, self.primary_key, alignmentName, 
-                self.__class__.__name__, value)
+        with sql_lib.ExclusiveSqlConnection(self.output) as cur:
+            sql_lib.upsert(cur, self.genome, self.primary_key, alignmentName, 
+                    self.__class__.__name__, value)
+
+    def upsert_dict_wrapper(self, d):
+        """even more convenient wrapper for upserting. Assumes input is a dict 
+        mapping alignment names to a value.
+        """
+        with sql_lib.ExclusiveSqlConnection(self.output) as cur:
+            for aln, value in d.iteritems():
+                sql_lib.upsert(cur, self.genome, self.primary_key, aln,
+                        self.__class__.__name__, value)

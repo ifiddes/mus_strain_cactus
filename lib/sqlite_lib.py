@@ -11,7 +11,7 @@ import sqlite3 as sql
 class ExclusiveSqlConnection(object):
     """meant to be used with a with statement to ensure proper closure"""
 
-    def __init__(self, path, timeout=120):
+    def __init__(self, path, timeout=200):
         self.path = path
         self.timeout = timeout
 
@@ -62,7 +62,7 @@ def initializeTable(cur, table, columns, primary_key):
     This breaks a big no-no of SQL and allows injection attacks. But, who cares?
     This isn't a web application.
     """
-    cur.execute("""CREATE TABLE '{}'({} TEXT PRIMARY KEY)""".format(table, primary_key))
+    cur.execute("""CREATE TABLE '{}' ({} TEXT PRIMARY KEY)""".format(table, primary_key))
     for n, t in columns:
         cur.execute("""ALTER TABLE '{}' ADD COLUMN {} {} """.format(table, n, t))
 
@@ -73,6 +73,11 @@ def numberOfRows(cur, table):
     """
     cur.execute("SELECT Count(*) FROM {}".format(table))
     return cur.fetchone()[0]
+
+
+def insertRow(cur, table, primary_key_column, primary_key):
+    cmd = """INSERT INTO '{}' ({}) VALUES ('{}')""".format(table, primary_key_column, primary_key)
+    cur.execute(cmd)
 
 
 def upsert(cur, table, primary_key_column, primary_key, col_to_change, value):

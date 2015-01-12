@@ -124,7 +124,7 @@ class PslRow(object):
         return s
 
 
-def readPsl(infile, uniqify=True):
+def readPsl(infile, uniqify=False):
     """ read a PSL file and return a list of PslRow objects
     """
     psls = []
@@ -134,7 +134,7 @@ def readPsl(infile, uniqify=True):
     return psls
 
 
-def pslIterator(infile, uniqify=True):
+def pslIterator(infile, uniqify=False):
     """ Iterator to loop over psls returning PslRow objects.
     If uniqify is set, will add a number to each name starting with -0"""
     names = Counter()
