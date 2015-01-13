@@ -16,9 +16,27 @@ from src.unknown_bases import UnknownBases
 from src.end_stop import EndStop
 from src.begin_start import BeginStart
 from src.in_frame_stop import InFrameStop
+from src.bad_frame import BadFrame
+from src.no_cds import NoCds
+from src.cds_gap import CdsGap
+from src.cds_mult_3_gap import CdsMult3Gap
+from src.utr_gap import UtrGap
+from src.cds_unknown_splice import CdsUnknownSplice
+from src.cds_non_canon_splice import CdsNonCanonSplice
+from src.utr_unknown_splice import UtrUnknownSplice
+from src.utr_non_canon_splice import UtrNonCanonSplice
+from src.number_scaffold_gap import NumberScaffoldGap
+from src.alignment_identity import AlignmentIdentity
+from src.alignment_coverage import AlignmentCoverage
+from src.alignment_partial_map import AlignmentPartialMap
+from src.alignment_abuts_right import AlignmentAbutsRight
+from src.alignment_abuts_left import AlignmentAbutsLeft
 
 #classifiers we are currently working with
-classifiers = [EndStop, UnknownBases, BeginStart, InFrameStop]
+classifiers = [EndStop, UnknownBases, BeginStart, InFrameStop, BadFrame, NoCds, CdsMult3Gap, 
+        UtrGap, CdsUnknownSplice, CdsNonCanonSplice, UtrUnknownSplice, UtrNonCanonSplice,
+        NumberScaffoldGap, AlignmentIdentity, AlignmentCoverage, AlignmentPartialMap, 
+        AlignmentAbutsRight, AlignmentAbutsLeft]
 
 #add in all of the basic attribute columns
 #classifiers = classifiers + [TranscriptID, GeneID, GeneName, GeneType, TranscriptType]
@@ -113,4 +131,5 @@ def main():
 
 
 if __name__ == '__main__':
-        main()
+    from src.main import *
+    main()

@@ -29,4 +29,4 @@ class BeginStart(AbstractClassifier):
             else:
                 s_dict[a] = t.cdsCoordinateToTranscript(0)
 
-        sef.upsert_dict_wrapper(s_dict)
+        self.upsert_dict_wrapper(s_dict)

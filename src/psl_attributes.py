@@ -153,7 +153,7 @@ class DestStart(AbstractClassifier):
 class DestStop(AbstractClassifier):
     """
     Creates a column representing the dest genomic stop location.
-    (+) strand value, so always smaller than destEnd.
+    (+) strand value, so always larger tha destStart
     """
     @staticmethod
     def __type__():

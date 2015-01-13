@@ -11,7 +11,7 @@ import sqlite3 as sql
 class ExclusiveSqlConnection(object):
     """meant to be used with a with statement to ensure proper closure"""
 
-    def __init__(self, path, timeout=200):
+    def __init__(self, path, timeout=1000):
         self.path = path
         self.timeout = timeout
 

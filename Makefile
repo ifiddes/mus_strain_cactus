@@ -1,7 +1,8 @@
-batchSystem = singleMachine
+batchSystem = parasol
 maxThreads = 10
 defaultMemory = 8589934592
 jobTree = .jobTree
+log = log.txt
 
 export PYTHONPATH:=./:${PYTHONPATH}
 export PATH:=./sonLib/bin:./submodules/jobTree/bin:${PATH}
@@ -17,10 +18,12 @@ gencodeAttributeMap = /cluster/home/markd/compbio/gencode/mus_strain_cactus/cact
 all :
 	cd sonLib && make
 	cd jobTree && make
+	python lib/twobit/check_if_installed.py
+	if [ $? == 3 ]; then python lib/twobit/setup_twobit.py build; python lib/twobit/setup_twobit.py install; fi
 
 run : all
-	if [ -d ${jobTree} ] ; then rm -rf ${jobTree}; fi
+	if [ -d ${jobTree} ]; then rm -rf ${jobTree}; fi
 	python src/main.py --refGenome ${refGenome} --genomes ${genomes} --annotationBed ${annotationBed} \
 	--dataDir ${dataDir} --gencodeAttributeMap ${gencodeAttributeMap} \
 	--maxThreads=${maxThreads} --batchSystem=${batchSystem} --defaultMemory=${defaultMemory} \
-	--jobTree ${jobTree} --overwriteDb 
+	--jobTree ${jobTree} --overwriteDb &> ${log}

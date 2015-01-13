@@ -50,7 +50,7 @@ class AbstractClassifier(Target):
     def get_alignments(self):
         self.alignments = psl_lib.readPsl(self.alnPsl)
 
-    def make_alignment_dict(self):
+    def get_alignment_dict(self):
         if not hasattr(self, 'alignments'):
             self.get_alignments()
         self.alignment_dict = psl_lib.getPslDict(self.alignments, noDuplicates=True)

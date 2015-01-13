@@ -650,6 +650,9 @@ class ChromosomeInterval(object):
         return cmp((self.chromosome, self.start, self.stop, self.strand),
                              (cI.chromosome, cI.start, cI.stop, cI.strand))
 
+    def __len__(self):
+        return self.stop - self.start
+
     def contains(self, other):
         """ Check the other chromosomeInterval to see if it is contained by this
         CI. If it is not contained return False, else return True.

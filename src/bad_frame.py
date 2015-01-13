@@ -1,10 +1,9 @@
 from src.abstract_classifier import AbstractClassifier
 import lib.sequence_lib as seq_lib
 
-class EndStop(AbstractClassifier):
+class BadFrame(AbstractClassifier):
     """
-    Looks at the end of the coding region (thickEnd) and sees if the last
-    three bases are a stop codon ('TAA', 'TGA', 'TAG')
+    Looks for CDS sequences that are not a multiple of 3
 
     Since sqlite3 lacks a BOOL type, reports 1 if TRUE and 0 if FALSE
 
@@ -19,8 +18,7 @@ class EndStop(AbstractClassifier):
 
         s_dict = {}
         for a, t in self.transcript_dict.iteritems():
-            s = t.getProteinSequence(self.seq_dict)
-            if len(s) > 0 and s[-1] != "*":
+            if t.getCdsLength() % 3 != 0:
                 s_dict[a] = 1
             else:
                 s_dict[a] = 0
