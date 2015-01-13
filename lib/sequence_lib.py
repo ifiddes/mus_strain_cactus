@@ -49,8 +49,8 @@ class Transcript(object):
         self.rgb = map(int, bed_tokens[8].split(","))
 
         #interval for entire transcript including introns
-        self.chromosomeInterval = ChromosomeInterval(bed_tokens[0], bed_tokens[1], 
-                bed_tokens[2], self.strand)
+        self.chromosomeInterval = ChromosomeInterval(bed_tokens[0], self.start, 
+                self.stop, self.strand)
 
         #build chromosome intervals for exons and introns
         self.exonIntervals = self._getExonIntervals(bed_tokens)
@@ -414,6 +414,65 @@ class Transcript(object):
         if cds_pos is None:
             return None
         return self.cdsCoordinateToAminoAcid(cds_pos, twoBitFileObj)
+
+
+class GenePredTranscript(Transcript):
+    """
+    Represent a transcript record from a genePred file. Stores the fields from the file
+    and then uses them to create the following class members:
+    chromosomeInterval: a ChromosomeInterval object representing the entire transcript
+        in chromosome coordinates.
+    exonIntervals: a list of ChromosomeInterval objects representing each exon in
+        chromosome coordinates.
+    intronIntervals: a list of ChromosomeInterval objects representing each intron
+        in chromosome coordinates.
+    exons: a list of Exon objects representing this transcript. These objects store mappings
+        between chromosome, transcript and CDS coordinate space. Transcript and CDS coordinates
+        are always transcript relative (5'->3').
+
+    To be more efficient, the cds and mRNA slots are saved for if those sequences are ever retrieved.
+    Then they will be stored so we don't slice the same thing over and over.
+    """
+    #adding slots for cdsStartStat, cdsEndStat, exonFrames
+    __slots__ = ('cdsStartStat', 'cdsEndStat', 'exonFrames')
+    
+    def __init__(self, gene_pred_tokens):
+        # Text genePred fields
+        self.name = gene_pred_tokens[0]
+        self.strand = convertStrand(gene_pred_tokens[2])
+
+        # Integer genePred fields
+        self.score = 0 # no score in genePred files
+        self.thickStart = int(gene_pred_tokens[5])
+        self.thickStop = int(gene_pred_tokens[6])
+        self.start = int(gene_pred_tokens[3])
+        self.stop = int(gene_pred_tokens[4])
+        self.rgb = [0, 128, 0] #no RGB in genePred files
+
+        # genePred specific fields
+        self.cdsStartStat = gene_pred_tokens[12]
+        self.cdsEndStat = gene_pred_tokens[13]
+        self.exonFrames = [int(x) for x in gene_pred_tokens[14].split(",") if x != ""]
+
+        #create a fake BED entry to pass to the interval making stuff
+        blockCount = gene_pred_tokens[7]
+        blockStarts = [int(x) for x in gene_pred_tokens[8].split(",") if x != ""]
+        blockEnds = [int(x) for x in gene_pred_tokens[9].split(",") if x != ""]
+        blockSizes = [e - s for e,s in izip(blockEnds, blockStarts)]
+        bed_tokens = [gene_pred_tokens[1], self.start, self.stop, self.name, self.score, gene_pred_tokens[2], 
+                self.thickStart, self.thickStop, ",".join(map(str,self.rgb)), blockCount, 
+                ",".join(map(str,blockSizes)), ",".join(map(str,blockStarts))]
+
+        #interval for entire transcript including introns
+        self.chromosomeInterval = ChromosomeInterval(bed_tokens[0], self.start, 
+                self.stop, self.strand)
+
+        #build chromosome intervals for exons and introns
+        self.exonIntervals = self._getExonIntervals(bed_tokens)
+        self.intronIntervals = self._getIntronIntervals(bed_tokens)
+
+        #build Exons mapping transcript space coordinates to chromosome
+        self.exons = self._getExons(bed_tokens)
 
 
 class Exon(object):
@@ -841,6 +900,15 @@ def tokenizeBedStream(bedStream):
             tokens = line.split()
             yield tokens
 
+def tokenizeGenePredStream(genePredStream):
+    """
+    Iterator through gene pred file, returning lines as list of tokens
+    """
+    for line in bedStream:
+        if line != '':
+            tokens = line.split("\t")
+            tokens[-1].rstrip()
+            yield tokens
 
 def transcriptIterator(transcriptsBedStream):
     """
