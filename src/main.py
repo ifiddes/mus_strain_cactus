@@ -3,7 +3,7 @@ import argparse
 import sqlite3 as sql
 from jobTree.scriptTree.target import Target
 from jobTree.scriptTree.stack import Stack
-from jobTree.src.bioio import getLogLevelString, isNewer, logger, setLoggingFromOptions
+from jobTree.src.bioio import getLogLevelString, isNewer, logger, setLoggingFromOptions, system
 from lib.sqlite_lib import initializeTable, insertRow
 from lib.general_lib import FileType, DirType, FullPaths
 
@@ -39,10 +39,10 @@ classifiers = [EndStop, UnknownBases, BeginStart, InFrameStop, BadFrame, NoCds, 
         AlignmentAbutsRight, AlignmentAbutsLeft]
 
 #add in all of the basic attribute columns
-#classifiers = classifiers + [TranscriptID, GeneID, GeneName, GeneType, TranscriptType]
+classifiers = classifiers + [TranscriptID, GeneID, GeneName, GeneType, TranscriptType]
 #add in all of the psl attribute columns
-#classifiers = classifiers + [SourceChrom, SourceStart, SourceStop, SourceStrand,
-#                            DestChrom, DestStart, DestStop, DestStrand]
+classifiers = classifiers + [SourceChrom, SourceStart, SourceStop, SourceStrand,
+                            DestChrom, DestStart, DestStop, DestStrand]
 
 
 #hard coded file extension types that we are looking for
@@ -61,9 +61,10 @@ def build_parser():
     parser.add_argument('--annotationBed', type=FileType)
     parser.add_argument('--dataDir', type=DirType, action=FullPaths)
     parser.add_argument('--gencodeAttributeMap', type=FileType)
-    parser.add_argument('--outDb', type=str, default="results.db")
+    parser.add_argument('--outDir', type=str, default="output/")
     parser.add_argument('--primaryKey', type=str, default="AlignmentID")
     parser.add_argument('--overwriteDb', action="store_true")
+    parser.add_argument('--mergedDb', type=str, default="results.db")
     return parser
 
 
@@ -77,29 +78,37 @@ def parse_dir(genomes, targetDir, ext):
     return pathDict
 
 
-def build_analysis(target, alnPslDict, seqFastaDict, geneCheckBedDict, gencodeAttributeMap,
-            genomes, annotationBed, outDb, primaryKeyColumn, refGenome):
+def build_analysis(target, alnPslDict, seqTwoBitDict, geneCheckBedDict, gencodeAttributeMap,
+            genomes, annotationBed, outDir, primaryKeyColumn, refGenome):
     for genome in genomes:
-        alnPsl, seqFasta = alnPslDict[genome], seqFastaDict[genome]
+        alnPsl, seqFasta = alnPslDict[genome], seqTwoBitDict[genome]
         geneCheckBed = geneCheckBedDict[genome]
-        initialize_sql_columns(genome, outDb, primaryKeyColumn)
+        initialize_sql_columns(genome, outDir, primaryKeyColumn)
         for classifier in classifiers:
             target.addChildTarget(classifier(genome, alnPsl, seqFasta, annotationBed,
-                    gencodeAttributeMap, geneCheckBed, outDb, refGenome, primaryKeyColumn))
+                    gencodeAttributeMap, geneCheckBed, outDir, refGenome, primaryKeyColumn))
 
 
-def initialize_sql_columns(genome, outDb, primaryKeyColumn):
+def initialize_sql_columns(genome, outDir, primaryKeyColumn):
+    outDb = os.path.join(outDir, genome + ".db")
     con = sql.connect(outDb)
     columns = [[x.__name__, x.__type__()] for x in classifiers]
     with con:
         initializeTable(con.cursor(), genome, columns, primaryKeyColumn)
 
 
-def initialize_sql_rows(genome, outDb, alnPsl, primaryKeyColumn):
+def initialize_sql_rows(genome, outDir, alnPsl, primaryKeyColumn):
+    outDb = os.path.join(outDir, genome + ".db")
     con = sql.connect(outDb)
     alnIds = set(x.split()[9] for x in open(alnPsl))
     for alnId in alnIds:
         insertRow(con.cursor(), genome, primaryKeyColumn, alnId)
+
+
+def merge_databases(outDir, mergedDb, genomes):
+    dbs = [os.path.join(outDir, x + ".db") for x in genomes]
+    for db in dbs:
+        system("sqlite3 {} .dump | sqlite3 {}".format(db, mergedDb))
 
 
 def main():
@@ -108,26 +117,35 @@ def main():
     args = parser.parse_args()
     setLoggingFromOptions(args)
 
-    if args.overwriteDb is True and os.path.exists(args.outDb):
-        os.remove(args.outDb)
+    if not os.path.exists(args.outDir):
+        os.mkdir(args.outDir)
+
+    if args.overwriteDb is True:
+        if os.path.exists(args.mergedDb):
+            os.remove(args.mergedDb)
+        for g in args.genomes:
+            if os.path.exists(os.path.join(args.outDir, g + ".db")):
+                os.remove(os.path.join(args.outDir, g + ".db"))
 
     logger.info("Building paths to the required files")
     alnPslDict = parse_dir(args.genomes, args.dataDir, alignment_ext)
-    seqFastaDict = parse_dir(args.genomes, args.dataDir, sequence_ext)
+    seqTwoBitDict = parse_dir(args.genomes, args.dataDir, sequence_ext)
     geneCheckBedDict = parse_dir(args.genomes, args.dataDir, gene_check_ext)
     #geneCheckBedDetailsDict = parse_dir(args.genomes, args.geneCheckDir, gene_check_details_ext)
 
-    refSequence = os.path.join(args.dataDir, args.refGenome + ".fa")
+    refSequence = os.path.join(args.dataDir, args.refGenome + ".2bit")
     if not os.path.exists(refSequence):
-        raise RuntimeError("Reference genome fasta not present at {}".format(refSequence))
+        raise RuntimeError("Reference genome 2bit not present at {}".format(refSequence))
     args.refSequence = refSequence
 
-    i = Stack(Target.makeTargetFn(build_analysis, args=(alnPslDict, seqFastaDict, geneCheckBedDict, 
-            args.gencodeAttributeMap, args.genomes, args.annotationBed, args.outDb, args.primaryKey, 
+    i = Stack(Target.makeTargetFn(build_analysis, args=(alnPslDict, seqTwoBitDict, geneCheckBedDict, 
+            args.gencodeAttributeMap, args.genomes, args.annotationBed, args.outDir, args.primaryKey, 
             args.refGenome))).startJobTree(args)
 
     if i != 0:
         raise RuntimeError("Got failed jobs")
+
+    merge_databases(args.outDir, args.mergedDb, args.genomes)
 
 
 if __name__ == '__main__':

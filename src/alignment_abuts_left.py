@@ -22,6 +22,7 @@ class AlignmentAbutsLeft(AbstractClassifier):
         return "INTEGER"
 
     def run(self):
+
         self.get_alignment_dict()
 
         s_dict = defaultdict(int)
